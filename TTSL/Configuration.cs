@@ -6,7 +6,7 @@ namespace TTSL;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
     public bool OverlayEnabled { get; set; } = true;
     public bool DtrBarEnabled { get; set; } = true;
     public int DtrBarMode { get; set; } = 0;
@@ -20,7 +20,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool EnumeratePartyMembers { get; set; } = false;
     public float RadarScaleYalms { get; set; } = 35f;
     public bool RemoteServerEnabled { get; set; } = false;
-    public string RemoteServerUrl { get; set; } = "http://127.0.0.1:69420";
+    public string RemoteServerUrl { get; set; } = "http://127.0.0.1:6942";
     public int RemotePositionIntervalMs { get; set; } = 250;
     public int RemoteFullSnapshotIntervalMs { get; set; } = 2000;
 

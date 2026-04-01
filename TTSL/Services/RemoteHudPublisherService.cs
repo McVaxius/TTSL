@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Json;
 using System.Numerics;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
@@ -15,6 +15,8 @@ namespace TTSL.Services;
 internal sealed class RemoteHudPublisherService : IDisposable
 {
     private const int MaxMana = 10000;
+    private static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan MaxRetryBackoff = TimeSpan.FromSeconds(15);
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -22,11 +24,15 @@ internal sealed class RemoteHudPublisherService : IDisposable
     };
 
     private readonly Plugin plugin;
-    private readonly HttpClient httpClient = new() { Timeout = TimeSpan.FromSeconds(2) };
-    private readonly SemaphoreSlim sendLock = new(1, 1);
+    private readonly HttpClient httpClient = new() { Timeout = HttpTimeout };
+    private readonly CancellationTokenSource shutdownCts = new();
 
+    private int sendInFlight;
+    private bool isDisposing;
+    private int consecutiveFailureCount;
     private DateTime lastPositionUpdateUtc = DateTime.MinValue;
     private DateTime lastFullSnapshotUtc = DateTime.MinValue;
+    private DateTime nextAttemptUtc = DateTime.MinValue;
     private DateTime? lastSuccessUtc;
     private bool lastAttemptFailed;
     private string? lastError;
@@ -52,6 +58,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         {
             statusText = "Disabled";
             ResetCadence();
+            ResetFailureState();
             TrySendGoodbyeIfNeeded();
             return;
         }
@@ -61,6 +68,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         {
             statusText = "Waiting for local player";
             ResetCadence();
+            ResetFailureState();
             TrySendGoodbyeIfNeeded();
             return;
         }
@@ -69,69 +77,78 @@ internal sealed class RemoteHudPublisherService : IDisposable
         {
             TrySendGoodbyeIfNeeded();
             ResetCadence();
+            ResetFailureState();
         }
 
         goodbyeSent = false;
         lastIdentity = identity;
 
         var now = DateTime.UtcNow;
+        if (lastAttemptFailed && now < nextAttemptUtc)
+        {
+            statusText = BuildBackoffStatus(now);
+            return;
+        }
+
         if ((now - lastFullSnapshotUtc).TotalMilliseconds >= Math.Max(500, cfg.RemoteFullSnapshotIntervalMs))
         {
-            lastFullSnapshotUtc = now;
             var fullSnapshot = BuildFullSnapshot(identity);
-            if (fullSnapshot != null)
-                _ = SendAsync("/api/update", fullSnapshot);
+            if (fullSnapshot != null && TryQueueSend("/api/update", fullSnapshot))
+                lastFullSnapshotUtc = now;
             return;
         }
 
         if ((now - lastPositionUpdateUtc).TotalMilliseconds >= Math.Max(100, cfg.RemotePositionIntervalMs))
         {
-            lastPositionUpdateUtc = now;
             var positionUpdate = BuildPositionUpdate(identity);
-            if (positionUpdate != null)
-                _ = SendAsync("/api/update", positionUpdate);
+            if (positionUpdate != null && TryQueueSend("/api/update", positionUpdate))
+                lastPositionUpdateUtc = now;
         }
     }
 
     public void Dispose()
     {
-        TrySendGoodbyeIfNeeded(force: true);
+        isDisposing = true;
+        TrySendGoodbyeIfNeeded();
+        SpinWait.SpinUntil(() => Volatile.Read(ref sendInFlight) == 0, TimeSpan.FromMilliseconds(150));
+        shutdownCts.Cancel();
+        SpinWait.SpinUntil(() => Volatile.Read(ref sendInFlight) == 0, TimeSpan.FromMilliseconds(150));
+        shutdownCts.Dispose();
         httpClient.Dispose();
-        sendLock.Dispose();
     }
 
-    private void TrySendGoodbyeIfNeeded(bool force = false)
+    private void TrySendGoodbyeIfNeeded()
     {
         if (lastIdentity == null || goodbyeSent)
             return;
 
-        goodbyeSent = true;
-
-        if (force)
-        {
-            try
-            {
-                SendAsync("/api/goodbye", new RemoteGoodbyeRequest
-                {
-                    AccountId = lastIdentity.AccountId,
-                    CharacterName = lastIdentity.CharacterName,
-                    WorldName = lastIdentity.WorldName,
-                }).GetAwaiter().GetResult();
-            }
-            catch
-            {
-                // Best-effort goodbye only.
-            }
-
+        if (!TryBeginSend())
             return;
-        }
 
+        goodbyeSent = true;
         _ = SendAsync("/api/goodbye", new RemoteGoodbyeRequest
         {
             AccountId = lastIdentity.AccountId,
             CharacterName = lastIdentity.CharacterName,
             WorldName = lastIdentity.WorldName,
         });
+    }
+
+    private bool TryQueueSend<T>(string path, T payload)
+    {
+        if (!TryBeginSend())
+            return false;
+
+        _ = SendAsync(path, payload);
+        return true;
+    }
+
+    private bool TryBeginSend()
+    {
+        if (isDisposing || shutdownCts.IsCancellationRequested)
+            return false;
+
+        return Interlocked.CompareExchange(ref sendInFlight, 1, 0) == 0;
     }
 
     private ClientIdentity? GetCurrentIdentity()
@@ -286,6 +303,14 @@ internal sealed class RemoteHudPublisherService : IDisposable
         lastFullSnapshotUtc = DateTime.MinValue;
     }
 
+    private void ResetFailureState()
+    {
+        consecutiveFailureCount = 0;
+        nextAttemptUtc = DateTime.MinValue;
+        lastAttemptFailed = false;
+        lastError = null;
+    }
+
     private static bool IdentityMatches(ClientIdentity left, ClientIdentity right)
     {
         return string.Equals(left.AccountId, right.AccountId, StringComparison.Ordinal) &&
@@ -295,11 +320,11 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
     private async Task SendAsync<T>(string path, T payload)
     {
-        if (!await sendLock.WaitAsync(0).ConfigureAwait(false))
-            return;
-
         try
         {
+            if (shutdownCts.IsCancellationRequested || isDisposing)
+                return;
+
             var baseUrl = NormalizeBaseUrl(plugin.Configuration.RemoteServerUrl);
             if (string.IsNullOrWhiteSpace(baseUrl))
             {
@@ -307,14 +332,25 @@ internal sealed class RemoteHudPublisherService : IDisposable
                 return;
             }
 
-            using var response = await httpClient.PostAsJsonAsync($"{baseUrl}{path}", payload, JsonOptions).ConfigureAwait(false);
+            var json = JsonSerializer.Serialize(payload, JsonOptions);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var response = await httpClient.PostAsync($"{baseUrl}{path}", content, shutdownCts.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                RecordFailure($"HTTP {(int)response.StatusCode} from {baseUrl}{path}");
+                var errorBody = await response.Content.ReadAsStringAsync(shutdownCts.Token).ConfigureAwait(false);
+                RecordFailure($"HTTP {(int)response.StatusCode} from {baseUrl}{path}: {TrimForLog(errorBody)}");
                 return;
             }
 
             RecordSuccess(baseUrl);
+        }
+        catch (OperationCanceledException) when (shutdownCts.IsCancellationRequested || isDisposing)
+        {
+            // Shutdown/reload cancellation is expected during plugin unload.
+        }
+        catch (ObjectDisposedException) when (shutdownCts.IsCancellationRequested || isDisposing)
+        {
+            // Shutdown raced the request; safe to ignore during plugin unload.
         }
         catch (Exception ex)
         {
@@ -322,7 +358,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         }
         finally
         {
-            sendLock.Release();
+            Interlocked.Exchange(ref sendInFlight, 0);
         }
     }
 
@@ -333,18 +369,41 @@ internal sealed class RemoteHudPublisherService : IDisposable
         if (lastAttemptFailed)
             Plugin.Log.Information("[TTSL] Remote HUD publishing recovered: {BaseUrl}", baseUrl);
 
+        consecutiveFailureCount = 0;
+        nextAttemptUtc = DateTime.MinValue;
         lastAttemptFailed = false;
         lastError = null;
     }
 
     private void RecordFailure(string error)
     {
-        statusText = "Publish failed";
+        consecutiveFailureCount = Math.Min(consecutiveFailureCount + 1, 5);
+        var backoff = CalculateBackoff(consecutiveFailureCount);
+        nextAttemptUtc = DateTime.UtcNow + backoff;
+        statusText = $"Retrying in {Math.Max(1, (int)Math.Ceiling(backoff.TotalSeconds))}s";
+
         if (!lastAttemptFailed || !string.Equals(lastError, error, StringComparison.Ordinal))
-            Plugin.Log.Warning("[TTSL] Remote HUD publishing failed: {Error}", error);
+        {
+            Plugin.Log.Warning("[TTSL] Remote HUD publishing failed: {Error}. Backing off for {Seconds}s.",
+                error,
+                Math.Max(1, (int)Math.Ceiling(backoff.TotalSeconds)));
+        }
 
         lastAttemptFailed = true;
         lastError = error;
+    }
+
+    private string BuildBackoffStatus(DateTime now)
+    {
+        var remaining = nextAttemptUtc - now;
+        var seconds = Math.Max(1, (int)Math.Ceiling(Math.Max(0, remaining.TotalSeconds)));
+        return $"Retrying in {seconds}s";
+    }
+
+    private static TimeSpan CalculateBackoff(int consecutiveFailures)
+    {
+        var seconds = Math.Min(MaxRetryBackoff.TotalSeconds, Math.Pow(2, Math.Max(0, consecutiveFailures - 1)));
+        return TimeSpan.FromSeconds(Math.Max(1, seconds));
     }
 
     private static string NormalizeBaseUrl(string url)
@@ -360,6 +419,15 @@ internal sealed class RemoteHudPublisherService : IDisposable
         }
 
         return trimmed.TrimEnd('/');
+    }
+
+    private static string TrimForLog(string errorBody)
+    {
+        if (string.IsNullOrWhiteSpace(errorBody))
+            return "No response body";
+
+        var trimmed = errorBody.Trim();
+        return trimmed.Length <= 220 ? trimmed : $"{trimmed[..220]}...";
     }
 
     private sealed class ClientIdentity

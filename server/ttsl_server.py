@@ -19,24 +19,34 @@ def utc_iso(value: datetime) -> str:
     return value.isoformat().replace("+00:00", "Z")
 
 
+def log_event(message: str) -> None:
+    print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {message}")
+
+
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TTSL Remote HUD</title>
 <style>
-:root{--bg:#08111a;--panel:#122131;--panel2:#182b40;--text:#edf6ff;--muted:#9fb4c7;--ok:#79e58d;--warn:#ffb86c;--bad:#ff7f7f;--accent:#8be9fd}
-*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(139,233,253,.15),transparent 28%),linear-gradient(180deg,#08111a,#0f1c2b 45%,#122131)}
-header{position:sticky;top:0;padding:18px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);backdrop-filter:blur(10px);background:rgba(8,17,26,.82);z-index:2}
-h1{margin:0 0 8px;font-size:27px}.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;color:var(--muted);font-size:14px}.toolbar label{display:inline-flex;align-items:center;gap:7px}
-main{padding:18px 20px 24px;display:grid;gap:16px}.group{background:rgba(18,33,49,.93);border:1px solid rgba(255,255,255,.08);border-radius:18px;overflow:hidden}
-.grouphead{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;background:linear-gradient(90deg,rgba(139,233,253,.12),rgba(255,184,108,.09));border-bottom:1px solid rgba(255,255,255,.08)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;padding:14px}.card{display:grid;gap:11px;padding:14px;border-radius:15px;background:linear-gradient(180deg,rgba(24,43,64,.95),rgba(14,27,42,.98));border:1px solid rgba(255,255,255,.08)}
-.head{display:flex;justify-content:space-between;gap:8px}.title{font-weight:700;font-size:17px}.sub,.muted{color:var(--muted);font-size:13px}.badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
-.badge{padding:4px 8px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(255,255,255,.08)}.ok{color:var(--ok);background:rgba(121,229,141,.14)}.warn{color:var(--warn);background:rgba(255,184,108,.14)}.bad{color:var(--bad);background:rgba(255,127,127,.14)}
-.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.metric{padding:9px 10px;border-radius:11px;background:rgba(255,255,255,.045)}.label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}.value{font-size:15px;font-weight:600}
-.bar{margin-top:6px;height:10px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.08)}.bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ffd479)}
-.list{display:grid;gap:7px}.row{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;border-radius:10px;background:rgba(255,255,255,.04);font-size:13px}
-canvas{width:100%;max-width:220px;aspect-ratio:1/1;justify-self:center;background:rgba(7,12,20,.82);border:1px solid rgba(255,255,255,.08);border-radius:18px}.empty{padding:26px;text-align:center;color:var(--muted);background:rgba(18,33,49,.82);border:1px dashed rgba(255,255,255,.16);border-radius:18px}
-@media (max-width:720px){header,main{padding-left:14px;padding-right:14px}.grid{grid-template-columns:1fr;padding:12px}}
+:root{--bg:#071018;--panel:#101925;--panel2:#152231;--line:rgba(255,255,255,.08);--text:#eaf4ff;--muted:#93a7bc;--ok:#79e58d;--warn:#ffbf74;--bad:#ff7f7f;--accent:#87d7ff}
+*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(135,215,255,.12),transparent 26%),linear-gradient(180deg,#071018,#0b1621 48%,#101925)}
+header{position:sticky;top:0;padding:8px 10px 6px;border-bottom:1px solid var(--line);background:rgba(7,16,24,.9);backdrop-filter:blur(10px);z-index:2}
+h1{margin:0 0 4px;font-size:18px}.toolbar{display:flex;flex-wrap:wrap;gap:6px 10px;color:var(--muted);font-size:11px}.toolbar label{display:inline-flex;align-items:center;gap:5px}
+main{padding:8px 10px 10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:8px;align-items:start}
+.card{display:grid;gap:6px;padding:8px;border-radius:11px;background:linear-gradient(180deg,rgba(16,25,37,.96),rgba(11,18,28,.98));border:1px solid var(--line)}
+.head{display:flex;justify-content:space-between;gap:6px;align-items:flex-start}.name{font-weight:700;font-size:14px;line-height:1.15}.zone,.sub,.foot{font-size:10px;color:var(--muted)}
+.badges,.states{display:flex;flex-wrap:wrap;gap:5px}.badge,.state{padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid transparent}
+.badge.ok,.state.on{color:var(--ok);background:rgba(121,229,141,.14);border-color:rgba(121,229,141,.22)}
+.badge.warn,.state.warn{color:var(--warn);background:rgba(255,191,116,.12);border-color:rgba(255,191,116,.22)}
+.badge.bad,.state.bad{color:var(--bad);background:rgba(255,127,127,.12);border-color:rgba(255,127,127,.22)}
+.state.off{color:#627385;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.06)}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.tile{padding:4px 5px;border-radius:8px;background:rgba(255,255,255,.04)}
+.label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}.value{font-size:11px;font-weight:600;line-height:1.2}
+.section{display:grid;gap:4px}.sectionhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.party{display:grid;gap:3px}.member{display:grid;grid-template-columns:20px minmax(0,1fr) 36px 40px;gap:4px;align-items:center;padding:3px 5px;border-radius:7px;background:rgba(255,255,255,.035);font-size:11px}
+.slot,.job,.hp,.dist{text-align:right;color:var(--muted)}.membername{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.radarbox{display:grid;justify-items:center;gap:3px}canvas{width:124px;max-width:100%;aspect-ratio:1/1;background:rgba(6,10,16,.92);border:1px solid var(--line);border-radius:12px}
+.empty{padding:20px;text-align:center;color:var(--muted);background:rgba(16,25,37,.84);border:1px dashed rgba(255,255,255,.14);border-radius:12px}
+@media (max-width:720px){header{padding:8px 10px 6px}main{padding:8px 10px 10px;grid-template-columns:1fr}}
 </style></head><body>
 <header><h1>TTSL Remote HUD</h1><div class="toolbar"><span id="summary">Waiting for clients...</span><span id="stamp">No updates yet.</span><label><input id="krangle" type="checkbox"> Krangle names/account IDs</label><label><input id="showStale" type="checkbox" checked> Show stale/disconnected</label></div></header>
 <main id="app"><div class="empty">No clients connected yet. Start the server, point TTSL at it, then enable remote publishing.</div></main>
@@ -45,18 +55,17 @@ const app=document.getElementById("app"),summary=document.getElementById("summar
 const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
 const kName=s=>krangle.checked?`Krangle-${hash(s).toString(36).toUpperCase().padStart(6,"0").slice(0,6)}`:s;
 const kAcct=s=>krangle.checked?`ACC-${hash(s).toString(16).toUpperCase().padStart(8,"0").slice(0,8)}`:s;
-const badge=(text,kind="")=>{const el=document.createElement("span");el.className=`badge ${kind}`.trim();el.textContent=text;return el};
-const pct=(cur,max)=>!max||max<=0?0:Math.max(0,Math.min(100,(cur/max)*100));
+const pct=(cur,max)=>!max||max<=0?"--":`${Math.round((cur/max)*100)}%`;
 const posText=p=>!p?"Unavailable":`X ${p.x.toFixed(1)} | Y ${p.y.toFixed(1)} | Z ${p.z.toFixed(1)}`;
-function drawRadar(canvas,client){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=w/2-18;ctx.clearRect(0,0,w,h);ctx.fillStyle="#08111a";ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(255,255,255,.14)";ctx.strokeRect(10,10,w-20,h-20);ctx.beginPath();ctx.moveTo(cx,14);ctx.lineTo(cx,h-14);ctx.moveTo(14,cy);ctx.lineTo(w-14,cy);ctx.stroke();ctx.fillStyle="#79e58d";ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();if(!client.position||!Array.isArray(client.party)||client.party.length===0){ctx.fillStyle="#9fb4c7";ctx.font="12px Segoe UI";ctx.fillText("No party positions",48,cy+4);return}for(const m of client.party){if(!m.position)continue;const dx=m.position.x-client.position.x,dz=m.position.z-client.position.z,px=cx+Math.max(-1,Math.min(1,dx/35))*r,py=cy+Math.max(-1,Math.min(1,dz/35))*r;ctx.fillStyle="#ffd479";ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#edf6ff";ctx.font="11px Segoe UI";ctx.fillText(String(m.slot),px+7,py+3)}}
-function renderClient(c){const card=document.createElement("section");card.className="card";const head=document.createElement("div");head.className="head";const left=document.createElement("div");left.innerHTML=`<div class="title">${kName(c.characterName)} @ ${c.worldName}</div><div class="sub">${c.territoryName||"Unknown zone"} (${c.territoryId??0})</div>`;const badges=document.createElement("div");badges.className="badges";badges.appendChild(badge(c.isDisconnected?"Disconnected":c.stale?"Stale":"Live",c.isDisconnected?"bad":c.stale?"warn":"ok"));badges.appendChild(badge(`${c.ageSeconds.toFixed(1)}s ago`));head.append(left,badges);
-const hpCur=c.player?.currentHp??0,hpMax=c.player?.maxHp??0,mpCur=c.player?.currentMp??0,mpMax=c.player?.maxMp??0;
-const metrics=document.createElement("div");metrics.className="metrics";metrics.innerHTML=`<div class="metric"><div class="label">Position</div><div class="value">${posText(c.position)}</div></div><div class="metric"><div class="label">Repair</div><div class="value">${c.repair?`${c.repair.minCondition}% min / ${c.repair.averageCondition}% avg`:"Unavailable"}</div></div><div class="metric"><div class="label">HP</div><div class="value">${hpCur.toLocaleString()} / ${hpMax.toLocaleString()}</div><div class="bar"><span style="width:${pct(hpCur,hpMax)}%"></span></div></div><div class="metric"><div class="label">MP</div><div class="value">${mpCur.toLocaleString()} / ${mpMax.toLocaleString()}</div><div class="bar"><span style="width:${pct(mpCur,mpMax)}%"></span></div></div>`;
-const conds=document.createElement("div");conds.className="list";for(const [label,active] of [["In combat",c.conditions?.inCombat],["Bound by duty",c.conditions?.boundByDuty],["In queue",c.conditions?.waitingForDuty],["Mounted",c.conditions?.mounted],["Casting",c.conditions?.casting],["Dead",c.conditions?.dead]]){const row=document.createElement("div");row.className="row";row.innerHTML=`<span>${label}</span><span class="${active?"":"muted"}">${active?"active":"inactive"}</span>`;conds.appendChild(row)}
-const party=document.createElement("div");party.className="list";if(Array.isArray(c.party)&&c.party.length>0){for(const m of c.party){const d=typeof m.distance==="number"?`${m.distance.toFixed(1)}y`:"off-table";const row=document.createElement("div");row.className="row";row.innerHTML=`<span>[${m.slot}] ${kName(m.name)} <span class="muted">${m.job}</span></span><span>${d}</span>`;party.appendChild(row)}}else{const row=document.createElement("div");row.className="row";row.innerHTML=`<span>No party data captured yet.</span><span class="muted">Waiting</span>`;party.appendChild(row)}
-const radar=document.createElement("canvas");radar.width=220;radar.height=220;const foot=document.createElement("div");foot.className="muted";foot.textContent=`Last update: ${c.lastSeenUtc} | Source: ${c.updateKind}`;card.append(head,metrics,conds,party,radar,foot);requestAnimationFrame(()=>drawRadar(radar,c));return card}
-function renderGroup(group){const section=document.createElement("section");section.className="group";const live=group.clients.filter(c=>!c.stale&&!c.isDisconnected).length;const head=document.createElement("div");head.className="grouphead";head.innerHTML=`<div><div class="title">${kAcct(group.accountId)}</div><div class="sub">${group.clients.length} client(s) tracked</div></div><div class="sub">${live} live, ${group.clients.length-live} stale/disconnected</div>`;const grid=document.createElement("div");grid.className="grid";const visible=showStale.checked?group.clients:group.clients.filter(c=>!c.stale&&!c.isDisconnected);if(visible.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent="All tracked clients in this account are stale or disconnected.";grid.appendChild(empty)}else for(const client of visible)grid.appendChild(renderClient(client));section.append(head,grid);return section}
-async function refresh(){try{const res=await fetch("/api/state",{cache:"no-store"});if(!res.ok)throw new Error(`HTTP ${res.status}`);const state=await res.json();summary.textContent=`${state.totalClients} client(s) across ${state.accountGroups.length} account group(s)`;stamp.textContent=`Generated ${state.generatedAtUtc} | Stale after ${state.staleSeconds}s`;app.replaceChildren();if(state.accountGroups.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing.";app.appendChild(empty);return}for(const group of state.accountGroups)app.appendChild(renderGroup(group))}catch(err){summary.textContent="Refresh failed";stamp.textContent=String(err)}}
+function chip(text,kind){const el=document.createElement("span");el.className=`badge ${kind}`.trim();el.textContent=text;return el}
+function stateChip(text,active,kind=""){const el=document.createElement("span");el.className=`state ${kind || (active?"on":"off")}`.trim();el.textContent=text;return el}
+function tile(label,value){const el=document.createElement("div");el.className="tile";el.innerHTML=`<div class="label">${label}</div><div class="value">${value}</div>`;return el}
+function drawRadar(canvas,client){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=w/2-16;ctx.clearRect(0,0,w,h);ctx.fillStyle="#071018";ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(255,255,255,.12)";ctx.strokeRect(9,9,w-18,h-18);ctx.beginPath();ctx.moveTo(cx,14);ctx.lineTo(cx,h-14);ctx.moveTo(14,cy);ctx.lineTo(w-14,cy);ctx.stroke();ctx.fillStyle="#79e58d";ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();if(!client.position||!Array.isArray(client.party)||client.party.length===0){ctx.fillStyle="#93a7bc";ctx.font="11px Segoe UI";ctx.fillText("No party",46,cy+4);return}for(const m of client.party){if(!m.position)continue;const dx=m.position.x-client.position.x,dz=m.position.z-client.position.z,px=cx+Math.max(-1,Math.min(1,dx/35))*r,py=cy+Math.max(-1,Math.min(1,dz/35))*r;ctx.fillStyle="#ffbf74";ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eaf4ff";ctx.font="10px Segoe UI";ctx.fillText(String(m.slot),px+5,py+3)}}
+function renderParty(client){const wrap=document.createElement("div");wrap.className="party";if(Array.isArray(client.party)&&client.party.length>0){for(const m of client.party){const row=document.createElement("div");row.className="member";const dist=typeof m.distance==="number"?`${m.distance.toFixed(1)}y`:"--";const hp=(m.currentHp!=null&&m.maxHp!=null&&m.maxHp>0)?pct(m.currentHp,m.maxHp):"--";row.innerHTML=`<div class="slot">${m.slot}</div><div class="membername">${kName(m.name)}</div><div class="job">${m.job}</div><div class="dist">${dist}</div>`;row.title=`HP ${hp}`;wrap.appendChild(row)}}else{const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No party data captured yet.</div><div class="job">--</div><div class="dist">--</div>`;wrap.appendChild(row)}return wrap}
+function renderStates(client){const wrap=document.createElement("div");wrap.className="states";wrap.append(stateChip("Combat",!!client.conditions?.inCombat),stateChip("Duty",!!client.conditions?.boundByDuty),stateChip("Queue",!!client.conditions?.waitingForDuty),stateChip("Mount",!!client.conditions?.mounted),stateChip("Cast",!!client.conditions?.casting),stateChip("Dead",!!client.conditions?.dead,client.conditions?.dead?"bad":"off"));return wrap}
+function renderClient(client){const card=document.createElement("section");card.className="card";const head=document.createElement("div");head.className="head";const info=document.createElement("div");info.innerHTML=`<div class="name">${kName(client.characterName)} @ ${client.worldName}</div><div class="zone">${client.territoryName||"Unknown zone"} (${client.territoryId??0})</div><div class="sub">${kAcct(client.accountId)}</div>`;const badges=document.createElement("div");badges.className="badges";badges.appendChild(chip(client.isDisconnected?"Disconnected":client.stale?"Stale":"Live",client.isDisconnected?"bad":client.stale?"warn":"ok"));badges.appendChild(chip(`${client.ageSeconds.toFixed(1)}s`,""));const metrics=document.createElement("div");metrics.className="meta";const hpCur=client.player?.currentHp??0,hpMax=client.player?.maxHp??0,mpCur=client.player?.currentMp??0,mpMax=client.player?.maxMp??0;metrics.append(tile("HP",`${hpCur.toLocaleString()} / ${hpMax.toLocaleString()} (${pct(hpCur,hpMax)})`),tile("MP",`${mpCur.toLocaleString()} / ${mpMax.toLocaleString()} (${pct(mpCur,mpMax)})`),tile("Position",posText(client.position)),tile("Repair",client.repair?`${client.repair.minCondition}% min | ${client.repair.averageCondition}% avg`:"Unavailable"));const stateSection=document.createElement("div");stateSection.className="section";stateSection.innerHTML=`<div class="sectionhead">Status</div>`;stateSection.appendChild(renderStates(client));const partySection=document.createElement("div");partySection.className="section";partySection.innerHTML=`<div class="sectionhead">Party</div>`;partySection.appendChild(renderParty(client));const radarSection=document.createElement("div");radarSection.className="radarbox";radarSection.innerHTML=`<div class="sectionhead">Radar</div>`;const radar=document.createElement("canvas");radar.width=140;radar.height=140;radarSection.appendChild(radar);const foot=document.createElement("div");foot.className="foot";foot.textContent=`Last update ${client.lastSeenUtc} | ${client.updateKind}`;head.append(info,badges);card.append(head,metrics,stateSection,partySection,radarSection,foot);requestAnimationFrame(()=>drawRadar(radar,client));return card}
+function flattenGroups(groups){return groups.flatMap(group=>group.clients.map(client=>({...client,accountId:group.accountId})))}
+async function refresh(){try{const res=await fetch("/api/state",{cache:"no-store"});if(!res.ok)throw new Error(`HTTP ${res.status}`);const state=await res.json();const clients=flattenGroups(state.accountGroups).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const visible=showStale.checked?clients:clients.filter(c=>!c.stale&&!c.isDisconnected);const live=clients.filter(c=>!c.stale&&!c.isDisconnected).length;summary.textContent=`${clients.length} client(s) tracked | ${live} live | ${clients.length-live} stale/disconnected`;stamp.textContent=`Generated ${state.generatedAtUtc} | stale after ${state.staleSeconds}s`;app.replaceChildren();if(visible.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent=clients.length===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing.":"All tracked clients are stale or disconnected.";app.appendChild(empty);return}for(const client of visible)app.appendChild(renderClient(client))}catch(err){summary.textContent="Refresh failed";stamp.textContent=String(err)}}
 krangle.addEventListener("change",refresh);showStale.addEventListener("change",refresh);refresh();setInterval(refresh,1000);
 </script></body></html>"""
 
@@ -64,27 +73,39 @@ krangle.addEventListener("change",refresh);showStale.addEventListener("change",r
 class TTSLStateStore:
     def __init__(self, stale_seconds: int) -> None:
         self.stale_seconds = stale_seconds
+        self.retention_seconds = max(stale_seconds * 2, stale_seconds + 60)
         self._clients: dict[tuple[str, str, str], dict] = {}
         self._lock = threading.Lock()
 
     def update(self, payload: dict) -> None:
         key = self._make_key(payload)
         now = utc_now()
+        now_unix = time.time()
         with self._lock:
-            client = self._clients.get(key) or {
+            previous = self._clients.get(key)
+            was_disconnected = bool(previous and previous.get("isDisconnected"))
+            was_stale = bool(previous and now_unix - float(previous.get("lastSeenUnix", now_unix)) >= self.stale_seconds)
+
+            client = previous or {
                 "accountId": key[0],
                 "characterName": key[1],
                 "worldName": key[2],
             }
             client["updateKind"] = payload.get("updateKind", "full")
             client["lastSeenUtc"] = utc_iso(now)
-            client["lastSeenUnix"] = time.time()
+            client["lastSeenUnix"] = now_unix
             client["isDisconnected"] = False
             client["goodbyeUtc"] = None
             for field in ("territoryId", "territoryName", "position", "player", "conditions", "repair", "party"):
                 if field in payload and payload[field] is not None:
                     client[field] = payload[field]
             self._clients[key] = client
+
+            if previous is None:
+                log_event(f"Client connected: {self._format_key(key)}")
+            elif was_disconnected or was_stale:
+                log_event(f"Client resumed: {self._format_key(key)}")
+
             self._prune_locked(now)
 
     def goodbye(self, payload: dict) -> None:
@@ -98,10 +119,15 @@ class TTSLStateStore:
                 "lastSeenUtc": utc_iso(now),
                 "lastSeenUnix": time.time(),
             }
+            already_disconnected = bool(client.get("isDisconnected"))
             client["updateKind"] = "goodbye"
             client["isDisconnected"] = True
             client["goodbyeUtc"] = utc_iso(now)
             self._clients[key] = client
+
+            if not already_disconnected:
+                log_event(f"Client goodbye: {self._format_key(key)}")
+
             self._prune_locked(now)
 
     def snapshot(self) -> dict:
@@ -130,9 +156,11 @@ class TTSLStateStore:
             }
 
     def _prune_locked(self, now: datetime) -> None:
-        cutoff = now.timestamp() - self.stale_seconds
-        for key in [key for key, client in self._clients.items() if float(client.get("lastSeenUnix", 0)) < cutoff]:
+        cutoff = now.timestamp() - self.retention_seconds
+        stale_keys = [key for key, client in self._clients.items() if float(client.get("lastSeenUnix", 0)) < cutoff]
+        for key in stale_keys:
             self._clients.pop(key, None)
+            log_event(f"Client removed after inactivity: {self._format_key(key)}")
 
     @staticmethod
     def _make_key(payload: dict) -> tuple[str, str, str]:
@@ -142,6 +170,10 @@ class TTSLStateStore:
         if not account_id or not character_name or not world_name:
             raise ValueError("accountId, characterName, and worldName are required")
         return account_id, character_name, world_name
+
+    @staticmethod
+    def _format_key(key: tuple[str, str, str]) -> str:
+        return f"{key[1]}@{key[2]} ({key[0]})"
 
 
 def make_handler(state: TTSLStateStore):
@@ -179,21 +211,48 @@ def make_handler(state: TTSLStateStore):
                     return self._write_json({"ok": True})
                 self.send_error(HTTPStatus.NOT_FOUND, "Unknown path")
             except ValueError as exc:
+                log_event(f"Bad request on {self.path}: {exc}")
                 self._write_json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
             except json.JSONDecodeError as exc:
+                log_event(f"Invalid JSON on {self.path}: {exc}")
                 self._write_json({"ok": False, "error": f"Invalid JSON: {exc}"}, HTTPStatus.BAD_REQUEST)
 
         def log_message(self, format: str, *args) -> None:
-            print(f"[{datetime.now():%Y-%m-%d %H:%M:%S}] {self.address_string()} {format % args}")
+            return
 
         def _read_json(self) -> dict:
-            length = int(self.headers.get("Content-Length", "0"))
-            if length <= 0:
-                raise ValueError("Request body is required")
-            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            transfer_encoding = self.headers.get("Transfer-Encoding", "")
+            if "chunked" in transfer_encoding.lower():
+                body = self._read_chunked_body()
+            else:
+                length = int(self.headers.get("Content-Length", "0"))
+                if length <= 0:
+                    raise ValueError("Request body is required")
+                body = self.rfile.read(length)
+
+            payload = json.loads(body.decode("utf-8"))
             if not isinstance(payload, dict):
                 raise ValueError("JSON object body is required")
             return payload
+
+        def _read_chunked_body(self) -> bytes:
+            body = bytearray()
+            while True:
+                size_line = self.rfile.readline().strip()
+                if not size_line:
+                    continue
+
+                chunk_size = int(size_line.split(b";", 1)[0], 16)
+                if chunk_size == 0:
+                    while True:
+                        trailer_line = self.rfile.readline()
+                        if trailer_line in (b"\r\n", b"\n", b""):
+                            return bytes(body)
+
+                body.extend(self.rfile.read(chunk_size))
+                terminator = self.rfile.read(2)
+                if terminator != b"\r\n":
+                    raise ValueError("Invalid chunk framing in request body")
 
         def _write_json(self, payload: dict, status: HTTPStatus = HTTPStatus.OK) -> None:
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -209,7 +268,7 @@ def make_handler(state: TTSLStateStore):
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Serve a multi-client TTSL remote HUD.")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host. Use 0.0.0.0 for LAN access.")
-    parser.add_argument("--port", type=int, default=69420, help="HTTP port for clients and viewers.")
+    parser.add_argument("--port", type=int, default=6942, help="HTTP port for clients and viewers.")
     parser.add_argument("--stale-seconds", type=int, default=300, help="How long stale clients remain visible.")
     return parser.parse_args()
 
@@ -218,7 +277,7 @@ def main() -> None:
     args = parse_args()
     state = TTSLStateStore(stale_seconds=max(30, args.stale_seconds))
     server = ThreadingHTTPServer((args.host, args.port), make_handler(state))
-    print(f"TTSL remote HUD listening on http://{args.host}:{args.port} (stale prune {state.stale_seconds}s)")
+    log_event(f"TTSL remote HUD listening on http://{args.host}:{args.port} (stale {state.stale_seconds}s, prune {state.retention_seconds}s)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

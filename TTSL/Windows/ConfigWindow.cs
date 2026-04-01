@@ -111,7 +111,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         ImGui.SameLine();
         if (ImGui.SmallButton("Use Local Default"))
         {
-            cfg.RemoteServerUrl = "http://127.0.0.1:69420";
+            cfg.RemoteServerUrl = "http://127.0.0.1:6942";
             changed = true;
         }
 
@@ -129,7 +129,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
             changed = true;
         }
 
-        ImGui.TextDisabled("Default Python server: python .\\server\\ttsl_server.py --host 0.0.0.0 --port 69420");
+        ImGui.TextDisabled("Default Python server: python .\\server\\ttsl_server.py --host 0.0.0.0 --port 6942");
         ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
         ImGui.TextDisabled($"Current account ID: {plugin.GetCurrentAccountId()}");
 

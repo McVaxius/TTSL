@@ -40,6 +40,7 @@ public sealed class Plugin : IDalamudPlugin
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        MigrateConfiguration();
         RemoteHudPublisher = new RemoteHudPublisherService(this);
 
         MainWindow = new MainWindow(this);
@@ -198,6 +199,29 @@ public sealed class Plugin : IDalamudPlugin
     {
         dtrEntry = DtrBar.Get(PluginInfo.DisplayName);
         dtrEntry.OnClick = _ => SetOverlayEnabled(!Configuration.OverlayEnabled, "DTR");
+    }
+
+    private void MigrateConfiguration()
+    {
+        var changed = false;
+
+        if (Configuration.Version < 2)
+        {
+            if (string.Equals(Configuration.RemoteServerUrl, "http://127.0.0.1:69420", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Configuration.RemoteServerUrl, "127.0.0.1:69420", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Configuration.RemoteServerUrl, "http://localhost:69420", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(Configuration.RemoteServerUrl, "localhost:69420", StringComparison.OrdinalIgnoreCase))
+            {
+                Configuration.RemoteServerUrl = "http://127.0.0.1:6942";
+                changed = true;
+            }
+
+            Configuration.Version = 2;
+            changed = true;
+        }
+
+        if (changed)
+            Configuration.Save();
     }
 
     private void OnFrameworkUpdate(IFramework framework)
