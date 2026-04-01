@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
@@ -9,6 +10,8 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
 {
     private static readonly string[] DtrModes = { "Text Only", "Icon+Text", "Icon Only" };
     private const string IconGuideUrl = "https://na.finalfantasyxiv.com/lodestone/character/22423564/blog/4393835";
+    private const string LocalServerDefaultHost = "127.0.0.1";
+    private const int LocalServerDefaultPort = 6942;
 
     private readonly Plugin plugin;
 
@@ -115,6 +118,18 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
             changed = true;
         }
 
+        var launchCommand = BuildSuggestedServerLaunchCommand();
+        ImGui.SetNextItemWidth(-115f);
+        ImGui.InputText("Python launch command", ref launchCommand, 1024, ImGuiInputTextFlags.ReadOnly);
+        ImGui.SameLine();
+        if (ImGui.SmallButton("Copy Command"))
+        {
+            ImGui.SetClipboardText(launchCommand);
+            Plugin.Log.Information("[TTSL] Copied Python server launch command to clipboard.");
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Copies the best local server-launch command TTSL could resolve from this install.");
+
         var positionIntervalMs = cfg.RemotePositionIntervalMs;
         if (ImGui.InputInt("Fast position interval (ms)", ref positionIntervalMs, 25, 100))
         {
@@ -129,7 +144,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
             changed = true;
         }
 
-        ImGui.TextDisabled("Default Python server: python .\\server\\ttsl_server.py --host 0.0.0.0 --port 6942");
+        ImGui.TextDisabled("Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0.");
         ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
         ImGui.TextDisabled("For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first.");
         ImGui.TextDisabled("The server will cache the first same-PC game path it sees for the rest of that monitoring session.");
@@ -221,5 +236,53 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         ImGui.TextDisabled("(?)");
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip(text);
+    }
+
+    private static string BuildSuggestedServerLaunchCommand()
+    {
+        var scriptPath = ResolveServerScriptPath();
+        return $"python \"{scriptPath}\" --host {LocalServerDefaultHost} --port {LocalServerDefaultPort}";
+    }
+
+    private static string ResolveServerScriptPath()
+    {
+        var pluginDirectory = Plugin.PluginInterface.AssemblyLocation.Directory?.FullName;
+        if (!string.IsNullOrWhiteSpace(pluginDirectory))
+        {
+            var resolved = ProbeServerScriptPath(pluginDirectory);
+            if (!string.IsNullOrWhiteSpace(resolved))
+                return resolved;
+        }
+
+        var codeDirectory = Path.GetDirectoryName(typeof(ConfigWindow).Assembly.Location);
+        if (!string.IsNullOrWhiteSpace(codeDirectory))
+        {
+            var resolved = ProbeServerScriptPath(codeDirectory);
+            if (!string.IsNullOrWhiteSpace(resolved))
+                return resolved;
+        }
+
+        return Path.GetFullPath(Path.Combine(pluginDirectory ?? Environment.CurrentDirectory, "server", "ttsl_server.py"));
+    }
+
+    private static string? ProbeServerScriptPath(string baseDirectory)
+    {
+        var relativeCandidates = new[]
+        {
+            Path.Combine("server", "ttsl_server.py"),
+            Path.Combine("..", "server", "ttsl_server.py"),
+            Path.Combine("..", "..", "server", "ttsl_server.py"),
+            Path.Combine("..", "..", "..", "server", "ttsl_server.py"),
+            Path.Combine("..", "..", "..", "..", "server", "ttsl_server.py"),
+        };
+
+        foreach (var relativePath in relativeCandidates)
+        {
+            var candidate = Path.GetFullPath(Path.Combine(baseDirectory, relativePath));
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
     }
 }

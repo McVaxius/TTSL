@@ -188,6 +188,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
         if (localPlayer == null)
             return null;
 
+        var map = GetMapSnapshot(Plugin.ClientState.TerritoryType);
+
         return new RemoteHudSnapshot
         {
             UpdateKind = "full",
@@ -201,10 +203,12 @@ internal sealed class RemoteHudPublisherService : IDisposable
             EnumeratePartyMembers = plugin.Configuration.EnumeratePartyMembers,
             Job = GetJobAbbreviation(localPlayer),
             JobId = localPlayer.ClassJob.RowId,
+            JobIconId = GetJobIconId(localPlayer.ClassJob.RowId),
             Gender = (byte)Plugin.PlayerState.Sex,
             TerritoryId = Plugin.ClientState.TerritoryType,
             TerritoryName = plugin.GetTerritoryName(Plugin.ClientState.TerritoryType),
-            MapId = GetMapId(Plugin.ClientState.TerritoryType),
+            MapId = map?.MapId,
+            Map = map,
             Position = new Vector3Snapshot(localPlayer.Position.X, localPlayer.Position.Y, localPlayer.Position.Z),
             Player = new PlayerStatsSnapshot(localPlayer.CurrentHp, localPlayer.MaxHp, localPlayer.CurrentMp, MaxMana, localPlayer.Level),
             RaceId = GetCustomizeValue(localPlayer, CustomizeRaceIndex),
@@ -222,6 +226,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
         if (localPlayer == null)
             return null;
 
+        var map = GetMapSnapshot(Plugin.ClientState.TerritoryType);
+
         return new RemoteHudSnapshot
         {
             UpdateKind = "position",
@@ -234,10 +240,12 @@ internal sealed class RemoteHudPublisherService : IDisposable
             EnumeratePartyMembers = plugin.Configuration.EnumeratePartyMembers,
             Job = GetJobAbbreviation(localPlayer),
             JobId = localPlayer.ClassJob.RowId,
+            JobIconId = GetJobIconId(localPlayer.ClassJob.RowId),
             Gender = (byte)Plugin.PlayerState.Sex,
             TerritoryId = Plugin.ClientState.TerritoryType,
             TerritoryName = plugin.GetTerritoryName(Plugin.ClientState.TerritoryType),
-            MapId = GetMapId(Plugin.ClientState.TerritoryType),
+            MapId = map?.MapId,
+            Map = map,
             Position = new Vector3Snapshot(localPlayer.Position.X, localPlayer.Position.Y, localPlayer.Position.Z),
             Player = new PlayerStatsSnapshot(localPlayer.CurrentHp, localPlayer.MaxHp, localPlayer.CurrentMp, MaxMana, localPlayer.Level),
             RaceId = GetCustomizeValue(localPlayer, CustomizeRaceIndex),
@@ -453,7 +461,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         return 62000u + jobId;
     }
 
-    private static uint? GetMapId(uint territoryId)
+    private static RemoteMapSnapshot? GetMapSnapshot(uint territoryId)
     {
         if (territoryId == 0)
             return null;
@@ -462,7 +470,17 @@ internal sealed class RemoteHudPublisherService : IDisposable
         {
             var sheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
             if (sheet != null && sheet.TryGetRow(territoryId, out var territory) && territory.Map.IsValid)
-                return territory.Map.RowId;
+            {
+                var map = territory.Map.Value;
+                return new RemoteMapSnapshot
+                {
+                    MapId = territory.Map.RowId,
+                    TexturePath = null,
+                    OffsetX = map.OffsetX,
+                    OffsetY = map.OffsetY,
+                    SizeFactor = map.SizeFactor,
+                };
+            }
         }
         catch
         {
@@ -645,10 +663,12 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public bool EnumeratePartyMembers { get; init; }
         public string Job { get; init; } = string.Empty;
         public uint JobId { get; init; }
+        public uint? JobIconId { get; init; }
         public byte Gender { get; init; }
         public uint TerritoryId { get; init; }
         public string TerritoryName { get; init; } = string.Empty;
         public uint? MapId { get; init; }
+        public RemoteMapSnapshot? Map { get; init; }
         public Vector3Snapshot? Position { get; init; }
         public PlayerStatsSnapshot? Player { get; init; }
         public byte? RaceId { get; init; }
@@ -689,6 +709,15 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public uint CurrentMp { get; init; }
         public int MaxMp { get; init; }
         public uint Level { get; init; }
+    }
+
+    private sealed class RemoteMapSnapshot
+    {
+        public uint MapId { get; init; }
+        public string? TexturePath { get; init; }
+        public short OffsetX { get; init; }
+        public short OffsetY { get; init; }
+        public ushort SizeFactor { get; init; }
     }
 
     private sealed class RemoteConditionSnapshot

@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import os
+import subprocess
 import sys
+import zlib
 from dataclasses import dataclass
 
 
@@ -12,6 +15,14 @@ SCRIPT_ROOT = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_PLAN_PATH = os.path.join(SCRIPT_ROOT, "ttsl_asset_plan.json")
 DEFAULT_OUTPUT_ROOT = os.path.join(SCRIPT_ROOT, "extracted")
 DEFAULT_SUMMARY_PATH = os.path.join(DEFAULT_OUTPUT_ROOT, "ttsl_asset_extract_summary.json")
+LOCAL_PYTHON_DEPS_ROOT = os.path.join(SCRIPT_ROOT, "_pydeps")
+SQPACK_FILE_TYPE_EMPTY = 1
+SQPACK_FILE_TYPE_STANDARD = 2
+SQPACK_FILE_TYPE_MODEL = 3
+SQPACK_FILE_TYPE_TEXTURE = 4
+SQPACK_BLOCK_PADDING = 128
+SQPACK_UNCOMPRESSED_BLOCK_MARKER = 32000
+TEX_HEADER_SIZE = 80
 STATIC_LUMINAPIE_CANDIDATES = [
     r"Z:\temp\awgil_clientstructs\ida",
     r"D:\temp\awgil_clientstructs\ida",
@@ -37,7 +48,7 @@ class LuminapieCandidateResult:
 
 
 class LuminapieBootstrapError(ModuleNotFoundError):
-    def __init__(self, results: list[LuminapieCandidateResult]) -> None:
+    def __init__(self, results: list[LuminapieCandidateResult], dependency_hint: str = "") -> None:
         self.results = results
         details = []
         for result in results:
@@ -53,11 +64,63 @@ class LuminapieBootstrapError(ModuleNotFoundError):
 
         hint = ""
         if any("No module named 'yaml'" in result.import_error for result in results):
-            hint = " Hint: the Python environment running the TTSL server is missing PyYAML."
+            hint = dependency_hint or "Hint: the Python environment running the TTSL server is missing PyYAML."
 
         self.hint = hint.strip()
-        message = "Could not import luminapie from the local candidate roots. Checked: " + "; ".join(details) + hint
+        hint_suffix = f" {hint}" if hint else ""
+        message = "Could not import luminapie from the local candidate roots. Checked: " + "; ".join(details) + hint_suffix
         super().__init__(message)
+
+
+def ensure_local_dependency_root() -> None:
+    if LOCAL_PYTHON_DEPS_ROOT not in sys.path:
+        sys.path.insert(0, LOCAL_PYTHON_DEPS_ROOT)
+
+
+def ensure_yaml_dependency() -> str:
+    ensure_local_dependency_root()
+    importlib.invalidate_caches()
+
+    try:
+        import yaml  # type: ignore  # noqa: F401
+        return ""
+    except ModuleNotFoundError:
+        pass
+
+    os.makedirs(LOCAL_PYTHON_DEPS_ROOT, exist_ok=True)
+    install_command = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-input",
+        "--target",
+        LOCAL_PYTHON_DEPS_ROOT,
+        "PyYAML>=6,<7",
+    ]
+
+    result = subprocess.run(
+        install_command,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+
+    importlib.invalidate_caches()
+    ensure_local_dependency_root()
+
+    try:
+        import yaml  # type: ignore  # noqa: F401
+        return "Hint: PyYAML was missing from this Python environment and was installed into TTSL's local _pydeps cache."
+    except ModuleNotFoundError:
+        stdout = (result.stdout or "").strip()
+        stderr = (result.stderr or "").strip()
+        output_bits = [bit for bit in [stdout, stderr] if bit]
+        output = " | ".join(output_bits)
+        if output:
+            return f"Hint: automatic PyYAML install failed. pip output: {output}"
+        return "Hint: automatic PyYAML install failed and the Python environment still cannot import yaml."
 
 
 def get_luminapie_candidates() -> list[str]:
@@ -124,6 +187,7 @@ def resolve_game_root(explicit_root: str, plan: dict) -> str:
 
 def bootstrap_luminapie() -> LuminapieBindings:
     candidates = get_luminapie_candidates()
+    dependency_hint = ensure_yaml_dependency()
     results: list[LuminapieCandidateResult] = []
     for candidate in candidates:
         exists = os.path.isdir(candidate)
@@ -149,7 +213,7 @@ def bootstrap_luminapie() -> LuminapieBindings:
             if candidate in sys.path:
                 sys.path.remove(candidate)
 
-    raise LuminapieBootstrapError(results)
+    raise LuminapieBootstrapError(results, dependency_hint)
 
 
 def normalize_sqpack_payload(payload: object) -> bytes:
@@ -162,10 +226,149 @@ def normalize_sqpack_payload(payload: object) -> bytes:
     raise TypeError(f"Unsupported sqpack payload type: {type(payload)!r}")
 
 
+def pad(value: int, multiple: int) -> int:
+    remainder = value % multiple
+    if remainder == 0:
+        return value
+    return value + (multiple - remainder)
+
+
+def read_le_int(stream, size: int) -> int:
+    data = stream.read(size)
+    if len(data) != size:
+        raise EOFError("Unexpected end of sqpack stream.")
+    return int.from_bytes(data, byteorder="little", signed=False)
+
+
+def read_sqpack_compressed_block(stream, *, last_in_file: bool = False) -> bytes:
+    start = stream.tell()
+    sixteen = stream.read(1)
+    if len(sixteen) != 1:
+        raise EOFError("Unexpected end of sqpack block header.")
+
+    while sixteen != b"\x10":
+        if sixteen != b"\x00":
+            raise ValueError("Unable to locate valid compressed block header.")
+        sixteen = stream.read(1)
+        if len(sixteen) != 1:
+            raise EOFError("Unexpected end of sqpack block header.")
+
+    zeros = stream.read(3)
+    zero = read_le_int(stream, 4)
+    if zeros != b"\x00\x00\x00" or zero != 0:
+        raise ValueError("Unable to locate valid compressed block header.")
+
+    part_comp_size = read_le_int(stream, 4)
+    part_decomp_size = read_le_int(stream, 4)
+
+    if part_comp_size == SQPACK_UNCOMPRESSED_BLOCK_MARKER:
+        data = stream.read(part_decomp_size)
+        if len(data) != part_decomp_size:
+            raise EOFError("Unexpected end of uncompressed sqpack block.")
+    else:
+        compressed = stream.read(part_comp_size)
+        if len(compressed) != part_comp_size:
+            raise EOFError("Unexpected end of compressed sqpack block.")
+        data = zlib.decompress(compressed, wbits=-15)
+
+    end = stream.tell()
+    length = end - start
+    target_length = pad(length, SQPACK_BLOCK_PADDING)
+    remaining = target_length - length
+    padding_data = stream.read(remaining)
+    if len(padding_data) != remaining:
+        raise EOFError("Unexpected end of sqpack padding.")
+
+    sixteen_index = padding_data.find(b"\x10")
+    if sixteen_index != -1:
+        rewind = len(padding_data) - sixteen_index
+        stream.seek(stream.tell() - rewind)
+    elif (not last_in_file) and any(byte != 0 for byte in padding_data):
+        raise ValueError("Unexpected real data in compressed data block padding section.")
+
+    return data
+
+
+def read_sqpack_compressed_blocks(stream, block_count: int, *, last_in_file: bool = False) -> bytes:
+    blocks: list[bytes] = []
+    for index in range(block_count):
+        blocks.append(read_sqpack_compressed_block(stream, last_in_file=last_in_file and index == block_count - 1))
+    return b"".join(blocks)
+
+
+def read_sqpack_texture_file(dat_path: str, offset: int) -> bytes:
+    with open(dat_path, "rb") as handle:
+        handle.seek(offset)
+        header_length = read_le_int(handle, 4)
+        file_type = read_le_int(handle, 4)
+        uncompressed_file_size = read_le_int(handle, 4)
+        _ = read_le_int(handle, 4)
+        _ = read_le_int(handle, 4)
+        mip_count = read_le_int(handle, 4)
+
+        if file_type == SQPACK_FILE_TYPE_EMPTY:
+            raise ValueError(f"Sqpack file at 0x{offset:X} is empty.")
+        if file_type != SQPACK_FILE_TYPE_TEXTURE:
+            raise ValueError(f"Sqpack file at 0x{offset:X} is type {file_type}, not texture.")
+
+        end_of_header = offset + header_length
+        mip_map_info_offset = offset + 24
+
+        handle.seek(end_of_header)
+        tex_header = handle.read(TEX_HEADER_SIZE)
+        if len(tex_header) != TEX_HEADER_SIZE:
+            raise EOFError("Unexpected end of texture header.")
+
+        decompressed_chunks: list[bytes] = [tex_header]
+        for mip_index in range(mip_count):
+            handle.seek(mip_map_info_offset + (20 * mip_index))
+            offset_from_header_end = read_le_int(handle, 4)
+            _ = read_le_int(handle, 4)
+            _ = read_le_int(handle, 4)
+            _ = read_le_int(handle, 4)
+            mip_map_parts = read_le_int(handle, 4)
+
+            handle.seek(end_of_header + offset_from_header_end)
+            decompressed_chunks.append(
+                read_sqpack_compressed_blocks(handle, mip_map_parts, last_in_file=mip_index == mip_count - 1)
+            )
+
+    decompressed_data = b"".join(decompressed_chunks)
+    if len(decompressed_data) < uncompressed_file_size:
+        decompressed_data += b"\x00" * (uncompressed_file_size - len(decompressed_data))
+    elif len(decompressed_data) > uncompressed_file_size:
+        decompressed_data = decompressed_data[:uncompressed_file_size]
+
+    return decompressed_data
+
+
+def extract_raw_file_with_sqpack_fallback(game_data: object, parsed_file: object, relative_path: str) -> bytes:
+    repo_index = game_data.get_repo_index(parsed_file.repo)
+    repository = game_data.repositories[repo_index]
+    index_entry, sqpack = repository.get_index(parsed_file.index)
+    data_file_id = index_entry.data_file_id()
+    offset = index_entry.data_file_offset()
+    dat_path = sqpack.data_files[data_file_id]
+
+    with open(dat_path, "rb") as handle:
+        handle.seek(offset + 4)
+        file_type = read_le_int(handle, 4)
+
+    if file_type == SQPACK_FILE_TYPE_TEXTURE:
+        return read_sqpack_texture_file(dat_path, offset)
+
+    raise ValueError(f"Sqpack fallback is not implemented for file type {file_type} at {relative_path}.")
+
+
 def extract_raw_file(game_data: object, parsed_file_name_type: type, relative_path: str) -> bytes:
     parsed = parsed_file_name_type(relative_path)
-    payload = game_data.get_file(parsed)
-    return normalize_sqpack_payload(payload)
+    try:
+        payload = game_data.get_file(parsed)
+        return normalize_sqpack_payload(payload)
+    except Exception as exc:
+        if "Type: 4 not implemented." not in str(exc):
+            raise
+        return extract_raw_file_with_sqpack_fallback(game_data, parsed, relative_path)
 
 
 def write_file(output_root: str, relative_path: str, data: bytes) -> str:
@@ -191,6 +394,7 @@ def build_summary(plan: dict, game_root: str, luminapie_root: str) -> dict:
         "jobIconIds": plan.get("jobIconIds", []),
         "enemyDataIds": plan.get("enemyDataIds", []),
         "jobIconTexPaths": plan.get("jobIconTexPaths", []),
+        "mapTextures": plan.get("mapTextures", []),
     }
 
 
@@ -216,10 +420,12 @@ def main() -> int:
         summary["status"] = "ok"
         summary["extractedFiles"] = []
         summary["failedFiles"] = []
+        map_textures = [entry for entry in plan.get("mapTextures", []) if isinstance(entry, dict) and str(entry.get("texturePath") or "").strip()]
         summary["unresolvedTargets"] = {
             "mapTiles": {
-                "status": "needs_sheet_mapping",
+                "status": "needs_live_map_texture_paths" if not map_textures else "extracting",
                 "mapIds": plan.get("mapIds", []),
+                "mapTextures": map_textures,
             },
             "raceIcons": {
                 "status": "needs_sheet_mapping",
@@ -234,6 +440,8 @@ def main() -> int:
                 destination = write_file(args.output_root, relative_path, raw_data)
                 summary["extractedFiles"].append(
                     {
+                        "kind": "jobIcon",
+                        "jobIconId": int(os.path.splitext(os.path.basename(relative_path))[0].split("_", 1)[0]),
                         "relativePath": relative_path,
                         "outputPath": destination,
                         "size": len(raw_data),
@@ -242,15 +450,69 @@ def main() -> int:
             except Exception as exc:
                 summary["failedFiles"].append(
                     {
+                        "kind": "jobIcon",
+                        "jobIconId": int(os.path.splitext(os.path.basename(relative_path))[0].split("_", 1)[0]),
                         "relativePath": relative_path,
                         "error": str(exc),
                     }
                 )
 
+        for map_texture in map_textures:
+            relative_path = str(map_texture.get("texturePath") or "").strip()
+            if not relative_path:
+                continue
+
+            try:
+                raw_data = extract_raw_file(game_data, bindings.parsed_file_name_type, relative_path)
+                destination = write_file(args.output_root, relative_path, raw_data)
+                summary["extractedFiles"].append(
+                    {
+                        "kind": "mapTexture",
+                        "mapId": map_texture.get("mapId"),
+                        "relativePath": relative_path,
+                        "outputPath": destination,
+                        "size": len(raw_data),
+                        "offsetX": map_texture.get("offsetX"),
+                        "offsetY": map_texture.get("offsetY"),
+                        "sizeFactor": map_texture.get("sizeFactor"),
+                    }
+                )
+            except Exception as exc:
+                summary["failedFiles"].append(
+                    {
+                        "kind": "mapTexture",
+                        "mapId": map_texture.get("mapId"),
+                        "relativePath": relative_path,
+                        "error": str(exc),
+                    }
+                )
+
+        extracted_map_entries = [entry for entry in summary["extractedFiles"] if entry.get("kind") == "mapTexture"]
+        failed_map_entries = [entry for entry in summary["failedFiles"] if entry.get("kind") == "mapTexture"]
+        summary["unresolvedTargets"]["mapTiles"] = {
+            "status": (
+                "needs_live_map_texture_paths"
+                if not map_textures
+                else "partial_failure"
+                if failed_map_entries
+                else "ready_from_extracted_textures"
+            ),
+            "mapIds": plan.get("mapIds", []),
+            "mapTextures": map_textures,
+            "failedMapIds": [entry.get("mapId") for entry in failed_map_entries if entry.get("mapId") not in (None, "")],
+            "extractedMapIds": [entry.get("mapId") for entry in extracted_map_entries if entry.get("mapId") not in (None, "")],
+        }
+
         summary["counts"] = {
+            "requestedTextureFiles": len(plan.get("jobIconTexPaths", [])) + len(map_textures),
+            "extractedTextureFiles": len(summary["extractedFiles"]),
+            "failedTextureFiles": len(summary["failedFiles"]),
             "requestedJobIconFiles": len(plan.get("jobIconTexPaths", [])),
-            "extractedJobIconFiles": len(summary["extractedFiles"]),
-            "failedJobIconFiles": len(summary["failedFiles"]),
+            "extractedJobIconFiles": sum(1 for entry in summary["extractedFiles"] if entry.get("kind") == "jobIcon"),
+            "failedJobIconFiles": sum(1 for entry in summary["failedFiles"] if entry.get("kind") == "jobIcon"),
+            "requestedMapTextureFiles": len(map_textures),
+            "extractedMapTextureFiles": len(extracted_map_entries),
+            "failedMapTextureFiles": len(failed_map_entries),
             "mapIds": len(plan.get("mapIds", [])),
             "raceIds": len(plan.get("raceIds", [])),
             "tribeIds": len(plan.get("tribeIds", [])),
@@ -262,9 +524,14 @@ def main() -> int:
         print(f"Game root: {game_root}")
         print(f"Luminapie root: {bindings.source_root}")
         print(f"Checked luminapie candidates: {', '.join(candidates)}")
-        print(f"Extracted {summary['counts']['extractedJobIconFiles']} / {summary['counts']['requestedJobIconFiles']} requested job icon texture(s).")
+        print(
+            "Extracted "
+            f"{summary['counts']['extractedJobIconFiles']} / {summary['counts']['requestedJobIconFiles']} requested job icon texture(s) "
+            "and "
+            f"{summary['counts']['extractedMapTextureFiles']} / {summary['counts']['requestedMapTextureFiles']} requested map texture(s)."
+        )
         if summary["failedFiles"]:
-            print(f"Failed {summary['counts']['failedJobIconFiles']} file(s). See {args.summary}.")
+            print(f"Failed {summary['counts']['failedTextureFiles']} file(s). See {args.summary}.")
         else:
             print(f"Summary written to {args.summary}")
         return 0
@@ -286,6 +553,7 @@ def main() -> int:
                 "jobIds": plan.get("jobIds", []),
                 "jobIconIds": plan.get("jobIconIds", []),
                 "jobIconTexPaths": plan.get("jobIconTexPaths", []),
+                "mapTextures": plan.get("mapTextures", []),
                 "enemyDataIds": plan.get("enemyDataIds", []),
             },
         }
