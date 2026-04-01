@@ -42,6 +42,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         MigrateConfiguration();
+        SyncActiveAccountConfiguration();
         RemoteHudPublisher = new RemoteHudPublisherService(this);
 
         MainWindow = new MainWindow(this);
@@ -260,12 +261,46 @@ public sealed class Plugin : IDalamudPlugin
             changed = true;
         }
 
+        if (Configuration.Version < 4)
+        {
+            Configuration.Version = 4;
+            changed = true;
+        }
+
+        if (Configuration.Version < 5)
+        {
+            Configuration.Version = 5;
+            changed = true;
+        }
+
         if (changed)
             Configuration.Save();
     }
 
     private void OnFrameworkUpdate(IFramework framework)
-        => RemoteHudPublisher.Update();
+    {
+        SyncActiveAccountConfiguration();
+        RemoteHudPublisher.Update();
+    }
+
+    private void SyncActiveAccountConfiguration()
+    {
+        var accountId = TryGetResolvedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId))
+            return;
+
+        if (!Configuration.EnsureActiveAccount(accountId))
+            return;
+
+        Log.Information("[TTSL] Activated account-scoped configuration for {AccountId}.", accountId);
+        SaveConfiguration();
+    }
+
+    private string? TryGetResolvedAccountId()
+    {
+        var contentId = PlayerState.ContentId;
+        return contentId == 0 ? null : contentId.ToString("X16");
+    }
 
     private void OnCommand(string command, string args)
     {

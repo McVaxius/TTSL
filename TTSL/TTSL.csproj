@@ -5,7 +5,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.0.0.9</Version>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Version>0.0.0.10</Version>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <RootNamespace>TTSL</RootNamespace>
@@ -14,6 +15,18 @@
   <PropertyGroup>
     <DalamudLibPath Condition="$(DALAMUD_HOME) != ''">$(DALAMUD_HOME)/</DalamudLibPath>
   </PropertyGroup>
+  <Target Name="MirrorLegacyDebugOutput" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(PlatformTarget)' == 'x64'">
+    <PropertyGroup>
+      <LegacyDebugOutputDir>$(MSBuildProjectDirectory)\bin\Debug\</LegacyDebugOutputDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <LegacyMirrorFiles Include="$(TargetDir)**\*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(LegacyDebugOutputDir)" />
+    <Copy SourceFiles="@(LegacyMirrorFiles)"
+          DestinationFiles="@(LegacyMirrorFiles->'$(LegacyDebugOutputDir)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
   <ItemGroup>
     <None Include="TTSL.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="images\**" CopyToOutputDirectory="PreserveNewest" />

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import importlib
 import json
 import os
@@ -16,6 +17,15 @@ DEFAULT_PLAN_PATH = os.path.join(SCRIPT_ROOT, "ttsl_asset_plan.json")
 DEFAULT_OUTPUT_ROOT = os.path.join(SCRIPT_ROOT, "extracted")
 DEFAULT_SUMMARY_PATH = os.path.join(DEFAULT_OUTPUT_ROOT, "ttsl_asset_extract_summary.json")
 LOCAL_PYTHON_DEPS_ROOT = os.path.join(SCRIPT_ROOT, "_pydeps")
+EXCEL_HEADER_MAGIC = b"EXHF"
+EXCEL_DATA_MAGIC = b"EXDF"
+EXCEL_COLUMN_TYPE_STRING = 0x0
+MAP_SHEET_NAME = "map"
+RACE_SHEET_NAME = "race"
+TRIBE_SHEET_NAME = "tribe"
+MAP_SHEET_MAP_ID_COLUMN_INDEX = 6
+MAP_DIFFUSE_SUFFIXES = ("_m", "_s")
+DEFAULT_EXD_LANGUAGE_SUFFIXES = ("en", "ja", "de", "fr", "ko", "chs", "cht", "tc")
 SQPACK_FILE_TYPE_EMPTY = 1
 SQPACK_FILE_TYPE_STANDARD = 2
 SQPACK_FILE_TYPE_MODEL = 3
@@ -30,6 +40,16 @@ STATIC_LUMINAPIE_CANDIDATES = [
     r"Z:\_research\FFXIVClientStructs\ida",
     r"Y:\_research\FFXIVClientStructs\ida",
 ]
+ICON_PALETTES = (
+    ("#1a3653", "#78c5ff", "#eaf4ff"),
+    ("#263d1f", "#93f2a5", "#f4fff8"),
+    ("#57331d", "#ffbf74", "#fff7ef"),
+    ("#4e2544", "#d5b7ff", "#f8f0ff"),
+    ("#4f2633", "#ff9b7a", "#fff2ee"),
+    ("#2d4a4d", "#87d7ff", "#eefcff"),
+    ("#50441f", "#f5d96b", "#fffbe9"),
+    ("#2d2f57", "#9aa9ff", "#f1f3ff"),
+)
 
 
 @dataclass
@@ -395,6 +415,382 @@ def get_map_texture_candidates(map_texture: dict) -> list[str]:
     return candidates
 
 
+def read_be_int(data: bytes, offset: int, size: int, *, signed: bool = False) -> int:
+    end = offset + size
+    if offset < 0 or end > len(data):
+        raise ValueError("Unexpected end of EXD/EXH payload.")
+    return int.from_bytes(data[offset:end], byteorder="big", signed=signed)
+
+
+def read_null_terminated_utf8(data: bytes, offset: int) -> str:
+    if offset < 0 or offset >= len(data):
+        return ""
+
+    terminator = data.find(b"\x00", offset)
+    if terminator < 0:
+        terminator = len(data)
+    return data[offset:terminator].decode("utf-8", errors="ignore").strip()
+
+
+def normalize_map_path_like(raw_path: object) -> str:
+    value = str(raw_path or "").replace("\\", "/").strip().strip("\0")
+    if not value:
+        return ""
+
+    marker = "ui/map/"
+    marker_index = value.lower().find(marker)
+    if marker_index >= 0:
+        value = value[marker_index + len(marker):]
+
+    return value.strip("/")
+
+
+def build_map_texture_candidates_from_path_like(raw_path: object) -> list[str]:
+    normalized = normalize_map_path_like(raw_path)
+    if not normalized:
+        return []
+
+    if normalized.lower().endswith(".tex"):
+        candidate = normalized if normalized.lower().startswith("ui/map/") else f"ui/map/{normalized}"
+        return [candidate]
+
+    file_stem = normalized.replace("/", "")
+    if not file_stem:
+        return []
+
+    return [f"ui/map/{normalized}/{file_stem}{suffix}.tex" for suffix in MAP_DIFFUSE_SUFFIXES]
+
+
+def load_excel_sheet_header(game_data: object, parsed_file_name_type: type, sheet_name: str) -> dict:
+    relative_path = f"exd/{sheet_name}.exh"
+    raw_data = extract_raw_file(game_data, parsed_file_name_type, relative_path)
+    if raw_data[:4] != EXCEL_HEADER_MAGIC:
+        raise ValueError(f"Invalid EXH header for {relative_path}.")
+
+    data_offset = read_be_int(raw_data, 6, 2)
+    column_count = read_be_int(raw_data, 8, 2)
+    page_count = read_be_int(raw_data, 10, 2)
+    language_count = read_be_int(raw_data, 12, 2)
+
+    columns: list[tuple[int, int]] = []
+    for index in range(column_count):
+        base_offset = 32 + (index * 4)
+        column_type = read_be_int(raw_data, base_offset, 2)
+        column_offset = read_be_int(raw_data, base_offset + 2, 2)
+        columns.append((column_type, column_offset))
+
+    page_base = 32 + (column_count * 4)
+    pages: list[int] = []
+    for index in range(page_count):
+        base_offset = page_base + (index * 8)
+        start_row_id = read_be_int(raw_data, base_offset, 4)
+        pages.append(start_row_id)
+
+    language_base = page_base + (page_count * 8)
+    languages: list[int] = []
+    for index in range(language_count):
+        language_code = read_be_int(raw_data, language_base + (index * 2), 2)
+        if language_code != 0:
+            languages.append(language_code)
+
+    return {
+        "data_offset": data_offset,
+        "columns": columns,
+        "pages": pages,
+        "languages": languages,
+    }
+
+
+def build_excel_data_path_candidates(sheet_name: str, page_start_row_id: int) -> list[str]:
+    candidates = [f"exd/{sheet_name}_{page_start_row_id}.exd"]
+    for suffix in DEFAULT_EXD_LANGUAGE_SUFFIXES:
+        candidates.append(f"exd/{sheet_name}_{page_start_row_id}_{suffix}.exd")
+    return candidates
+
+
+def load_first_existing_excel_data_file(
+    game_data: object,
+    parsed_file_name_type: type,
+    sheet_name: str,
+    page_start_row_id: int,
+) -> bytes | None:
+    for relative_path in build_excel_data_path_candidates(sheet_name, page_start_row_id):
+        try:
+            return extract_raw_file(game_data, parsed_file_name_type, relative_path)
+        except Exception:
+            continue
+    return None
+
+
+def read_excel_string_column_from_row(row_data: bytes, column_offset: int, data_offset: int) -> str:
+    string_offset = read_be_int(row_data, column_offset, 4, signed=True)
+    return read_null_terminated_utf8(row_data, data_offset + string_offset)
+
+
+def resolve_map_id_paths_from_sheet(
+    game_data: object,
+    parsed_file_name_type: type,
+    requested_map_ids: set[int],
+) -> dict[int, str]:
+    if not requested_map_ids:
+        return {}
+
+    header = load_excel_sheet_header(game_data, parsed_file_name_type, MAP_SHEET_NAME)
+    columns = header["columns"]
+    if MAP_SHEET_MAP_ID_COLUMN_INDEX >= len(columns):
+        raise ValueError(f"Map sheet is missing column index {MAP_SHEET_MAP_ID_COLUMN_INDEX}.")
+
+    map_id_column_type, map_id_column_offset = columns[MAP_SHEET_MAP_ID_COLUMN_INDEX]
+    if map_id_column_type != EXCEL_COLUMN_TYPE_STRING:
+        raise ValueError(f"Map sheet column {MAP_SHEET_MAP_ID_COLUMN_INDEX} is not a string column.")
+
+    resolved: dict[int, str] = {}
+    remaining = {int(map_id) for map_id in requested_map_ids if int(map_id) > 0}
+    for page_start_row_id in header["pages"]:
+        if not remaining:
+            break
+
+        raw_page = load_first_existing_excel_data_file(game_data, parsed_file_name_type, MAP_SHEET_NAME, page_start_row_id)
+        if raw_page is None or raw_page[:4] != EXCEL_DATA_MAGIC:
+            continue
+
+        row_table_size = read_be_int(raw_page, 8, 4)
+        row_table_base = 32
+        for row_table_offset in range(0, row_table_size, 8):
+            row_base = row_table_base + row_table_offset
+            row_id = read_be_int(raw_page, row_base, 4)
+            if row_id not in remaining:
+                continue
+
+            data_offset = read_be_int(raw_page, row_base + 4, 4)
+            if data_offset < 0 or data_offset + 6 > len(raw_page):
+                continue
+
+            entry_size = read_be_int(raw_page, data_offset, 4)
+            row_data_start = data_offset + 6
+            row_data_end = row_data_start + entry_size
+            if row_data_end > len(raw_page):
+                continue
+
+            row_data = raw_page[row_data_start:row_data_end]
+            map_path = read_excel_string_column_from_row(row_data, map_id_column_offset, header["data_offset"])
+            if not map_path:
+                continue
+
+            resolved[row_id] = map_path
+            remaining.remove(row_id)
+
+    return resolved
+
+
+def enrich_plan_map_textures_from_map_ids(plan: dict, game_data: object, parsed_file_name_type: type) -> bool:
+    map_ids = {
+        int(value)
+        for value in plan.get("mapIds", [])
+        if value not in (None, "") and str(value).strip().isdigit() and int(value) > 0
+    }
+    if not map_ids:
+        return False
+
+    existing_entries: list[dict] = []
+    existing_map_ids: set[int] = set()
+    for entry in plan.get("mapTextures", []):
+        if not isinstance(entry, dict):
+            continue
+
+        candidate_paths = get_map_texture_candidates(entry)
+        if not candidate_paths:
+            continue
+
+        normalized_entry = {
+            "mapId": entry.get("mapId"),
+            "texturePath": candidate_paths[0],
+            "texturePathCandidates": candidate_paths,
+            "offsetX": entry.get("offsetX"),
+            "offsetY": entry.get("offsetY"),
+            "sizeFactor": entry.get("sizeFactor"),
+        }
+        existing_entries.append(normalized_entry)
+
+        try:
+            map_id_value = int(entry.get("mapId"))
+        except (TypeError, ValueError):
+            continue
+        if map_id_value > 0:
+            existing_map_ids.add(map_id_value)
+
+    missing_map_ids = map_ids - existing_map_ids
+    if not missing_map_ids:
+        return False
+
+    resolved_paths = resolve_map_id_paths_from_sheet(game_data, parsed_file_name_type, missing_map_ids)
+    if not resolved_paths:
+        return False
+
+    changed = False
+    for map_id in sorted(missing_map_ids):
+        map_path = resolved_paths.get(map_id, "")
+        candidate_paths = build_map_texture_candidates_from_path_like(map_path)
+        if not candidate_paths:
+            continue
+
+        existing_entries.append(
+            {
+                "mapId": map_id,
+                "texturePath": candidate_paths[0],
+                "texturePathCandidates": candidate_paths,
+            }
+        )
+        changed = True
+
+    if not changed:
+        return False
+
+    existing_entries.sort(key=lambda entry: (int(entry.get("mapId") or 0), str(entry.get("texturePath") or "")))
+    plan["mapTextures"] = existing_entries
+
+    goals = plan.setdefault("goals", {})
+    map_goal = goals.setdefault("mapTiles", {})
+    map_goal["count"] = len(existing_entries)
+    map_goal["status"] = "ready_to_extract" if existing_entries else "waiting_for_data"
+
+    summary = plan.setdefault("summary", {})
+    summary["maps"] = len(existing_entries)
+    return True
+
+
+def get_string_column_offsets(header: dict) -> list[int]:
+    offsets: list[int] = []
+    for column_type, column_offset in header.get("columns", []):
+        if column_type == EXCEL_COLUMN_TYPE_STRING:
+            offsets.append(column_offset)
+    return offsets
+
+
+def resolve_named_sheet_rows(
+    game_data: object,
+    parsed_file_name_type: type,
+    sheet_name: str,
+    requested_row_ids: set[int],
+) -> dict[int, dict[str, str]]:
+    if not requested_row_ids:
+        return {}
+
+    header = load_excel_sheet_header(game_data, parsed_file_name_type, sheet_name)
+    string_offsets = get_string_column_offsets(header)
+    if not string_offsets:
+        return {}
+
+    resolved: dict[int, dict[str, str]] = {}
+    remaining = {int(row_id) for row_id in requested_row_ids if int(row_id) > 0}
+    for page_start_row_id in header["pages"]:
+        if not remaining:
+            break
+
+        raw_page = load_first_existing_excel_data_file(game_data, parsed_file_name_type, sheet_name, page_start_row_id)
+        if raw_page is None or raw_page[:4] != EXCEL_DATA_MAGIC:
+            continue
+
+        row_table_size = read_be_int(raw_page, 8, 4)
+        row_table_base = 32
+        for row_table_offset in range(0, row_table_size, 8):
+            row_base = row_table_base + row_table_offset
+            row_id = read_be_int(raw_page, row_base, 4)
+            if row_id not in remaining:
+                continue
+
+            data_offset = read_be_int(raw_page, row_base + 4, 4)
+            if data_offset < 0 or data_offset + 6 > len(raw_page):
+                continue
+
+            entry_size = read_be_int(raw_page, data_offset, 4)
+            row_data_start = data_offset + 6
+            row_data_end = row_data_start + entry_size
+            if row_data_end > len(raw_page):
+                continue
+
+            row_data = raw_page[row_data_start:row_data_end]
+            labels: list[str] = []
+            for string_offset in string_offsets:
+                label = read_excel_string_column_from_row(row_data, string_offset, header["data_offset"])
+                if label:
+                    labels.append(label)
+
+            if not labels:
+                continue
+
+            resolved[row_id] = {
+                "masculineName": labels[0],
+                "feminineName": labels[1] if len(labels) > 1 and labels[1] else labels[0],
+            }
+            remaining.remove(row_id)
+
+    return resolved
+
+
+def build_monogram(label: str, fallback: str) -> str:
+    sanitized = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in str(label or "").upper())
+    tokens = [token for token in sanitized.split() if token]
+    if not tokens:
+        return fallback
+
+    if len(tokens) >= 2:
+        joined = "".join(token[0] for token in tokens[:2])
+        return joined[:3] or fallback
+
+    token = tokens[0]
+    return token[:3] if len(token) >= 3 else token[:2] or fallback
+
+
+def build_icon_palette(seed: int) -> tuple[str, str, str]:
+    return ICON_PALETTES[(max(1, seed) - 1) % len(ICON_PALETTES)]
+
+
+def guess_race_id_from_tribe_id(tribe_id: int) -> int:
+    return max(1, ((max(1, tribe_id) - 1) // 2) + 1)
+
+
+def build_sheet_icon_svg(monogram: str, accent_label: str, palette: tuple[str, str, str], title: str) -> bytes:
+    background, accent, foreground = palette
+    safe_monogram = html.escape(monogram[:3])
+    safe_accent = html.escape((accent_label or "").upper()[:8])
+    safe_title = html.escape(title or monogram)
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="{safe_title}">
+  <title>{safe_title}</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="{background}"/>
+      <stop offset="100%" stop-color="{accent}"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#g)"/>
+  <rect x="6" y="6" width="52" height="13" rx="8" fill="rgba(7,16,24,0.34)"/>
+  <rect x="6" y="48" width="52" height="10" rx="6" fill="rgba(7,16,24,0.20)"/>
+  <text x="32" y="15" text-anchor="middle" font-family="Segoe UI,Tahoma,sans-serif" font-size="8" font-weight="700" fill="{foreground}" letter-spacing="1.1">{safe_accent}</text>
+  <text x="32" y="40" text-anchor="middle" font-family="Segoe UI,Tahoma,sans-serif" font-size="21" font-weight="800" fill="{foreground}" letter-spacing="0.8">{safe_monogram}</text>
+  <circle cx="13" cy="51" r="3" fill="{foreground}" opacity="0.82"/>
+  <circle cx="51" cy="51" r="3" fill="{foreground}" opacity="0.82"/>
+</svg>
+"""
+    return svg.encode("utf-8")
+
+
+def write_generated_file(output_root: str, relative_path: str, data: bytes) -> str:
+    normalized_relative = relative_path.replace("/", os.sep)
+    destination = os.path.join(output_root, "generated", normalized_relative)
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
+    with open(destination, "wb") as handle:
+        handle.write(data)
+    return destination
+
+
+def write_json_file(path: str, payload: dict) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
+        handle.write("\n")
+
+
 def build_summary(plan: dict, game_root: str, luminapie_root: str) -> dict:
     return {
         "planGeneratedAtUtc": plan.get("generatedAtUtc"),
@@ -414,10 +810,7 @@ def build_summary(plan: dict, game_root: str, luminapie_root: str) -> dict:
 
 
 def write_summary(summary_path: str, payload: dict) -> None:
-    os.makedirs(os.path.dirname(summary_path), exist_ok=True)
-    with open(summary_path, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
-        handle.write("\n")
+    write_json_file(summary_path, payload)
 
 
 def main() -> int:
@@ -431,6 +824,31 @@ def main() -> int:
         os.makedirs(args.output_root, exist_ok=True)
 
         game_data = bindings.game_data_type(game_root, load_schema=False)
+        enrich_plan_map_textures_from_map_ids(plan, game_data, bindings.parsed_file_name_type)
+        race_ids = {
+            int(value)
+            for value in plan.get("raceIds", [])
+            if value not in (None, "") and str(value).strip().isdigit() and int(value) > 0
+        }
+        tribe_ids = {
+            int(value)
+            for value in plan.get("tribeIds", [])
+            if value not in (None, "") and str(value).strip().isdigit() and int(value) > 0
+        }
+        supplemental_race_ids = {guess_race_id_from_tribe_id(tribe_id) for tribe_id in tribe_ids}
+        race_rows = resolve_named_sheet_rows(
+            game_data,
+            bindings.parsed_file_name_type,
+            RACE_SHEET_NAME,
+            race_ids | supplemental_race_ids,
+        )
+        tribe_rows = resolve_named_sheet_rows(
+            game_data,
+            bindings.parsed_file_name_type,
+            TRIBE_SHEET_NAME,
+            tribe_ids,
+        )
+        write_json_file(args.plan, plan)
         summary = build_summary(plan, game_root, bindings.source_root)
         summary["status"] = "ok"
         summary["extractedFiles"] = []
@@ -443,9 +861,9 @@ def main() -> int:
                 "mapTextures": map_textures,
             },
             "raceIcons": {
-                "status": "needs_sheet_mapping",
-                "raceIds": plan.get("raceIds", []),
-                "tribeIds": plan.get("tribeIds", []),
+                "status": "generating" if (race_ids or tribe_ids) else "waiting_for_data",
+                "raceIds": sorted(race_ids),
+                "tribeIds": sorted(tribe_ids),
             },
         }
 
@@ -519,8 +937,81 @@ def main() -> int:
                     }
                 )
 
+        for race_id in sorted(race_ids):
+            row = race_rows.get(race_id)
+            if row is None:
+                summary["failedFiles"].append(
+                    {
+                        "kind": "raceIcon",
+                        "raceId": race_id,
+                        "error": f"Race sheet row {race_id} could not be resolved.",
+                    }
+                )
+                continue
+
+            race_name = row.get("masculineName") or row.get("feminineName") or f"Race {race_id}"
+            svg_data = build_sheet_icon_svg(
+                monogram=build_monogram(race_name, f"R{race_id}"),
+                accent_label="RACE",
+                palette=build_icon_palette(race_id),
+                title=race_name,
+            )
+            destination = write_generated_file(args.output_root, f"race-icons/race_{race_id:03d}.svg", svg_data)
+            summary["extractedFiles"].append(
+                {
+                    "kind": "raceIcon",
+                    "raceId": race_id,
+                    "outputPath": destination,
+                    "masculineName": row.get("masculineName"),
+                    "feminineName": row.get("feminineName"),
+                    "size": len(svg_data),
+                }
+            )
+
+        for tribe_id in sorted(tribe_ids):
+            row = tribe_rows.get(tribe_id)
+            if row is None:
+                summary["failedFiles"].append(
+                    {
+                        "kind": "tribeIcon",
+                        "tribeId": tribe_id,
+                        "error": f"Tribe sheet row {tribe_id} could not be resolved.",
+                    }
+                )
+                continue
+
+            tribe_name = row.get("masculineName") or row.get("feminineName") or f"Tribe {tribe_id}"
+            race_id = guess_race_id_from_tribe_id(tribe_id)
+            race_name = race_rows.get(race_id, {}).get("masculineName") or "CLAN"
+            svg_data = build_sheet_icon_svg(
+                monogram=build_monogram(tribe_name, f"T{tribe_id}"),
+                accent_label=build_monogram(race_name, "CLN"),
+                palette=build_icon_palette(race_id),
+                title=tribe_name,
+            )
+            destination = write_generated_file(args.output_root, f"tribe-icons/tribe_{tribe_id:03d}.svg", svg_data)
+            summary["extractedFiles"].append(
+                {
+                    "kind": "tribeIcon",
+                    "tribeId": tribe_id,
+                    "raceId": race_id,
+                    "outputPath": destination,
+                    "masculineName": row.get("masculineName"),
+                    "feminineName": row.get("feminineName"),
+                    "raceMasculineName": race_rows.get(race_id, {}).get("masculineName"),
+                    "raceFeminineName": race_rows.get(race_id, {}).get("feminineName"),
+                    "size": len(svg_data),
+                }
+            )
+
         extracted_map_entries = [entry for entry in summary["extractedFiles"] if entry.get("kind") == "mapTexture"]
         failed_map_entries = [entry for entry in summary["failedFiles"] if entry.get("kind") == "mapTexture"]
+        extracted_race_entries = [
+            entry for entry in summary["extractedFiles"] if entry.get("kind") in {"raceIcon", "tribeIcon"}
+        ]
+        failed_race_entries = [
+            entry for entry in summary["failedFiles"] if entry.get("kind") in {"raceIcon", "tribeIcon"}
+        ]
         summary["unresolvedTargets"]["mapTiles"] = {
             "status": (
                 "needs_live_map_texture_paths"
@@ -534,17 +1025,41 @@ def main() -> int:
             "failedMapIds": [entry.get("mapId") for entry in failed_map_entries if entry.get("mapId") not in (None, "")],
             "extractedMapIds": [entry.get("mapId") for entry in extracted_map_entries if entry.get("mapId") not in (None, "")],
         }
+        summary["unresolvedTargets"]["raceIcons"] = {
+            "status": (
+                "waiting_for_data"
+                if not race_ids and not tribe_ids
+                else "partial_failure"
+                if failed_race_entries
+                else "ready_from_generated_sheet_icons"
+            ),
+            "raceIds": sorted(race_ids),
+            "tribeIds": sorted(tribe_ids),
+            "extractedRaceIds": [entry.get("raceId") for entry in summary["extractedFiles"] if entry.get("kind") == "raceIcon"],
+            "extractedTribeIds": [entry.get("tribeId") for entry in summary["extractedFiles"] if entry.get("kind") == "tribeIcon"],
+            "failedRaceIds": [entry.get("raceId") for entry in summary["failedFiles"] if entry.get("kind") == "raceIcon"],
+            "failedTribeIds": [entry.get("tribeId") for entry in summary["failedFiles"] if entry.get("kind") == "tribeIcon"],
+        }
 
         summary["counts"] = {
             "requestedTextureFiles": len(plan.get("jobIconTexPaths", [])) + len(map_textures),
-            "extractedTextureFiles": len(summary["extractedFiles"]),
-            "failedTextureFiles": len(summary["failedFiles"]),
+            "extractedTextureFiles": len([entry for entry in summary["extractedFiles"] if entry.get("kind") in {"jobIcon", "mapTexture"}]),
+            "failedTextureFiles": len([entry for entry in summary["failedFiles"] if entry.get("kind") in {"jobIcon", "mapTexture"}]),
             "requestedJobIconFiles": len(plan.get("jobIconTexPaths", [])),
             "extractedJobIconFiles": sum(1 for entry in summary["extractedFiles"] if entry.get("kind") == "jobIcon"),
             "failedJobIconFiles": sum(1 for entry in summary["failedFiles"] if entry.get("kind") == "jobIcon"),
             "requestedMapTextureFiles": len(map_textures),
             "extractedMapTextureFiles": len(extracted_map_entries),
             "failedMapTextureFiles": len(failed_map_entries),
+            "requestedRaceIconFiles": len(race_ids),
+            "extractedRaceIconFiles": sum(1 for entry in summary["extractedFiles"] if entry.get("kind") == "raceIcon"),
+            "failedRaceIconFiles": sum(1 for entry in summary["failedFiles"] if entry.get("kind") == "raceIcon"),
+            "requestedTribeIconFiles": len(tribe_ids),
+            "extractedTribeIconFiles": sum(1 for entry in summary["extractedFiles"] if entry.get("kind") == "tribeIcon"),
+            "failedTribeIconFiles": sum(1 for entry in summary["failedFiles"] if entry.get("kind") == "tribeIcon"),
+            "requestedGeneratedIconFiles": len(race_ids) + len(tribe_ids),
+            "extractedGeneratedIconFiles": len(extracted_race_entries),
+            "failedGeneratedIconFiles": len(failed_race_entries),
             "mapIds": len(plan.get("mapIds", [])),
             "raceIds": len(plan.get("raceIds", [])),
             "tribeIds": len(plan.get("tribeIds", [])),
@@ -560,10 +1075,12 @@ def main() -> int:
             "Extracted "
             f"{summary['counts']['extractedJobIconFiles']} / {summary['counts']['requestedJobIconFiles']} requested job icon texture(s) "
             "and "
-            f"{summary['counts']['extractedMapTextureFiles']} / {summary['counts']['requestedMapTextureFiles']} requested map texture(s)."
+            f"{summary['counts']['extractedMapTextureFiles']} / {summary['counts']['requestedMapTextureFiles']} requested map texture(s), "
+            f"{summary['counts']['extractedRaceIconFiles']} / {summary['counts']['requestedRaceIconFiles']} race icon(s), and "
+            f"{summary['counts']['extractedTribeIconFiles']} / {summary['counts']['requestedTribeIconFiles']} tribe icon(s)."
         )
         if summary["failedFiles"]:
-            print(f"Failed {summary['counts']['failedTextureFiles']} file(s). See {args.summary}.")
+            print(f"Failed {len(summary['failedFiles'])} file(s). See {args.summary}.")
         else:
             print(f"Summary written to {args.summary}")
         return 0

@@ -2,11 +2,15 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import io
 import importlib
 import json
 import mimetypes
 import os
+import shutil
 import socket
+import struct
 import subprocess
 import sys
 import threading
@@ -35,9 +39,30 @@ EXTRACT_SCRIPT_PATH = os.path.join(SERVER_ROOT, "extract_ttsl_assets.py")
 EXTRACT_OUTPUT_ROOT = os.path.join(SERVER_ROOT, "extracted")
 EXTRACT_SUMMARY_PATH = os.path.join(EXTRACT_OUTPUT_ROOT, "ttsl_asset_extract_summary.json")
 CACHE_ROOT = os.path.join(SERVER_ROOT, "cache")
+SCREENSHOT_CACHE_ROOT = os.path.join(CACHE_ROOT, "screenshots")
 LOCAL_PYTHON_DEPS_ROOT = os.path.join(SERVER_ROOT, "_pydeps")
+AUTO_EXTRACT_RETRY_COOLDOWN_SECONDS = 30.0
 TEX_HEADER_SIZE = 80
 TEX_FORMAT_A8R8G8B8 = 5200
+TEX_FORMAT_DXT1 = 13344
+TEX_FORMAT_DXT3 = 13360
+TEX_FORMAT_DXT5 = 13361
+DDS_MAGIC = 0x20534444
+DDS_HEADER_SIZE = 124
+DDS_PIXEL_FORMAT_SIZE = 32
+DDS_CAPS_TEXTURE = 0x1000
+DDS_CAPS_MIPMAP = 0x400000
+DDSD_CAPS = 0x1
+DDSD_HEIGHT = 0x2
+DDSD_WIDTH = 0x4
+DDSD_PITCH = 0x8
+DDSD_PIXELFORMAT = 0x1000
+DDSD_MIPMAPCOUNT = 0x20000
+DDSD_LINEARSIZE = 0x80000
+DDPF_ALPHAPIXELS = 0x1
+DDPF_ALPHA = 0x2
+DDPF_FOURCC = 0x4
+DDPF_RGB = 0x40
 _PILLOW_IMPORT_RESULT: tuple[object | None, str] | None = None
 
 
@@ -106,16 +131,58 @@ def ensure_pillow_dependency() -> tuple[object | None, str]:
         return _PILLOW_IMPORT_RESULT
 
 
-def read_tex_header(raw_data: bytes) -> tuple[int, int, int]:
+def read_tex_header(raw_data: bytes) -> tuple[int, int, int, int]:
     if len(raw_data) < TEX_HEADER_SIZE:
         raise ValueError("TEX file is smaller than the expected 80-byte header.")
 
     format_code = int.from_bytes(raw_data[4:8], byteorder="little", signed=False)
     width = int.from_bytes(raw_data[8:10], byteorder="little", signed=False)
     height = int.from_bytes(raw_data[10:12], byteorder="little", signed=False)
+    mip_count = raw_data[14] & 0x0F
     if width <= 0 or height <= 0:
         raise ValueError("TEX file reported invalid dimensions.")
-    return format_code, width, height
+    if mip_count <= 0:
+        mip_count = 1
+    return format_code, width, height, mip_count
+
+
+def build_dds_payload(format_code: int, width: int, height: int, mip_count: int, pixel_data: bytes) -> bytes:
+    four_cc_map = {
+        TEX_FORMAT_DXT1: b"DXT1",
+        TEX_FORMAT_DXT3: b"DXT3",
+        TEX_FORMAT_DXT5: b"DXT5",
+    }
+    four_cc = four_cc_map.get(format_code)
+    if four_cc is None:
+        raise ValueError(f"Unsupported TEX image format {format_code}.")
+
+    flags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT | DDSD_MIPMAPCOUNT | DDSD_LINEARSIZE
+    linear_size = (width * height) // 2 if format_code == TEX_FORMAT_DXT1 else (width * height)
+    caps = DDS_CAPS_TEXTURE | (DDS_CAPS_MIPMAP if mip_count > 1 else 0)
+    header = bytearray()
+    header += struct.pack("<I", DDS_MAGIC)
+    header += struct.pack("<I", DDS_HEADER_SIZE)
+    header += struct.pack("<I", flags)
+    header += struct.pack("<I", height)
+    header += struct.pack("<I", width)
+    header += struct.pack("<I", linear_size)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", mip_count)
+    header += bytes(44)
+    header += struct.pack("<I", DDS_PIXEL_FORMAT_SIZE)
+    header += struct.pack("<I", DDPF_FOURCC)
+    header += four_cc
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", caps)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    header += struct.pack("<I", 0)
+    return bytes(header) + pixel_data
 
 
 def convert_tex_to_png(raw_tex_path: str, png_path: str) -> None:
@@ -126,18 +193,20 @@ def convert_tex_to_png(raw_tex_path: str, png_path: str) -> None:
     with open(raw_tex_path, "rb") as handle:
         raw_data = handle.read()
 
-    format_code, width, height = read_tex_header(raw_data)
-    if format_code != TEX_FORMAT_A8R8G8B8:
-        raise ValueError(f"Unsupported TEX image format {format_code} in {raw_tex_path}.")
-
+    format_code, width, height, mip_count = read_tex_header(raw_data)
     pixel_data = raw_data[TEX_HEADER_SIZE:]
-    required_bytes = width * height * 4
-    if len(pixel_data) < required_bytes:
-        raise ValueError(
-            f"TEX pixel payload is truncated: expected {required_bytes} bytes, got {len(pixel_data)}."
-        )
+    if format_code == TEX_FORMAT_A8R8G8B8:
+        required_bytes = width * height * 4
+        if len(pixel_data) < required_bytes:
+            raise ValueError(
+                f"TEX pixel payload is truncated: expected {required_bytes} bytes, got {len(pixel_data)}."
+            )
+        image = image_type.frombytes("RGBA", (width, height), pixel_data[:required_bytes], "raw", "BGRA")
+    else:
+        dds_payload = build_dds_payload(format_code, width, height, mip_count, pixel_data)
+        image = image_type.open(io.BytesIO(dds_payload))
+        image.load()
 
-    image = image_type.frombytes("RGBA", (width, height), pixel_data[:required_bytes], "raw", "BGRA")
     os.makedirs(os.path.dirname(png_path), exist_ok=True)
     image.save(png_path, format="PNG")
 
@@ -150,6 +219,19 @@ def ensure_png_cache(raw_tex_path: str, cache_relative_path: str) -> str:
 
     if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(raw_tex_path):
         convert_tex_to_png(raw_tex_path, cache_path)
+
+    return cache_path
+
+
+def ensure_static_cache_copy(source_path: str, cache_relative_path: str) -> str:
+    cache_path = os.path.normpath(os.path.join(CACHE_ROOT, cache_relative_path.replace("/", os.sep)))
+    cache_root = os.path.normpath(CACHE_ROOT)
+    if os.path.commonpath([cache_root, cache_path]) != cache_root:
+        raise ValueError(f"Refusing to write cache asset outside {cache_root}: {cache_relative_path}")
+
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(source_path):
+        shutil.copyfile(source_path, cache_path)
 
     return cache_path
 
@@ -185,11 +267,13 @@ main{padding:8px 10px 10px;display:grid;grid-template-columns:repeat(auto-fit,mi
 .section{display:grid;gap:4px}.sectionhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .party{display:grid;gap:3px}.member{display:grid;grid-template-columns:20px minmax(0,1fr) 36px 40px;gap:4px;align-items:center;padding:3px 5px;border-radius:7px;background:rgba(255,255,255,.035);font-size:11px}
 .slot,.job,.hp,.dist{text-align:right;color:var(--muted)}.membername{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.controls{display:grid;gap:6px}.controlrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.controlrow input{flex:1 1 180px;padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--text);font:inherit}.controlrow button,.controlrow a{padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(135,215,255,.12);color:var(--text);font:inherit;cursor:pointer;text-decoration:none}.controlrow button:disabled{opacity:.45;cursor:not-allowed}.controlnote{font-size:10px;color:var(--muted)}
 .radarbox{display:grid;justify-items:center;gap:3px}canvas{display:block;max-width:100%;aspect-ratio:1/1;background:rgba(6,10,16,.92);border:1px solid var(--line);border-radius:12px}
 .iconimg{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:rgba(255,255,255,.04);object-fit:cover}
 .mapframe{position:relative;max-width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,16,.92)}
 .mapimg{position:absolute;display:block;max-width:none;max-height:none}
 .mapdot{position:absolute;width:10px;height:10px;border-radius:999px;background:var(--ok);border:2px solid rgba(7,16,24,.95);transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(121,229,141,.24)}
+.mapoverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;background:transparent;border:none}
 .aggmembers{display:grid;gap:4px}.aggmember{display:grid;gap:4px;padding:5px 6px;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.04)}.aggmember.stranger{border-color:rgba(255,127,127,.18)}
 .aggmain{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;flex-wrap:wrap}.aggname{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap}
 .aggname .slot,.aggname .job,.aggname .lvl{color:var(--muted);font-size:10px;font-weight:700}.aggname .membername{font-size:12px;font-weight:700;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}
@@ -202,9 +286,10 @@ main{padding:8px 10px 10px;display:grid;grid-template-columns:repeat(auto-fit,mi
 <main id="app"><div class="empty">No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.</div></main>
 <script>
 const app=document.getElementById("app"),summary=document.getElementById("summary"),stamp=document.getElementById("stamp"),assetPlan=document.getElementById("assetPlan"),extractStatus=document.getElementById("extractStatus"),extractAssets=document.getElementById("extractAssets"),krangle=document.getElementById("krangle"),krangleEnemies=document.getElementById("krangleEnemies"),showStale=document.getElementById("showStale"),aggregateParties=document.getElementById("aggregateParties"),icons=document.getElementById("icons"),enumerate=document.getElementById("enumerate"),mapBoxPxInput=document.getElementById("mapBoxPx"),combatWidthInput=document.getElementById("combatWidth"),combatHeightInput=document.getElementById("combatHeight"),travelWidthInput=document.getElementById("travelWidth"),travelHeightInput=document.getElementById("travelHeight");
-const UI_STORAGE_PREFIX="ttslhud.",DEFAULT_MAP_BOX_PX=160,DEFAULT_COMBAT_WIDTH_YALMS=20,DEFAULT_COMBAT_HEIGHT_YALMS=20,DEFAULT_TRAVEL_WIDTH_YALMS=50,DEFAULT_TRAVEL_HEIGHT_YALMS=50,MAP_PERCENT_PER_YALM=(41/2048/40)*100;
+const UI_STORAGE_PREFIX="ttslhud.",DEFAULT_MAP_BOX_PX=160,DEFAULT_COMBAT_WIDTH_YALMS=20,DEFAULT_COMBAT_HEIGHT_YALMS=20,DEFAULT_TRAVEL_WIDTH_YALMS=50,DEFAULT_TRAVEL_HEIGHT_YALMS=50;
 const tankJobs=new Set(["GLA","MRD","PLD","WAR","DRK","GNB"]),healJobs=new Set(["CNJ","WHM","SCH","AST","SGE"]),dpsJobs=new Set(["PGL","LNC","ROG","ARC","THM","ACN","MNK","DRG","NIN","SAM","RPR","VPR","BRD","MCH","DNC","BLM","SMN","RDM","PCT","BLU"]);
-let currentAssetCatalog={jobIcons:{},maps:{},warnings:[]};
+let currentAssetCatalog={jobIcons:{},maps:{},raceIcons:{},tribeIcons:{},warnings:[]};
+const remoteControlDrafts=new Map();
 const clampNumber=(value,min,max,fallback)=>{const parsed=Number(value);return Number.isFinite(parsed)?Math.max(min,Math.min(max,parsed)):fallback};
 function loadNumericPreference(key,fallback,min,max){try{const stored=window.localStorage.getItem(`${UI_STORAGE_PREFIX}${key}`);return clampNumber(stored,min,max,fallback)}catch{return fallback}}
 function persistNumericPreference(key,value){try{window.localStorage.setItem(`${UI_STORAGE_PREFIX}${key}`,String(value))}catch{}}
@@ -228,22 +313,60 @@ function chip(text,kind=""){const el=document.createElement("span");el.className
 function stateChip(text,active,kind=""){const el=document.createElement("span");el.className=`state ${kind || (active?"on":"off")}`.trim();el.textContent=text;return el}
 function tile(label,value,kind=""){const el=document.createElement("div");el.className="tile";el.innerHTML=`<div class="label">${label}</div><div class="value ${kind}">${value}</div>`;return el}
 function jobIconAsset(jobIconId){return jobIconId==null?null:(currentAssetCatalog.jobIcons||{})[String(jobIconId)]||null}
-function mapAsset(map){return !map||map.mapId==null?null:(currentAssetCatalog.maps||{})[String(map.mapId)]||null}
+function raceIconAsset(raceId){return raceId==null?null:(currentAssetCatalog.raceIcons||{})[String(raceId)]||null}
+function tribeIconAsset(tribeId){return tribeId==null?null:(currentAssetCatalog.tribeIcons||{})[String(tribeId)]||null}
+function assetUrl(asset){return asset?.pngUrl||asset?.svgUrl||null}
+function localizedAssetName(asset,gender){if(!asset)return"";if(gender===1&&asset.feminineName)return String(asset.feminineName);if(asset.masculineName)return String(asset.masculineName);if(asset.feminineName)return String(asset.feminineName);return""}
+function mapAsset(map){if(!map)return null;const catalogMaps=currentAssetCatalog.maps||{};const candidates=[];if(map.texturePath)candidates.push(String(map.texturePath));for(const candidate of map.texturePathCandidates||[]){const text=String(candidate||"");if(text&&!candidates.includes(text))candidates.push(text)}for(const candidate of candidates){const key=`texture:${candidate.replace(/\\\\/g,"/").trim().toLowerCase()}`;if(catalogMaps[key])return catalogMaps[key]}if(map.mapId!=null){const fallback=Object.values(catalogMaps).find(entry=>Number(entry?.mapId)===Number(map.mapId));if(fallback)return fallback}return null}
 function currentViewportSettings(inCombat){return{boxPx:clampNumber(mapBoxPxInput.value,96,320,DEFAULT_MAP_BOX_PX),widthYalms:clampNumber(inCombat?combatWidthInput.value:travelWidthInput.value,5,500,inCombat?DEFAULT_COMBAT_WIDTH_YALMS:DEFAULT_TRAVEL_WIDTH_YALMS),heightYalms:clampNumber(inCombat?combatHeightInput.value:travelHeightInput.value,5,500,inCombat?DEFAULT_COMBAT_HEIGHT_YALMS:DEFAULT_TRAVEL_HEIGHT_YALMS)}}
 function aggregatePartyInCombat(party){const source=Array.isArray(party?.members)?party.members.find(member=>member.isSource)||party.members.find(member=>!member.isStranger):null;return !!source?.conditions?.inCombat}
-function worldSpanToMapPercent(spanYalms){return Math.max(.5,Math.min(100,Number(spanYalms||0)*MAP_PERCENT_PER_YALM))}
-function mapCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||sizeFactor===0)return null;const scale=Number(sizeFactor)/100;return(41/scale)*(((Number(value)+Number(offset))*scale+1024)/2048)+1}
-function buildMapMarker(position,map){if(!position||!map)return null;const x=mapCoordinate(position.x,map.offsetX,map.sizeFactor),y=mapCoordinate(position.z,map.offsetY,map.sizeFactor);if(x==null||y==null)return null;return{x,y,left:Math.max(0,Math.min(100,((x-1)/40)*100)),top:Math.max(0,Math.min(100,((y-1)/40)*100))}}
-function buildMapViewport(position,map,widthYalms,heightYalms){const marker=buildMapMarker(position,map);if(!marker)return{marker:null};const viewWidthPct=worldSpanToMapPercent(widthYalms),viewHeightPct=worldSpanToMapPercent(heightYalms),scaleX=Math.max(1,100/viewWidthPct),scaleY=Math.max(1,100/viewHeightPct),markerU=marker.left/100,markerV=marker.top/100,offsetX=Math.max(0,Math.min(1-(1/scaleX),markerU-(.5/scaleX))),offsetY=Math.max(0,Math.min(1-(1/scaleY),markerV-(.5/scaleY))),dotLeft=Math.max(0,Math.min(100,(markerU-offsetX)*scaleX*100)),dotTop=Math.max(0,Math.min(100,(markerV-offsetY)*scaleY*100));return{marker,imageWidthPercent:scaleX*100,imageHeightPercent:scaleY*100,imageLeftPercent:-offsetX*scaleX*100,imageTopPercent:-offsetY*scaleY*100,dotLeftPercent:dotLeft,dotTopPercent:dotTop}}
-function renderIdentity(entity){const wrap=document.createElement("div");wrap.className="ident";if(!icons.checked)return wrap;const asset=jobIconAsset(entity.jobIconId);if(asset?.pngUrl){const img=document.createElement("img");img.className="iconimg";img.src=asset.pngUrl;img.alt=entity.job||`Job ${entity.jobIconId}`;img.title=entity.job||`Job ${entity.jobIconId}`;wrap.appendChild(img)}if(entity.job)wrap.appendChild(chip(entity.job,jobKind(entity.job)));if(entity.level!=null)wrap.appendChild(chip(`Lv ${entity.level}`,"util"));if(entity.gender!=null)wrap.appendChild(chip(genderSymbol(entity.gender),"util"));return wrap}
+function mapVisibleCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||sizeFactor===0)return null;const scale=Number(sizeFactor)/100;return(41/scale)*(((Number(value)+Number(offset))*scale+1024)/2048)+1}
+function mapTextureCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||sizeFactor===0)return null;const scale=Number(sizeFactor)/100;return Math.max(0,Math.min(1,(((Number(value)+Number(offset))*scale+1024)/2048)))}
+function buildMapMarker(position,map){if(!position||!map)return null;const leftUnit=mapTextureCoordinate(position.x,map.offsetX,map.sizeFactor),topUnit=mapTextureCoordinate(position.z,map.offsetY,map.sizeFactor),mapX=mapVisibleCoordinate(position.x,map.offsetX,map.sizeFactor),mapY=mapVisibleCoordinate(position.z,map.offsetY,map.sizeFactor);if(leftUnit==null||topUnit==null)return null;return{left:leftUnit*100,top:topUnit*100,x:mapX,y:mapY}}
+function buildMapViewport(position,map,widthYalms,heightYalms){const marker=buildMapMarker(position,map);if(!marker)return{marker:null};const halfWidth=Math.max(.5,Number(widthYalms||0)/2),halfHeight=Math.max(.5,Number(heightYalms||0)/2),leftUnit=mapTextureCoordinate(Number(position.x)-halfWidth,map.offsetX,map.sizeFactor),rightUnit=mapTextureCoordinate(Number(position.x)+halfWidth,map.offsetX,map.sizeFactor),topUnit=mapTextureCoordinate(Number(position.z)-halfHeight,map.offsetY,map.sizeFactor),bottomUnit=mapTextureCoordinate(Number(position.z)+halfHeight,map.offsetY,map.sizeFactor);if(leftUnit==null||rightUnit==null||topUnit==null||bottomUnit==null)return{marker};const leftPct=Math.max(0,Math.min(100,Math.min(leftUnit,rightUnit)*100)),rightPct=Math.max(0,Math.min(100,Math.max(leftUnit,rightUnit)*100)),topPct=Math.max(0,Math.min(100,Math.min(topUnit,bottomUnit)*100)),bottomPct=Math.max(0,Math.min(100,Math.max(topUnit,bottomUnit)*100)),viewWidthPct=Math.max(.5,rightPct-leftPct),viewHeightPct=Math.max(.5,bottomPct-topPct),scaleX=Math.max(1,100/viewWidthPct),scaleY=Math.max(1,100/viewHeightPct),markerU=marker.left/100,markerV=marker.top/100,offsetX=Math.max(0,Math.min(1-(1/scaleX),markerU-(.5/scaleX))),offsetY=Math.max(0,Math.min(1-(1/scaleY),markerV-(.5/scaleY))),dotLeft=Math.max(0,Math.min(100,(markerU-offsetX)*scaleX*100)),dotTop=Math.max(0,Math.min(100,(markerV-offsetY)*scaleY*100));return{marker,imageWidthPercent:scaleX*100,imageHeightPercent:scaleY*100,imageLeftPercent:-offsetX*scaleX*100,imageTopPercent:-offsetY*scaleY*100,dotLeftPercent:dotLeft,dotTopPercent:dotTop,scaleX,scaleY,offsetXUnit:offsetX,offsetYUnit:offsetY}}
+function renderIdentity(entity){const wrap=document.createElement("div");wrap.className="ident";if(!icons.checked)return wrap;const appendIcon=(asset,label)=>{const url=assetUrl(asset);if(!url)return;const img=document.createElement("img");img.className="iconimg";img.src=url;img.alt=label;img.title=label;wrap.appendChild(img)};const jobAsset=jobIconAsset(entity.jobIconId);if(jobAsset)appendIcon(jobAsset,entity.job||`Job ${entity.jobIconId}`);const ancestryAsset=tribeIconAsset(entity.tribeId)||raceIconAsset(entity.raceId);const ancestryName=localizedAssetName(ancestryAsset,entity.gender);if(ancestryAsset&&ancestryName)appendIcon(ancestryAsset,ancestryName);if(entity.job)wrap.appendChild(chip(entity.job,jobKind(entity.job)));if(entity.level!=null)wrap.appendChild(chip(`Lv ${entity.level}`,"util"));if(entity.gender!=null)wrap.appendChild(chip(genderSymbol(entity.gender),"util"));return wrap}
 function buildEnemyPoints(combat){return Array.isArray(combat?.hostiles)?combat.hostiles.filter(enemy=>enemy.position).map((enemy,index)=>({position:enemy.position,color:enemy.isCurrentTarget?"#ff5e7d":enemy.isTargetingTrackedParty?"#ff9b7a":"#ff7f7f",label:enemy.isCurrentTarget?"TGT":`E${index+1}`})):[]}
-function drawRadarBase(canvas,points,origin,labeler,widthYalms,heightYalms){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=w/2-16,halfWidth=Math.max(1,Number(widthYalms)/2),halfHeight=Math.max(1,Number(heightYalms)/2);ctx.clearRect(0,0,w,h);ctx.fillStyle="#071018";ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(255,255,255,.12)";ctx.strokeRect(9,9,w-18,h-18);ctx.beginPath();ctx.moveTo(cx,14);ctx.lineTo(cx,h-14);ctx.moveTo(14,cy);ctx.lineTo(w-14,cy);ctx.stroke();ctx.fillStyle="#79e58d";ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();if(!origin||points.length===0){ctx.fillStyle="#93a7bc";ctx.font="11px Segoe UI";ctx.fillText("No radar data",34,cy+4);return}for(const point of points){if(!point.position)continue;const dx=point.position.x-origin.x,dz=point.position.z-origin.z,px=cx+Math.max(-1,Math.min(1,dx/halfWidth))*r,py=cy+Math.max(-1,Math.min(1,dz/halfHeight))*r;ctx.fillStyle=point.color;ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eaf4ff";ctx.font="10px Segoe UI";ctx.fillText(labeler(point),px+5,py+3)}}
+function drawFacingCone(ctx,x,y,rotation,color,size){
+  if(typeof rotation!=="number"||!Number.isFinite(rotation))return;
+  const facing=rotation,dirX=Math.sin(facing),dirY=Math.cos(facing),shaft=size*.95,tip=size*1.45,wing=size*.55,base=size*.2;
+  ctx.save();
+  ctx.strokeStyle="rgba(7,16,24,.95)";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x+dirX*shaft,y+dirY*shaft);
+  ctx.stroke();
+  ctx.strokeStyle=color;
+  ctx.lineWidth=2.25;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x+dirX*shaft,y+dirY*shaft);
+  ctx.stroke();
+  ctx.fillStyle=color;
+  ctx.globalAlpha=.92;
+  ctx.beginPath();
+  ctx.moveTo(x+dirX*base,y+dirY*base);
+  ctx.lineTo(x+dirX*tip+dirY*wing,y+dirY*tip-dirX*wing);
+  ctx.lineTo(x+dirX*tip-dirY*wing,y+dirY*tip+dirX*wing);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle="rgba(7,16,24,.95)";
+  ctx.lineWidth=1.4;
+  ctx.stroke();
+  ctx.restore()
+}
+function drawRadarBase(canvas,points,origin,labeler,widthYalms,heightYalms){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=w/2-16,halfWidth=Math.max(1,Number(widthYalms)/2),halfHeight=Math.max(1,Number(heightYalms)/2);ctx.clearRect(0,0,w,h);ctx.fillStyle="#071018";ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(255,255,255,.12)";ctx.strokeRect(9,9,w-18,h-18);ctx.beginPath();ctx.moveTo(cx,14);ctx.lineTo(cx,h-14);ctx.moveTo(14,cy);ctx.lineTo(w-14,cy);ctx.stroke();drawFacingCone(ctx,cx,cy,origin?.rotation,"#79e58d",17);ctx.fillStyle="#79e58d";ctx.beginPath();ctx.arc(cx,cy,4.5,0,Math.PI*2);ctx.fill();if(!origin||points.length===0){ctx.fillStyle="#93a7bc";ctx.font="11px Segoe UI";ctx.fillText("No radar data",34,cy+4);return}for(const point of points){if(!point.position)continue;const dx=point.position.x-origin.x,dz=point.position.z-origin.z,px=cx+Math.max(-1,Math.min(1,dx/halfWidth))*r,py=cy+Math.max(-1,Math.min(1,dz/halfHeight))*r;drawFacingCone(ctx,px,py,point.position.rotation,point.color,14);ctx.fillStyle=point.color;ctx.beginPath();ctx.arc(px,py,4.2,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eaf4ff";ctx.font="10px Segoe UI";ctx.fillText(labeler(point),px+6,py+3)}}
+function sameTrackedPosition(left,right){return !!left&&!!right&&Math.abs(Number(left.x)-Number(right.x))<.05&&Math.abs(Number(left.z)-Number(right.z))<.05}
+function buildClientMinimapPoints(client){const points=[];for(const member of client.party||[]){if(!member.position||sameTrackedPosition(member.position,client.position))continue;points.push({position:member.position,color:"#ffbf74",label:shortLabel(member.name,member.slot,client.worldName),rotation:member.position.rotation,size:12})}for(const enemy of buildEnemyPoints(client.combat))points.push({...enemy,rotation:enemy.position?.rotation,size:11});return points}
+function buildAggregateMinimapPoints(party,source){const points=[];for(const member of party.members||[]){if(member===source||!member.position||sameTrackedPosition(member.position,source?.position))continue;points.push({position:member.position,color:member.isStranger?"#ff7f7f":member.isSubmitting?"#ffbf74":"#93a7bc",label:shortLabel(member.name,member.slotText,member.worldName),rotation:member.position.rotation,size:member.isStranger?11:12})}for(const enemy of buildEnemyPoints(party.combat))points.push({...enemy,rotation:enemy.position?.rotation,size:11});return points}
+function projectMarkerToViewport(marker,mapViewport){if(!marker||!mapViewport?.marker||mapViewport.scaleX==null||mapViewport.scaleY==null)return null;const markerU=marker.left/100,markerV=marker.top/100;return{left:Math.max(0,Math.min(100,(markerU-mapViewport.offsetXUnit)*mapViewport.scaleX*100)),top:Math.max(0,Math.min(100,(markerV-mapViewport.offsetYUnit)*mapViewport.scaleY*100)),x:marker.x,y:marker.y}}
+function drawMinimapOverlay(canvas,map,mapViewport,sourcePosition,points,sourceLabel){const ctx=canvas.getContext("2d"),width=canvas.width,height=canvas.height;ctx.clearRect(0,0,width,height);const drawPoint=(point,color,label,size)=>{const projected=projectMarkerToViewport(buildMapMarker(point.position,map),mapViewport);if(!projected)return;const px=width*(projected.left/100),py=height*(projected.top/100);drawFacingCone(ctx,px,py,point.rotation??point.position?.rotation,color,size);ctx.fillStyle=color;ctx.beginPath();ctx.arc(px,py,Math.max(3.6,size*.28),0,Math.PI*2);ctx.fill();ctx.strokeStyle="rgba(7,16,24,.95)";ctx.lineWidth=1.4;ctx.stroke();if(label){ctx.fillStyle="#eaf4ff";ctx.strokeStyle="rgba(7,16,24,.95)";ctx.lineWidth=2.8;ctx.font="10px Segoe UI";ctx.strokeText(label,px+7,py+4);ctx.fillText(label,px+7,py+4)}};for(const point of points||[])if(point?.position)drawPoint(point,point.color||"#ffbf74",point.label||"",point.size||11);if(sourcePosition)drawPoint({position:sourcePosition,rotation:sourcePosition.rotation},"#79e58d",sourceLabel||"",14)}
 function drawRadar(canvas,client){const viewport=currentViewportSettings(!!client?.conditions?.inCombat);canvas.width=viewport.boxPx;canvas.height=viewport.boxPx;if(!client.position||!Array.isArray(client.party)||client.party.length===0){const hostiles=buildEnemyPoints(client.combat);if(hostiles.length===0){drawRadarBase(canvas,[],null,()=>"-",viewport.widthYalms,viewport.heightYalms);return}drawRadarBase(canvas,hostiles,client.position||null,point=>point.label,viewport.widthYalms,viewport.heightYalms);return}const points=client.party.filter(m=>m.position).map(m=>({position:m.position,color:"#ffbf74",slot:m.slot,name:m.name,world:client.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(client.combat)),client.position,point=>point.label||shortLabel(point.name,point.slot,point.world),viewport.widthYalms,viewport.heightYalms)}
 function drawAggregateRadar(canvas,party){const viewport=currentViewportSettings(aggregatePartyInCombat(party));canvas.width=viewport.boxPx;canvas.height=viewport.boxPx;const source=party.members.find(m=>m.isSource&&m.position)||party.members.find(m=>m.position&&!m.isStranger)||null;if(!source){drawRadarBase(canvas,buildEnemyPoints(party.combat),null,point=>point.label,viewport.widthYalms,viewport.heightYalms);return}const points=party.members.filter(m=>m.position&&m!==source).map(m=>({position:m.position,color:m.isStranger?"#ff7f7f":m.isSubmitting?"#ffbf74":"#93a7bc",slot:m.slotText,name:m.name,world:m.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(party.combat)),source.position,point=>point.label||shortLabel(point.name,point.slot,point.world),viewport.widthYalms,viewport.heightYalms)}
 function renderParty(client){const wrap=document.createElement("div");wrap.className="party";if(Array.isArray(client.party)&&client.party.length>0){for(const m of client.party){const row=document.createElement("div");row.className="member";const dist=typeof m.distance==="number"?`${m.distance.toFixed(1)}y`:"--";row.innerHTML=`<div class="slot">${m.slot}</div><div class="membername">${displayName(m.name,m.krangledName)}</div><div class="job">${m.job}</div><div class="dist">${dist}</div>`;row.title=`${levelText(m.level)} | HP ${hpText(m.currentHp,m.maxHp)} | MP ${mpText(m.currentMp,m.maxMp)}`;wrap.appendChild(row)}}else{const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No party data captured yet.</div><div class="job">--</div><div class="dist">--</div>`;wrap.appendChild(row)}return wrap}
 function renderStates(client){const wrap=document.createElement("div");wrap.className="states";wrap.append(stateChip("Combat",!!client.conditions?.inCombat),stateChip("Duty",!!client.conditions?.boundByDuty),stateChip("Queue",!!client.conditions?.waitingForDuty),stateChip("Mount",!!client.conditions?.mounted),stateChip("Cast",!!client.conditions?.casting),stateChip("Dead",!!client.conditions?.dead,client.conditions?.dead?"bad":"off"));return wrap}
 function renderThreats(combat){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Threat</div>`;const list=document.createElement("div");list.className="party";const hostiles=[];if(combat?.currentTarget)hostiles.push(combat.currentTarget);for(const hostile of combat?.hostiles||[]){if(!hostiles.some(existing=>existing.dataId===hostile.dataId&&existing.distance===hostile.distance&&existing.name===hostile.name))hostiles.push(hostile)}if(hostiles.length===0){const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No combat telemetry captured.</div><div class="job">--</div><div class="dist">--</div>`;list.appendChild(row);section.appendChild(list);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="member";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const label=hostile.isCurrentTarget?"T":hostile.isTargetingTrackedParty?"A":"E";const hp=pct(hostile.currentHp,hostile.maxHp);row.innerHTML=`<div class="slot">${label}</div><div class="membername">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div class="job">${dist}</div><div class="dist">${hp}</div>`;row.title=`${hostile.isCurrentTarget?"Current target":hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} | ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;list.appendChild(row)}section.appendChild(list);return section}
-function renderMapSection(map,position,title="Map",inCombat=false){
+function renderMinimapSection(map,position,title="Minimap",inCombat=false,points=[],sourceLabel=""){
   const section=document.createElement("div");
   section.className="section";
   section.innerHTML=`<div class="sectionhead">${title}</div>`;
@@ -252,7 +375,7 @@ function renderMapSection(map,position,title="Map",inCombat=false){
   const asset=mapAsset(map);
   const mapViewport=buildMapViewport(position,map,viewport.widthYalms,viewport.heightYalms);
 
-  if(asset?.pngUrl){
+  if(asset?.pngUrl&&mapViewport.marker){
     const frame=document.createElement("div");
     frame.className="mapframe";
     frame.style.width=`${viewport.boxPx}px`;
@@ -276,17 +399,20 @@ function renderMapSection(map,position,title="Map",inCombat=false){
     }
 
     frame.appendChild(img);
-
-    if(mapViewport.marker){
-      const dot=document.createElement("span");
-      dot.className="mapdot";
-      dot.style.left=`${mapViewport.dotLeftPercent}%`;
-      dot.style.top=`${mapViewport.dotTopPercent}%`;
-      dot.title=`${mapViewport.marker.x.toFixed(1)}, ${mapViewport.marker.y.toFixed(1)}`;
-      frame.appendChild(dot);
-    }
+    const overlay=document.createElement("canvas");
+    overlay.className="mapoverlay";
+    overlay.width=viewport.boxPx;
+    overlay.height=viewport.boxPx;
+    frame.appendChild(overlay);
 
     section.appendChild(frame);
+    requestAnimationFrame(()=>drawMinimapOverlay(overlay,map,mapViewport,position,points,sourceLabel));
+  }else if(position||points.length>0){
+    const fallback=document.createElement("canvas");
+    fallback.width=viewport.boxPx;
+    fallback.height=viewport.boxPx;
+    section.appendChild(fallback);
+    requestAnimationFrame(()=>drawRadarBase(fallback,points,position||null,point=>point.label||"",viewport.widthYalms,viewport.heightYalms));
   }else{
     const row=document.createElement("div");
     row.className="member";
@@ -322,7 +448,7 @@ function renderClient(client){
 
   const info=document.createElement("div");
   info.innerHTML=`<div class="name">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div class="zone">${client.territoryName||"Unknown zone"} (${client.territoryId??0})</div><div class="sub">${kAcct(client.accountId)}</div>`;
-  info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender}));
+  info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender,raceId:client.raceId,tribeId:client.tribeId}));
 
   const badges=document.createElement("div");
   badges.className="badges";
@@ -348,13 +474,6 @@ function renderClient(client){
   partySection.innerHTML=`<div class="sectionhead">Party</div>`;
   partySection.appendChild(renderParty(client));
 
-  const viewport=currentViewportSettings(!!client?.conditions?.inCombat);
-  const radarSection=document.createElement("div");
-  radarSection.className="radarbox";
-  radarSection.innerHTML=`<div class="sectionhead">Radar | ${viewport.widthYalms.toFixed(0)}y x ${viewport.heightYalms.toFixed(0)}y</div>`;
-  const radar=document.createElement("canvas");
-  radarSection.appendChild(radar);
-
   const foot=document.createElement("div");
   foot.className="foot";
   foot.textContent=`Last update ${client.lastSeenUtc} | ${client.updateKind}`;
@@ -365,13 +484,11 @@ function renderClient(client){
     metrics,
     stateSection,
     partySection,
-    renderMapSection(client.map,client.position,"Map",!!client?.conditions?.inCombat),
+    renderMinimapSection(client.map,client.position,"Minimap",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU"),
     renderThreats(client.combat),
-    radarSection,
+    renderRemoteControlSection(client,"Remote Control"),
     foot
   );
-
-  requestAnimationFrame(()=>drawRadar(radar,client));
   return card;
 }
 function renderAggregateMember(member){const row=document.createElement("div");row.className=`aggmember ${member.isStranger?"stranger":""}`.trim();const main=document.createElement("div");main.className="aggmain";const info=document.createElement("div");info.className="aggname";info.innerHTML=`<span class="slot">${member.slotText}</span><span class="membername">${displayCharacter(member.name,member.worldName,member.krangledName)}</span><span class="job">${member.job||"--"}</span><span class="lvl">${levelText(member.level)}</span>`;info.appendChild(renderIdentity(member));const badges=document.createElement("div");badges.className="badges";if(member.isStranger){badges.append(chip("Stranger","bad"),chip("Limited data","warn"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"));badges.append(chip(member.isSubmitting?"Submitting":"Monitored",member.isSubmitting?"ok":"warn"));if(member.isSource)badges.append(chip("Source","ok"))}main.append(info,badges);const meta=document.createElement("div");meta.className="aggmeta";meta.append(tile("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null?"bad":""),tile("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null?"bad":""),tile("Position",posText(member.position),member.position?"" :"bad"),tile("Extra",member.isStranger?"Conditions/repair unavailable":member.repair?`${member.repair.minCondition}% min | ${member.repair.averageCondition}% avg`:"No repair data",member.isStranger||!member.repair?"bad":""));row.append(main,meta);if(!member.isStranger){const states=renderStates(member);row.append(states);const note=document.createElement("div");note.className="aggnote";note.textContent=`${member.territoryName||"Unknown zone"} (${member.territoryId??0}) | Last update ${member.lastSeenUtc} | ${member.updateKind}`;row.append(note)}else{const note=document.createElement("div");note.className="aggnote bad";note.textContent="Only party-list fields are available for strangers: name, position, HP, MP, level, and job.";row.append(note)}return row}
@@ -396,13 +513,7 @@ function renderAggregateParty(party){
   const section=document.createElement("div");
   section.className="section";
   section.innerHTML=`<div class="sectionhead">Aggregated Party</div>`;
-
-  const radarViewport=currentViewportSettings(aggregatePartyInCombat(party));
-  const radarSection=document.createElement("div");
-  radarSection.className="radarbox";
-  radarSection.innerHTML=`<div class="sectionhead">Party Radar | ${radarViewport.widthYalms.toFixed(0)}y x ${radarViewport.heightYalms.toFixed(0)}y</div>`;
-  const radar=document.createElement("canvas");
-  radarSection.appendChild(radar);
+  const sourceMember=party.members.find(m=>m.isSource&&m.position)||party.members.find(m=>m.position&&!m.isStranger)||null;
 
   const members=document.createElement("div");
   members.className="aggmembers";
@@ -410,10 +521,10 @@ function renderAggregateParty(party){
     members.appendChild(renderAggregateMember(member));
 
   section.append(
-    renderMapSection(party.map,party.sourcePosition,"Source Map",aggregatePartyInCombat(party)),
-    radarSection,
+    renderMinimapSection(party.map,party.sourcePosition,"Source Minimap",aggregatePartyInCombat(party),buildAggregateMinimapPoints(party,sourceMember),sourceMember?"SRC":""),
     members,
-    renderThreats(party.combat)
+    renderThreats(party.combat),
+    renderRemoteControlSection({accountId:party.sourceAccountId,characterName:party.sourceCharacterName,worldName:party.sourceWorldName,sourcePolicy:party.sourcePolicy,sourceLastScreenshot:party.sourceLastScreenshot},"Source Remote Control","Aggregate-party stranger actions route through the source client.")
   );
 
   const foot=document.createElement("div");
@@ -422,15 +533,18 @@ function renderAggregateParty(party){
 
   head.append(info,badges);
   card.append(head,section,foot);
-  requestAnimationFrame(()=>drawAggregateRadar(radar,party));
   return card;
 }
 function flattenGroups(groups){return groups.flatMap(group=>group.clients.map(client=>({...client,accountId:group.accountId})))}
 function pathSummary(info){if(!info||!info.captured)return"same-PC game path not captured yet";return`same-PC game path ready from ${displayCharacter(info.sourceCharacterName,info.sourceWorldName,info.sourceKrangledName)}`}
-function assetSummary(plan,catalog){const warning=(catalog?.warnings||[])[0];if(!plan||!plan.summary)return warning||"Asset plan pending.";const s=plan.summary;const readyIcons=Object.keys(catalog?.jobIcons||{}).length;const readyMaps=Object.keys(catalog?.maps||{}).length;const base=`Asset plan: ${s.jobIcons} icon tex path(s), ${s.maps} map texture(s), ${s.races} race id(s), ${s.tribes} tribe id(s), ${s.enemies} enemy id(s) | web cache ${readyIcons} icon png(s), ${readyMaps} map png(s)`;return warning?`${base} | ${warning}`:base}
+function assetSummary(plan,catalog){const warning=(catalog?.warnings||[])[0];if(!plan||!plan.summary)return warning||"Asset plan pending.";const s=plan.summary;const readyJobIcons=Object.keys(catalog?.jobIcons||{}).length;const readyRaceIcons=Object.keys(catalog?.raceIcons||{}).length;const readyTribeIcons=Object.keys(catalog?.tribeIcons||{}).length;const readyMaps=Object.keys(catalog?.maps||{}).length;const base=`Asset plan: ${s.jobIcons} job icon tex path(s), ${s.maps} map texture(s), ${s.races} race id(s), ${s.tribes} tribe id(s), ${s.enemies} enemy id(s) | web cache ${readyJobIcons} job icon(s), ${readyRaceIcons} race icon(s), ${readyTribeIcons} clan icon(s), ${readyMaps} map png(s)`;return warning?`${base} | ${warning}`:base}
 function extractionSummary(state){if(!state)return"Extraction idle.";if(state.running)return`Extraction running: ${state.message||"working..."}`;if(state.lastCompletedUtc)return`Extraction ${state.lastExitCode===0?"ready":"failed"}: ${state.message||"see server log"}`;return state.message||"Extraction idle."}
 async function triggerExtract(){try{extractAssets.disabled=true;const res=await fetch("/api/extract-assets",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const payload=await res.json();if(!res.ok||!payload.ok)throw new Error(payload.error||`HTTP ${res.status}`);extractStatus.textContent=payload.message||"Extraction started.";await refresh()}catch(err){extractStatus.textContent=`Extraction request failed: ${err}`;extractAssets.disabled=false}}
-async function refresh(){try{const res=await fetch("/api/state",{cache:"no-store"});if(!res.ok)throw new Error(`HTTP ${res.status}`);const state=await res.json();currentAssetCatalog=state.assetCatalog||{jobIcons:{},maps:{},warnings:[]};const clients=flattenGroups(state.accountGroups).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const live=clients.filter(c=>!c.stale&&!c.isDisconnected).length;const aggregate=Array.isArray(state.aggregateParties)?state.aggregateParties:[];const looseFromServer=Array.isArray(state.looseClients)?state.looseClients:clients;const visibleLoose=(showStale.checked?looseFromServer:looseFromServer.filter(c=>!c.stale&&!c.isDisconnected)).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const visibleAggregate=aggregateParties.checked?(showStale.checked?aggregate:aggregate.filter(p=>p.liveCount>0)):[];summary.textContent=`${clients.length} client(s) tracked | ${live} live | ${clients.length-live} stale/disconnected${aggregateParties.checked?` | ${aggregate.length} party group(s)`:""}`;stamp.textContent=`Generated ${state.generatedAtUtc} | stale after ${state.staleSeconds}s | ${pathSummary(state.gamePathInfo)}`;assetPlan.textContent=assetSummary(state.assetPlan,currentAssetCatalog);extractStatus.textContent=extractionSummary(state.assetExtraction);extractAssets.textContent=state.assetExtraction?.running?"Extracting...":"Extract Assets";extractAssets.disabled=!!state.assetExtraction?.running||!state.gamePathInfo?.captured;app.replaceChildren();if(aggregateParties.checked){for(const party of visibleAggregate)app.appendChild(renderAggregateParty(party));for(const client of visibleLoose)app.appendChild(renderClient(client));if(visibleAggregate.length===0&&visibleLoose.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent=clients.length===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.":"All tracked clients are stale or disconnected.";app.appendChild(empty)}return}const visible=showStale.checked?clients:clients.filter(c=>!c.stale&&!c.isDisconnected);if(visible.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent=clients.length===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.":"All tracked clients are stale or disconnected.";app.appendChild(empty);return}for(const client of visible)app.appendChild(renderClient(client))}catch(err){summary.textContent="Refresh failed";stamp.textContent=String(err);assetPlan.textContent="Asset plan unavailable.";extractStatus.textContent="Extraction status unavailable.";extractAssets.disabled=false}}
+function remoteControlKey(target){return`${String(target?.accountId||"").trim()}|${String(target?.characterName||"").trim()}|${String(target?.worldName||"").trim()}`}
+function activeRemoteDraftKey(){const active=document.activeElement;return active instanceof HTMLInputElement?String(active.dataset.remoteDraftKey||"").trim():""}
+async function queueRemoteAction(target,actionType,text=""){try{const payload={accountId:target.accountId,characterName:target.characterName,worldName:target.worldName,actionType};if(text)payload.text=text;const res=await fetch("/api/queue-action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const response=await res.json();if(!res.ok||!response.ok)throw new Error(response.error||`HTTP ${res.status}`);extractStatus.textContent=response.message||"Queued remote action.";await refresh();return true}catch(err){extractStatus.textContent=`Remote action failed: ${err}`;return false}}
+function renderRemoteControlSection(target,title,noteText=""){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">${title}</div>`;const controls=document.createElement("div");controls.className="controls";const policy=target?.policy||target?.sourcePolicy||{};const lastScreenshot=target?.lastScreenshot||target?.sourceLastScreenshot||null;if(policy.allowEchoCommands){const row=document.createElement("div");row.className="controlrow";const draftKey=remoteControlKey(target);const input=document.createElement("input");input.type="text";input.maxLength=220;input.placeholder="Plain text goes to /echo. Slash commands like /sit run verbatim";input.dataset.remoteDraftKey=draftKey;input.value=remoteControlDrafts.get(draftKey)||"";input.addEventListener("input",()=>remoteControlDrafts.set(draftKey,input.value));input.addEventListener("blur",()=>{const value=String(input.value||"");if(value)remoteControlDrafts.set(draftKey,value);else remoteControlDrafts.delete(draftKey)});const button=document.createElement("button");button.type="button";button.textContent="Send Text";button.addEventListener("click",()=>{const text=String(input.value||"").trim();if(!text)return;button.disabled=true;queueRemoteAction(target,"echoCommand",text).then(ok=>{button.disabled=false;if(ok){input.value="";remoteControlDrafts.delete(draftKey)}})});input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();button.click()}});row.append(input,button);controls.appendChild(row)}if(policy.allowScreenshotRequests||lastScreenshot){const row=document.createElement("div");row.className="controlrow";if(policy.allowScreenshotRequests){const button=document.createElement("button");button.type="button";button.textContent="Request Screenshot";button.addEventListener("click",()=>{button.disabled=true;queueRemoteAction(target,"requestScreenshot").finally(()=>{button.disabled=false})});row.appendChild(button)}if(lastScreenshot?.url){const link=document.createElement("a");link.href=lastScreenshot.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Last Screenshot Sent";row.appendChild(link);const stamp=document.createElement("span");stamp.className="controlnote";stamp.textContent=`${lastScreenshot.capturedAtUtc||"Unknown time"}`;row.appendChild(stamp)}controls.appendChild(row)}const note=document.createElement("div");note.className="controlnote";if(noteText){note.textContent=noteText}else if(policy.allowEchoCommands||policy.allowScreenshotRequests){note.textContent="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, subject to this client's local policy settings."}else{note.textContent="This client is not currently allowing web-triggered text, slash commands, or screenshots."}controls.appendChild(note);section.appendChild(controls);return section}
+async function refresh(){try{const editingRemoteDraftKey=activeRemoteDraftKey();const res=await fetch("/api/state",{cache:"no-store"});if(!res.ok)throw new Error(`HTTP ${res.status}`);const state=await res.json();currentAssetCatalog=state.assetCatalog||{jobIcons:{},maps:{},raceIcons:{},tribeIcons:{},warnings:[]};const clients=flattenGroups(state.accountGroups).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const live=clients.filter(c=>!c.stale&&!c.isDisconnected).length;const aggregate=Array.isArray(state.aggregateParties)?state.aggregateParties:[];const looseFromServer=Array.isArray(state.looseClients)?state.looseClients:clients;const visibleLoose=(showStale.checked?looseFromServer:looseFromServer.filter(c=>!c.stale&&!c.isDisconnected)).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const visibleAggregate=aggregateParties.checked?(showStale.checked?aggregate:aggregate.filter(p=>p.liveCount>0)):[];summary.textContent=`${clients.length} client(s) tracked | ${live} live | ${clients.length-live} stale/disconnected${aggregateParties.checked?` | ${aggregate.length} party group(s)`:""}`;stamp.textContent=`Generated ${state.generatedAtUtc} | stale after ${state.staleSeconds}s | ${pathSummary(state.gamePathInfo)}`;assetPlan.textContent=assetSummary(state.assetPlan,currentAssetCatalog);extractStatus.textContent=extractionSummary(state.assetExtraction);extractAssets.textContent=state.assetExtraction?.running?"Extracting...":"Extract Assets";extractAssets.disabled=!!state.assetExtraction?.running||!state.gamePathInfo?.captured;if(editingRemoteDraftKey)return;app.replaceChildren();if(aggregateParties.checked){for(const party of visibleAggregate)app.appendChild(renderAggregateParty(party));for(const client of visibleLoose)app.appendChild(renderClient(client));if(visibleAggregate.length===0&&visibleLoose.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent=clients.length===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.":"All tracked clients are stale or disconnected.";app.appendChild(empty)}return}const visible=showStale.checked?clients:clients.filter(c=>!c.stale&&!c.isDisconnected);if(visible.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent=clients.length===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.":"All tracked clients are stale or disconnected.";app.appendChild(empty);return}for(const client of visible)app.appendChild(renderClient(client))}catch(err){summary.textContent="Refresh failed";stamp.textContent=String(err);assetPlan.textContent="Asset plan unavailable.";extractStatus.textContent="Extraction status unavailable.";extractAssets.disabled=false}}
 wireNumericPreference(mapBoxPxInput,"mapBoxPx",DEFAULT_MAP_BOX_PX,96,320);wireNumericPreference(combatWidthInput,"combatWidth",DEFAULT_COMBAT_WIDTH_YALMS,5,300);wireNumericPreference(combatHeightInput,"combatHeight",DEFAULT_COMBAT_HEIGHT_YALMS,5,300);wireNumericPreference(travelWidthInput,"travelWidth",DEFAULT_TRAVEL_WIDTH_YALMS,5,500);wireNumericPreference(travelHeightInput,"travelHeight",DEFAULT_TRAVEL_HEIGHT_YALMS,5,500);extractAssets.addEventListener("click",triggerExtract);krangle.addEventListener("change",refresh);krangleEnemies.addEventListener("change",refresh);showStale.addEventListener("change",refresh);aggregateParties.addEventListener("change",refresh);icons.addEventListener("change",refresh);enumerate.addEventListener("change",refresh);refresh();setInterval(refresh,1000);
 </script></body></html>"""
 
@@ -440,13 +554,16 @@ class TTSLStateStore:
         self.stale_seconds = stale_seconds
         self.retention_seconds = max(stale_seconds * 2, stale_seconds + 60)
         self._clients: dict[tuple[str, str, str], dict] = {}
+        self._pending_actions: dict[tuple[str, str, str], list[dict]] = {}
         self._server_host_name = socket.gethostname().strip().casefold()
         self._session_game_path: str | None = None
         self._session_game_path_source: dict | None = None
         self._asset_plan_output_path = os.path.join(SERVER_ROOT, "ttsl_asset_plan.json")
         self._last_asset_plan_json = ""
         self._asset_catalog_cache_mtime = -1.0
-        self._asset_catalog_cache = {"available": False, "jobIcons": {}, "maps": {}, "warnings": []}
+        self._asset_catalog_cache = {"available": False, "jobIcons": {}, "maps": {}, "raceIcons": {}, "tribeIcons": {}, "warnings": []}
+        self._last_auto_extract_signature = ""
+        self._last_auto_extract_started_unix = 0.0
         self._asset_extract_state = {
             "running": False,
             "message": "Extraction idle.",
@@ -460,6 +577,8 @@ class TTSLStateStore:
         key = self._make_key(payload)
         now = utc_now()
         now_unix = time.time()
+        auto_extract_requested = False
+        auto_extract_message = ""
         with self._lock:
             previous = self._clients.get(key)
             was_disconnected = bool(previous and previous.get("isDisconnected"))
@@ -494,6 +613,7 @@ class TTSLStateStore:
                 "player",
                 "raceId",
                 "tribeId",
+                "policy",
                 "conditions",
                 "repair",
                 "party",
@@ -511,6 +631,13 @@ class TTSLStateStore:
                 log_event(f"Client resumed: {self._format_key(key)}")
 
             self._prune_locked(now)
+
+            if str(payload.get("updateKind") or "full").strip().lower() != "position":
+                _, _, auto_extract_requested, auto_extract_message = self._evaluate_auto_extract_locked(now)
+
+        if auto_extract_requested:
+            threading.Thread(target=self._run_asset_extract, daemon=True).start()
+            log_event(auto_extract_message)
 
     def goodbye(self, payload: dict) -> None:
         key = self._make_key(payload)
@@ -542,8 +669,8 @@ class TTSLStateStore:
             self._prune_locked(now)
             groups: dict[str, list[dict]] = {}
             snapshot_clients: list[dict] = []
-            now_unix = time.time()
             for client in self._clients.values():
+                now_unix = time.time()
                 item = deepcopy(client)
                 age_seconds = max(0.0, now_unix - float(item.get("lastSeenUnix", now_unix)))
                 item["ageSeconds"] = age_seconds
@@ -558,9 +685,9 @@ class TTSLStateStore:
                 account_groups.append({"accountId": account_id, "clients": clients})
             account_groups.sort(key=lambda item: item["accountId"])
             aggregate_parties, loose_clients = self._build_aggregate_parties(snapshot_clients)
-            asset_plan = self._build_asset_plan_locked(snapshot_clients, now)
-            asset_catalog = self._build_asset_catalog_locked()
-            return {
+            asset_plan, asset_catalog, auto_extract_requested, auto_extract_message = self._evaluate_auto_extract_locked(now, snapshot_clients)
+
+            snapshot = {
                 "generatedAtUtc": utc_iso(now),
                 "staleSeconds": self.stale_seconds,
                 "totalClients": sum(len(group["clients"]) for group in account_groups),
@@ -580,28 +707,273 @@ class TTSLStateStore:
                 },
             }
 
+        if auto_extract_requested:
+            threading.Thread(target=self._run_asset_extract, daemon=True).start()
+            log_event(auto_extract_message)
+
+        return snapshot
+
+    def _evaluate_auto_extract_locked(
+        self,
+        now: datetime,
+        snapshot_clients: list[dict] | None = None,
+    ) -> tuple[dict, dict, bool, str]:
+        now_unix = time.time()
+        if snapshot_clients is None:
+            snapshot_clients = [deepcopy(client) for client in self._clients.values()]
+
+        asset_plan = self._build_asset_plan_locked(snapshot_clients, now)
+        asset_catalog = self._build_asset_catalog_locked()
+        missing_map_textures = self._get_missing_map_textures(asset_plan, asset_catalog)
+        missing_race_icons = self._get_missing_named_icons(asset_plan.get("raceIds"), (asset_catalog.get("raceIcons") or {}).keys())
+        missing_tribe_icons = self._get_missing_named_icons(asset_plan.get("tribeIds"), (asset_catalog.get("tribeIcons") or {}).keys())
+        if not missing_map_textures and not missing_race_icons and not missing_tribe_icons:
+            self._last_auto_extract_signature = ""
+            self._last_auto_extract_started_unix = 0.0
+            return asset_plan, asset_catalog, False, ""
+
+        auto_extract_signature = self._build_auto_extract_signature(missing_map_textures, missing_race_icons, missing_tribe_icons)
+        if (
+            self._session_game_path is None
+            or self._asset_extract_state["running"]
+            or (
+                auto_extract_signature == self._last_auto_extract_signature
+                and (now_unix - self._last_auto_extract_started_unix) < AUTO_EXTRACT_RETRY_COOLDOWN_SECONDS
+            )
+        ):
+            return asset_plan, asset_catalog, False, ""
+
+        work_items: list[str] = []
+        map_count = len(missing_map_textures)
+        if map_count:
+            work_items.append(f"{map_count} missing {'map texture' if map_count == 1 else 'map textures'}")
+
+        race_count = len(missing_race_icons)
+        if race_count:
+            work_items.append(f"{race_count} missing {'race icon' if race_count == 1 else 'race icons'}")
+
+        tribe_count = len(missing_tribe_icons)
+        if tribe_count:
+            work_items.append(f"{tribe_count} missing {'clan icon' if tribe_count == 1 else 'clan icons'}")
+
+        auto_extract_message = f"Auto-extracting {', '.join(work_items)} for the current session."
+        if not self._prepare_asset_extract_locked(now, auto_extract_message):
+            return asset_plan, asset_catalog, False, ""
+
+        self._last_auto_extract_signature = auto_extract_signature
+        self._last_auto_extract_started_unix = now_unix
+        return asset_plan, asset_catalog, True, auto_extract_message
+
     def trigger_asset_extract(self) -> tuple[bool, str]:
         now = utc_now()
         with self._lock:
-            if self._asset_extract_state["running"]:
-                return False, "Asset extraction is already running."
-            if self._session_game_path is None:
-                return False, "Same-PC game path not captured yet."
-            if not os.path.isfile(EXTRACT_SCRIPT_PATH):
-                return False, f"Extractor script not found: {EXTRACT_SCRIPT_PATH}"
-
             self._build_asset_plan_locked([deepcopy(client) for client in self._clients.values()], now)
-            self._asset_extract_state = {
-                "running": True,
-                "message": "Launching extractor with the current session plan.",
-                "lastStartedUtc": utc_iso(now),
-                "lastCompletedUtc": self._asset_extract_state.get("lastCompletedUtc"),
-                "lastExitCode": self._asset_extract_state.get("lastExitCode"),
-            }
+            if not self._prepare_asset_extract_locked(now, "Launching extractor with the current session plan."):
+                if self._asset_extract_state["running"]:
+                    return False, "Asset extraction is already running."
+                if self._session_game_path is None:
+                    return False, "Same-PC game path not captured yet."
+                return False, f"Extractor script not found: {EXTRACT_SCRIPT_PATH}"
 
         threading.Thread(target=self._run_asset_extract, daemon=True).start()
         log_event("Asset extraction requested from web UI.")
         return True, "Asset extraction started."
+
+    def queue_remote_action(self, payload: dict) -> tuple[bool, str]:
+        action_type = str(payload.get("actionType") or "").strip().lower()
+        target_key = self._make_key(payload)
+        now = utc_now()
+
+        with self._lock:
+            client = self._clients.get(target_key)
+            if client is None:
+                return False, "Target client is not currently tracked."
+
+            policy = client.get("policy") or {}
+            if action_type == "echocommand":
+                if not bool(policy.get("allowEchoCommands")):
+                    return False, "That client does not allow web text or slash commands."
+
+                text = self._sanitize_remote_text(payload.get("text"))
+                if not text:
+                    return False, "Text is empty."
+
+                queue_item = {
+                    "actionId": f"echo-{int(time.time() * 1000)}",
+                    "actionType": "echoCommand",
+                    "text": text,
+                    "queuedAtUtc": utc_iso(now),
+                }
+                message = "Queued web text/slash command."
+            elif action_type == "requestscreenshot":
+                if not bool(policy.get("allowScreenshotRequests")):
+                    return False, "That client does not allow web screenshot requests."
+
+                queue_item = {
+                    "actionId": f"shot-{int(time.time() * 1000)}",
+                    "actionType": "requestScreenshot",
+                    "queuedAtUtc": utc_iso(now),
+                }
+                message = "Queued screenshot request."
+            else:
+                return False, f"Unsupported action type: {action_type or 'missing'}"
+
+            queue = self._pending_actions.setdefault(target_key, [])
+            queue.append(queue_item)
+            log_event(f"Queued web action {queue_item['actionType']} for {self._format_key(target_key)}")
+            return True, message
+
+    def consume_remote_actions(self, payload: dict) -> list[dict]:
+        target_key = self._make_key(payload)
+        with self._lock:
+            queued = self._pending_actions.pop(target_key, [])
+            return deepcopy(queued)
+
+    def save_uploaded_screenshot(self, payload: dict) -> tuple[bool, str, dict | None]:
+        target_key = self._make_key(payload)
+        image_base64 = str(payload.get("imageBase64") or "").strip()
+        content_type = str(payload.get("contentType") or "image/png").strip().lower()
+        if not image_base64:
+            return False, "Screenshot payload is empty.", None
+        if content_type != "image/png":
+            return False, f"Unsupported screenshot content type: {content_type}", None
+
+        try:
+            image_bytes = base64.b64decode(image_base64, validate=True)
+        except Exception as exc:
+            return False, f"Invalid screenshot base64 payload: {exc}", None
+
+        captured_at = str(payload.get("capturedAtUtc") or utc_iso(utc_now()))
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_stem = self._build_safe_client_stem(target_key)
+        file_name = f"{safe_stem}_{timestamp}.png"
+        file_path = os.path.join(SCREENSHOT_CACHE_ROOT, file_name)
+        os.makedirs(SCREENSHOT_CACHE_ROOT, exist_ok=True)
+        with open(file_path, "wb") as handle:
+            handle.write(image_bytes)
+
+        screenshot_info = {
+            "capturedAtUtc": captured_at,
+            "url": build_cache_url(file_path),
+            "contentType": "image/png",
+            "fileName": file_name,
+            "actionId": payload.get("actionId"),
+        }
+
+        with self._lock:
+            client = self._clients.get(target_key)
+            if client is not None:
+                client["lastScreenshot"] = screenshot_info
+
+        log_event(f"Stored uploaded screenshot for {self._format_key(target_key)}: {file_name}")
+        return True, "Screenshot stored.", deepcopy(screenshot_info)
+
+    def _prepare_asset_extract_locked(self, now: datetime, message: str) -> bool:
+        if self._asset_extract_state["running"]:
+            return False
+        if self._session_game_path is None:
+            return False
+        if not os.path.isfile(EXTRACT_SCRIPT_PATH):
+            return False
+
+        self._asset_extract_state = {
+            "running": True,
+            "message": message,
+            "lastStartedUtc": utc_iso(now),
+            "lastCompletedUtc": self._asset_extract_state.get("lastCompletedUtc"),
+            "lastExitCode": self._asset_extract_state.get("lastExitCode"),
+        }
+        return True
+
+    @staticmethod
+    def _sanitize_remote_text(value: object) -> str:
+        text = str(value or "").replace("\r", " ").replace("\n", " ").strip()
+        if len(text) > 220:
+            text = text[:220]
+        return text
+
+    @staticmethod
+    def _build_safe_client_stem(key: tuple[str, str, str]) -> str:
+        raw = f"{key[1]}_{key[2]}_{key[0]}"
+        sanitized = "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in raw)
+        while "__" in sanitized:
+            sanitized = sanitized.replace("__", "_")
+        return sanitized.strip("_") or "ttsl_client"
+
+    @staticmethod
+    def _get_missing_map_textures(asset_plan: dict, asset_catalog: dict) -> list[dict]:
+        available_map_keys = {
+            str(key).strip()
+            for key in (asset_catalog.get("maps") or {}).keys()
+            if str(key).strip()
+        }
+        missing: list[dict] = []
+        for entry in asset_plan.get("mapTextures") or []:
+            if not isinstance(entry, dict):
+                continue
+
+            texture_candidates: list[str] = []
+            primary = str(entry.get("texturePath") or "").strip()
+            if primary:
+                texture_candidates.append(primary)
+            for candidate in entry.get("texturePathCandidates") or []:
+                candidate_text = str(candidate or "").strip()
+                if candidate_text and candidate_text not in texture_candidates:
+                    texture_candidates.append(candidate_text)
+
+            if any(TTSLStateStore._build_map_catalog_key(candidate, entry.get("mapId")) in available_map_keys for candidate in texture_candidates):
+                continue
+
+            missing.append(deepcopy(entry))
+
+        return missing
+
+    @staticmethod
+    def _get_missing_named_icons(requested_ids: list[int] | None, available_keys) -> list[int]:
+        available = {
+            int(str(key).strip())
+            for key in available_keys
+            if str(key).strip().isdigit()
+        }
+        missing: list[int] = []
+        for requested_id in requested_ids or []:
+            try:
+                value = int(requested_id)
+            except (TypeError, ValueError):
+                continue
+            if value > 0 and value not in available:
+                missing.append(value)
+        return sorted(set(missing))
+
+    @staticmethod
+    def _build_auto_extract_signature(
+        missing_map_textures: list[dict],
+        missing_race_icons: list[int],
+        missing_tribe_icons: list[int],
+    ) -> str:
+        signature_parts: list[str] = []
+        for entry in sorted(
+            missing_map_textures,
+            key=lambda item: (int(item.get("mapId") or 0), str(item.get("texturePath") or "")),
+        ):
+            texture_candidates = []
+            primary = str(entry.get("texturePath") or "").strip()
+            if primary:
+                texture_candidates.append(primary)
+            for candidate in entry.get("texturePathCandidates") or []:
+                candidate_text = str(candidate or "").strip()
+                if candidate_text and candidate_text not in texture_candidates:
+                    texture_candidates.append(candidate_text)
+
+            signature_parts.append(f"map:{int(entry.get('mapId') or 0)}:{'|'.join(texture_candidates)}")
+
+        if missing_race_icons:
+            signature_parts.append(f"race:{'|'.join(str(icon_id) for icon_id in missing_race_icons)}")
+
+        if missing_tribe_icons:
+            signature_parts.append(f"tribe:{'|'.join(str(icon_id) for icon_id in missing_tribe_icons)}")
+
+        return ";".join(signature_parts)
 
     def _build_asset_plan_locked(self, snapshot_clients: list[dict], generated_at: datetime) -> dict:
         territory_ids: set[int] = set()
@@ -624,6 +996,8 @@ class TTSLStateStore:
                 self._append_enemy_id(current_target, enemy_data_ids)
             for hostile in combat.get("hostiles") or []:
                 self._append_enemy_id(hostile, enemy_data_ids)
+
+        self._merge_cached_map_textures(map_ids, map_textures)
 
         job_icon_tex_paths = [
             f"ui/icon/{(icon_id // 1000) * 1000:06d}/{icon_id:06d}_hr1.tex"
@@ -651,7 +1025,7 @@ class TTSLStateStore:
             "enemyDataIds": sorted(enemy_data_ids),
             "goals": {
                 "jobIcons": {"status": "ready_to_extract" if job_icon_tex_paths else "waiting_for_data", "count": len(job_icon_tex_paths)},
-                "raceIcons": {"status": "needs_sheet_mapping", "count": len(race_ids)},
+                "raceIcons": {"status": "ready_to_generate" if (race_ids or tribe_ids) else "waiting_for_data", "count": len(race_ids) + len(tribe_ids)},
                 "mapTiles": {"status": "ready_to_extract" if ordered_map_textures else "waiting_for_data", "count": len(ordered_map_textures)},
             },
             "summary": {
@@ -733,7 +1107,7 @@ class TTSLStateStore:
         if summary_mtime == self._asset_catalog_cache_mtime:
             return deepcopy(self._asset_catalog_cache)
 
-        catalog = {"available": False, "jobIcons": {}, "maps": {}, "warnings": []}
+        catalog = {"available": False, "jobIcons": {}, "maps": {}, "raceIcons": {}, "tribeIcons": {}, "warnings": []}
         if summary_mtime < 0:
             catalog["warnings"].append("No extracted asset summary found yet.")
             self._asset_catalog_cache = catalog
@@ -779,20 +1153,59 @@ class TTSLStateStore:
                             continue
 
                         map_id_value = int(map_id)
-                        base_name = os.path.splitext(os.path.basename(str(entry.get("relativePath") or f"map_{map_id_value}.tex")))[0]
+                        texture_path = str(entry.get("relativePath") or entry.get("texturePath") or "").strip()
+                        if not texture_path:
+                            continue
+
+                        base_name = os.path.splitext(os.path.basename(texture_path or f"map_{map_id_value}.tex"))[0]
                         cache_path = ensure_png_cache(raw_path, f"maps/{map_id_value:06d}_{base_name}.png")
-                        catalog["maps"][str(map_id_value)] = {
+                        map_entry = {
                             "mapId": map_id_value,
                             "pngUrl": build_cache_url(cache_path),
-                            "texturePath": entry.get("relativePath") or entry.get("texturePath"),
+                            "texturePath": texture_path,
+                            "texturePathCandidates": entry.get("candidatePaths") or entry.get("texturePathCandidates") or [texture_path],
                             "offsetX": entry.get("offsetX"),
                             "offsetY": entry.get("offsetY"),
                             "sizeFactor": entry.get("sizeFactor"),
                         }
+                        catalog["maps"][self._build_map_catalog_key(texture_path, map_id_value)] = map_entry
+                        continue
+
+                    if kind == "raceIcon":
+                        race_id = entry.get("raceId")
+                        if race_id in (None, ""):
+                            continue
+
+                        race_id_value = int(race_id)
+                        cache_path = ensure_static_cache_copy(raw_path, f"race-icons/race_{race_id_value:03d}.svg")
+                        catalog["raceIcons"][str(race_id_value)] = {
+                            "raceId": race_id_value,
+                            "svgUrl": build_cache_url(cache_path),
+                            "masculineName": entry.get("masculineName"),
+                            "feminineName": entry.get("feminineName"),
+                        }
+                        continue
+
+                    if kind == "tribeIcon":
+                        tribe_id = entry.get("tribeId")
+                        if tribe_id in (None, ""):
+                            continue
+
+                        tribe_id_value = int(tribe_id)
+                        cache_path = ensure_static_cache_copy(raw_path, f"tribe-icons/tribe_{tribe_id_value:03d}.svg")
+                        catalog["tribeIcons"][str(tribe_id_value)] = {
+                            "tribeId": tribe_id_value,
+                            "raceId": entry.get("raceId"),
+                            "svgUrl": build_cache_url(cache_path),
+                            "masculineName": entry.get("masculineName"),
+                            "feminineName": entry.get("feminineName"),
+                            "raceMasculineName": entry.get("raceMasculineName"),
+                            "raceFeminineName": entry.get("raceFeminineName"),
+                        }
                 except Exception as exc:
                     catalog["warnings"].append(f"{kind}: {exc}")
 
-            catalog["available"] = bool(catalog["jobIcons"] or catalog["maps"])
+            catalog["available"] = bool(catalog["jobIcons"] or catalog["maps"] or catalog["raceIcons"] or catalog["tribeIcons"])
         except Exception as exc:
             catalog["warnings"].append(str(exc))
 
@@ -861,6 +1274,68 @@ class TTSLStateStore:
         except (TypeError, ValueError):
             return
 
+    @staticmethod
+    def _build_map_catalog_key(texture_path: object, map_id: object | None) -> str:
+        normalized_texture = str(texture_path or "").strip().replace("\\", "/").casefold()
+        if normalized_texture:
+            return f"texture:{normalized_texture}"
+
+        if map_id not in (None, ""):
+            try:
+                return f"map:{int(map_id)}"
+            except (TypeError, ValueError):
+                pass
+
+        return "map:unknown"
+
+    def _merge_cached_map_textures(self, map_ids: set[int], map_textures: dict[str, dict]) -> None:
+        if not map_ids or not os.path.isfile(self._asset_plan_output_path):
+            return
+
+        try:
+            with open(self._asset_plan_output_path, "r", encoding="utf-8") as handle:
+                cached_plan = json.load(handle)
+        except Exception:
+            return
+
+        for entry in cached_plan.get("mapTextures", []):
+            if not isinstance(entry, dict):
+                continue
+
+            try:
+                map_id_value = int(entry.get("mapId"))
+            except (TypeError, ValueError):
+                continue
+
+            if map_id_value <= 0 or map_id_value not in map_ids:
+                continue
+
+            texture_candidates: list[str] = []
+            primary = str(entry.get("texturePath") or "").strip()
+            if primary:
+                texture_candidates.append(primary)
+
+            for candidate in entry.get("texturePathCandidates") or []:
+                candidate_text = str(candidate or "").strip()
+                if candidate_text and candidate_text not in texture_candidates:
+                    texture_candidates.append(candidate_text)
+
+            if not texture_candidates:
+                continue
+
+            replacement = {
+                "mapId": map_id_value,
+                "texturePath": texture_candidates[0],
+                "texturePathCandidates": texture_candidates,
+                "offsetX": entry.get("offsetX"),
+                "offsetY": entry.get("offsetY"),
+                "sizeFactor": entry.get("sizeFactor"),
+            }
+            map_key = self._build_map_catalog_key(texture_candidates[0], map_id_value)
+            existing = map_textures.get(map_key)
+            if existing is None or len(texture_candidates) > len(existing.get("texturePathCandidates") or []):
+                map_textures[map_key] = replacement
+
     def _append_asset_ids_from_entity(
         self,
         entity: dict,
@@ -896,7 +1371,7 @@ class TTSLStateStore:
                     map_id_value = 0
 
             if texture_candidates:
-                map_key = f"map:{map_id_value}" if map_id_value > 0 else f"texture:{texture_candidates[0].casefold()}"
+                map_key = self._build_map_catalog_key(texture_candidates[0], map_id_value if map_id_value > 0 else None)
                 existing = map_textures.get(map_key)
                 replacement = {
                     "mapId": map_id_value if map_id_value > 0 else map_info.get("mapId"),
@@ -1052,10 +1527,13 @@ class TTSLStateStore:
         disconnected_count = sum(1 for client in represented_clients if client.get("isDisconnected"))
 
         return {
+            "sourceAccountId": source_client.get("accountId", ""),
             "sourceCharacterName": source_client.get("characterName", ""),
             "sourceWorldName": source_client.get("worldName", ""),
             "sourceKrangledName": source_client.get("krangledName", ""),
             "sourceConnectedAtUtc": source_client.get("connectedAtUtc", source_client.get("lastSeenUtc", "Unknown")),
+            "sourcePolicy": deepcopy(source_client.get("policy")),
+            "sourceLastScreenshot": deepcopy(source_client.get("lastScreenshot")),
             "territoryId": source_client.get("territoryId"),
             "territoryName": source_client.get("territoryName", "Unknown zone"),
             "map": deepcopy(source_client.get("map")),
@@ -1294,6 +1772,7 @@ class TTSLStateStore:
         stale_keys = [key for key, client in self._clients.items() if float(client.get("lastSeenUnix", 0)) < cutoff]
         for key in stale_keys:
             self._clients.pop(key, None)
+            self._pending_actions.pop(key, None)
             log_event(f"Client removed after inactivity: {self._format_key(key)}")
 
     @staticmethod
@@ -1319,6 +1798,9 @@ def make_handler(state: TTSLStateStore):
                 body = PAGE.encode("utf-8")
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+                self.send_header("Pragma", "no-cache")
+                self.send_header("Expires", "0")
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)
@@ -1356,13 +1838,19 @@ def make_handler(state: TTSLStateStore):
                 payload = self._read_json()
                 if self.path == "/api/update":
                     state.update(payload)
-                    return self._write_json({"ok": True})
+                    return self._write_json({"ok": True, "actions": state.consume_remote_actions(payload)})
                 if self.path == "/api/goodbye":
                     state.goodbye(payload)
                     return self._write_json({"ok": True})
                 if self.path == "/api/extract-assets":
                     ok, message = state.trigger_asset_extract()
                     return self._write_json({"ok": ok, "message": message, "error": None if ok else message}, HTTPStatus.OK if ok else HTTPStatus.CONFLICT)
+                if self.path == "/api/queue-action":
+                    ok, message = state.queue_remote_action(payload)
+                    return self._write_json({"ok": ok, "message": message, "error": None if ok else message}, HTTPStatus.OK if ok else HTTPStatus.CONFLICT)
+                if self.path == "/api/upload-screenshot":
+                    ok, message, screenshot = state.save_uploaded_screenshot(payload)
+                    return self._write_json({"ok": ok, "message": message, "error": None if ok else message, "screenshot": screenshot}, HTTPStatus.OK if ok else HTTPStatus.CONFLICT)
                 self.send_error(HTTPStatus.NOT_FOUND, "Unknown path")
             except ValueError as exc:
                 log_event(f"Bad request on {self.path}: {exc}")

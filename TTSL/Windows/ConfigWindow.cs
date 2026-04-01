@@ -161,6 +161,16 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Copies the best local server-launch command TTSL could resolve from this install.");
 
+        var loadedDllPath = typeof(Plugin).Assembly.Location;
+        ImGui.SetNextItemWidth(-130f);
+        ImGui.InputText("Loaded DLL", ref loadedDllPath, 1024, ImGuiInputTextFlags.ReadOnly);
+        ImGui.SameLine();
+        if (ImGui.SmallButton("Copy DLL Path"))
+        {
+            ImGui.SetClipboardText(loadedDllPath);
+            Plugin.Log.Information("[TTSL] Copied loaded DLL path to clipboard.");
+        }
+
         var positionIntervalMs = cfg.RemotePositionIntervalMs;
         if (ImGui.InputInt("Fast position interval (ms)", ref positionIntervalMs, 25, 100))
         {
@@ -175,11 +185,35 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
             changed = true;
         }
 
+        ImGui.Spacing();
+        ImGui.TextColored(new Vector4(0.95f, 0.75f, 0.35f, 1f), "Web Viewer Policy");
+
+        var allowWebEchoCommands = cfg.AllowWebEchoCommands;
+        if (ImGui.Checkbox("Allow web viewer text and slash commands", ref allowWebEchoCommands))
+        {
+            cfg.AllowWebEchoCommands = allowWebEchoCommands;
+            changed = true;
+        }
+        ImGui.SameLine();
+        HelpMarker("Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim.");
+
+        var allowWebScreenshotRequests = cfg.AllowWebScreenshotRequests;
+        if (ImGui.Checkbox("Allow web viewer screenshot requests", ref allowWebScreenshotRequests))
+        {
+            cfg.AllowWebScreenshotRequests = allowWebScreenshotRequests;
+            changed = true;
+        }
+        ImGui.SameLine();
+        HelpMarker("Captures the current FFXIV game-window client area and uploads it to the Python server.");
+
         ImGui.TextDisabled("Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0.");
         ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
         ImGui.TextDisabled("The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar.");
         ImGui.TextDisabled("For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first.");
         ImGui.TextDisabled("The server will cache the first same-PC game path it sees for the rest of that monitoring session.");
+        ImGui.TextDisabled("Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, and screenshot buttons use the uploader/source client for aggregate-party stranger data.");
+        ImGui.TextDisabled("TTSL settings are now stored per account ID once a live account is detected.");
+        ImGui.TextDisabled(@"Debug x64 builds are mirrored to TTSL\\bin\\Debug\\ after build for legacy local dev paths.");
         ImGui.TextDisabled($"Current account ID: {plugin.GetCurrentAccountId()}");
 
         var remoteStatusColor = cfg.RemoteServerEnabled

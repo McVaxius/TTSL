@@ -175,6 +175,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             DrawMetricCell("Server", cfg.RemoteServerUrl);
             DrawMetricCell("Client", publisher.LastCharacterKey == null ? "Waiting" : plugin.GetDisplayName(publisher.LastCharacterKey));
             DrawMetricCell("Account", publisher.LastAccountId ?? plugin.GetCurrentAccountId());
+            DrawMetricCell("Web", $"{(cfg.AllowWebEchoCommands ? "Text on" : "Text off")} | {(cfg.AllowWebScreenshotRequests ? "Shot on" : "Shot off")}");
             DrawMetricCell("Last OK", publisher.LastSuccessUtc.HasValue
                 ? publisher.LastSuccessUtc.Value.ToLocalTime().ToString("HH:mm:ss")
                 : "None");
