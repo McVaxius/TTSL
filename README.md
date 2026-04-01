@@ -1,6 +1,6 @@
 # Thick Thighs Save Lives
 
-`TTSL` is a Dalamud plugin focused on keeping essential HUD state visible when your normal rendering setup is intentionally stripped down.
+`TTSL` is a Dalamud plugin focused on keeping essential HUD state visible when your normal rendering setup is intentionally stripped down semi remote or remote.
 
 Current surface:
 

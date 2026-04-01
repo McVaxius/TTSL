@@ -19,6 +19,10 @@ public sealed class Configuration : IPluginConfiguration
     public bool ShowPartyRadar { get; set; } = true;
     public bool EnumeratePartyMembers { get; set; } = false;
     public float RadarScaleYalms { get; set; } = 35f;
+    public bool RemoteServerEnabled { get; set; } = false;
+    public string RemoteServerUrl { get; set; } = "http://127.0.0.1:69420";
+    public int RemotePositionIntervalMs { get; set; } = 250;
+    public int RemoteFullSnapshotIntervalMs { get; set; } = 2000;
 
     public void Save()
         => Plugin.PluginInterface.SavePluginConfig(this);

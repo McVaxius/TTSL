@@ -91,6 +91,9 @@ public sealed class MainWindow : PositionedWindow, IDisposable
 
         DrawPlayerPanel(player);
 
+        ImGui.Separator();
+        DrawRemoteHudPanel();
+
         if (cfg.ShowConditionPanel)
         {
             ImGui.Separator();
@@ -145,6 +148,38 @@ public sealed class MainWindow : PositionedWindow, IDisposable
 
         ImGui.Text($"MP: {player.CurrentMp:N0} / {MaxMana:N0}");
         ImGui.ProgressBar(player.CurrentMp / (float)MaxMana, new Vector2(-1f, 0f), $"{(player.CurrentMp / (float)MaxMana) * 100f:0.0}%");
+    }
+
+    private void DrawRemoteHudPanel()
+    {
+        var cfg = plugin.Configuration;
+        var publisher = plugin.RemoteHudPublisher;
+        var titleColor = cfg.RemoteServerEnabled
+            ? new Vector4(0.85f, 0.55f, 1f, 1f)
+            : new Vector4(0.7f, 0.7f, 0.7f, 1f);
+
+        ImGui.TextColored(titleColor, "Remote HUD");
+        ImGui.Text($"Server: {cfg.RemoteServerUrl}");
+        ImGui.Text($"Account ID: {publisher.LastAccountId ?? plugin.GetCurrentAccountId()}");
+        if (!string.IsNullOrWhiteSpace(publisher.LastCharacterKey))
+            ImGui.Text($"Character Key: {publisher.LastCharacterKey}");
+
+        ImGui.Text($"Cadence: {Math.Max(100, cfg.RemotePositionIntervalMs)} ms fast | {Math.Max(500, cfg.RemoteFullSnapshotIntervalMs)} ms full");
+        ImGui.TextColored(cfg.RemoteServerEnabled
+            ? new Vector4(0.35f, 0.95f, 0.55f, 1f)
+            : new Vector4(0.85f, 0.85f, 0.85f, 1f), $"Status: {publisher.StatusText}");
+
+        if (publisher.LastSuccessUtc.HasValue)
+        {
+            ImGui.Text($"Last success: {publisher.LastSuccessUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+        }
+        else
+        {
+            ImGui.TextDisabled("Last success: none yet");
+        }
+
+        if (!string.IsNullOrWhiteSpace(publisher.LastError))
+            ImGui.TextColored(new Vector4(1f, 0.55f, 0.4f, 1f), $"Last error: {publisher.LastError}");
     }
 
     private void DrawConditionPanel()

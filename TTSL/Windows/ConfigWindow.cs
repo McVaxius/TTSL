@@ -90,6 +90,57 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         }
 
         ImGui.Separator();
+        ImGui.TextColored(new Vector4(0.85f, 0.55f, 1f, 1f), "Remote HUD Server");
+
+        var remoteEnabled = cfg.RemoteServerEnabled;
+        if (ImGui.Checkbox("Publish HUD snapshots to remote server", ref remoteEnabled))
+        {
+            cfg.RemoteServerEnabled = remoteEnabled;
+            changed = true;
+        }
+        ImGui.SameLine();
+        HelpMarker("Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser.");
+
+        var remoteUrl = cfg.RemoteServerUrl;
+        ImGui.SetNextItemWidth(340f);
+        if (ImGui.InputText("Server URL", ref remoteUrl, 256))
+        {
+            cfg.RemoteServerUrl = remoteUrl.Trim();
+            changed = true;
+        }
+        ImGui.SameLine();
+        if (ImGui.SmallButton("Use Local Default"))
+        {
+            cfg.RemoteServerUrl = "http://127.0.0.1:69420";
+            changed = true;
+        }
+
+        var positionIntervalMs = cfg.RemotePositionIntervalMs;
+        if (ImGui.InputInt("Fast position interval (ms)", ref positionIntervalMs, 25, 100))
+        {
+            cfg.RemotePositionIntervalMs = Math.Clamp(positionIntervalMs, 100, 10000);
+            changed = true;
+        }
+
+        var fullSnapshotIntervalMs = cfg.RemoteFullSnapshotIntervalMs;
+        if (ImGui.InputInt("Full snapshot interval (ms)", ref fullSnapshotIntervalMs, 100, 500))
+        {
+            cfg.RemoteFullSnapshotIntervalMs = Math.Clamp(fullSnapshotIntervalMs, 500, 30000);
+            changed = true;
+        }
+
+        ImGui.TextDisabled("Default Python server: python .\\server\\ttsl_server.py --host 0.0.0.0 --port 69420");
+        ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
+        ImGui.TextDisabled($"Current account ID: {plugin.GetCurrentAccountId()}");
+
+        var remoteStatusColor = cfg.RemoteServerEnabled
+            ? new Vector4(0.35f, 0.95f, 0.55f, 1f)
+            : new Vector4(0.8f, 0.8f, 0.8f, 1f);
+        ImGui.TextColored(remoteStatusColor, $"Publisher: {plugin.RemoteHudPublisher.StatusText}");
+        if (!string.IsNullOrWhiteSpace(plugin.RemoteHudPublisher.LastError))
+            ImGui.TextColored(new Vector4(1f, 0.55f, 0.4f, 1f), $"Last error: {plugin.RemoteHudPublisher.LastError}");
+
+        ImGui.Separator();
         ImGui.TextColored(new Vector4(0.55f, 0.85f, 1f, 1f), "DTR");
 
         var dtrEnabled = cfg.DtrBarEnabled;

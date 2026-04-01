@@ -22,6 +22,7 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPlayerState PlayerState { get; private set; } = null!;
     [PluginService] internal static ICondition Condition { get; private set; } = null!;
     [PluginService] internal static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService] internal static IFramework Framework { get; private set; } = null!;
     [PluginService] internal static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] internal static IPartyList PartyList { get; private set; } = null!;
     [PluginService] internal static IDataManager DataManager { get; private set; } = null!;
@@ -32,12 +33,14 @@ public sealed class Plugin : IDalamudPlugin
     public readonly WindowSystem WindowSystem = new(PluginInfo.InternalName);
     public MainWindow MainWindow { get; }
     public ConfigWindow ConfigWindow { get; }
+    internal RemoteHudPublisherService RemoteHudPublisher { get; }
 
     private IDtrBarEntry? dtrEntry;
 
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        RemoteHudPublisher = new RemoteHudPublisherService(this);
 
         MainWindow = new MainWindow(this);
         ConfigWindow = new ConfigWindow(this);
@@ -52,6 +55,7 @@ public sealed class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
+        Framework.Update += OnFrameworkUpdate;
 
         SetupDtrBar();
         UpdateDtrBar();
@@ -61,11 +65,13 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        Framework.Update -= OnFrameworkUpdate;
         PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
 
         WindowSystem.RemoveAllWindows();
+        RemoteHudPublisher.Dispose();
         MainWindow.Dispose();
         ConfigWindow.Dispose();
         dtrEntry?.Remove();
@@ -103,6 +109,9 @@ public sealed class Plugin : IDalamudPlugin
 
     public string GetDisplayName(string name)
         => Configuration.KrangleEnabled ? KrangleService.KrangleName(name) : name;
+
+    public string GetCurrentAccountId()
+        => PlayerState.ContentId == 0 ? "Unavailable" : PlayerState.ContentId.ToString("X16");
 
     public void UpdateDtrBar()
     {
@@ -190,6 +199,9 @@ public sealed class Plugin : IDalamudPlugin
         dtrEntry = DtrBar.Get(PluginInfo.DisplayName);
         dtrEntry.OnClick = _ => SetOverlayEnabled(!Configuration.OverlayEnabled, "DTR");
     }
+
+    private void OnFrameworkUpdate(IFramework framework)
+        => RemoteHudPublisher.Update();
 
     private void OnCommand(string command, string args)
     {

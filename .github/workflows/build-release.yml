@@ -11,7 +11,7 @@ env:
   PLUGIN_NAME: TTSL
   SOLUTION_FILE: TTSL.slnx
   INTERNAL_NAME: TTSL
-  RELEASE_DIR: TTSL\bin\x64\Release\TTSL
+  RELEASE_DIR: TTSL\bin\Release\TTSL
 
 jobs:
   build:
