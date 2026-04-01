@@ -357,6 +357,10 @@ class TTSLStateStore:
             )
             stdout = (result.stdout or "").strip()
             stderr = (result.stderr or "").strip()
+            if stdout:
+                log_event(f"Asset extraction stdout:\n{stdout}")
+            if stderr:
+                log_event(f"Asset extraction stderr:\n{stderr}")
             message = stdout.splitlines()[-1] if stdout else "Extractor finished."
             if result.returncode != 0:
                 message = stderr.splitlines()[-1] if stderr else (stdout.splitlines()[-1] if stdout else "Extractor failed.")
