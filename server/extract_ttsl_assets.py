@@ -8,13 +8,16 @@ import sys
 from dataclasses import dataclass
 
 
-DEFAULT_PLAN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ttsl_asset_plan.json")
-DEFAULT_OUTPUT_ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "extracted")
+SCRIPT_ROOT = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_PLAN_PATH = os.path.join(SCRIPT_ROOT, "ttsl_asset_plan.json")
+DEFAULT_OUTPUT_ROOT = os.path.join(SCRIPT_ROOT, "extracted")
 DEFAULT_SUMMARY_PATH = os.path.join(DEFAULT_OUTPUT_ROOT, "ttsl_asset_extract_summary.json")
-LUMINAPIE_CANDIDATES = [
+STATIC_LUMINAPIE_CANDIDATES = [
     r"Z:\temp\awgil_clientstructs\ida",
     r"D:\temp\awgil_clientstructs\ida",
+    r"Y:\temp\awgil_clientstructs\ida",
     r"Z:\_research\FFXIVClientStructs\ida",
+    r"Y:\_research\FFXIVClientStructs\ida",
 ]
 
 
@@ -48,8 +51,40 @@ class LuminapieBootstrapError(ModuleNotFoundError):
             else:
                 details.append(f"{result.candidate} [{package_state}; import failed: unknown error]")
 
-        message = "Could not import luminapie from the local candidate roots. Checked: " + "; ".join(details)
+        hint = ""
+        if any("No module named 'yaml'" in result.import_error for result in results):
+            hint = " Hint: the Python environment running the TTSL server is missing PyYAML."
+
+        self.hint = hint.strip()
+        message = "Could not import luminapie from the local candidate roots. Checked: " + "; ".join(details) + hint
         super().__init__(message)
+
+
+def get_luminapie_candidates() -> list[str]:
+    candidates: list[str] = []
+
+    def add_candidate(candidate: str) -> None:
+        if not candidate:
+            return
+
+        normalized = os.path.normpath(candidate)
+        if normalized not in candidates:
+            candidates.append(normalized)
+
+    for candidate in STATIC_LUMINAPIE_CANDIDATES:
+        add_candidate(candidate)
+
+    script_drive, _ = os.path.splitdrive(SCRIPT_ROOT)
+    if script_drive:
+        drive_root = f"{script_drive}\\"
+        add_candidate(os.path.join(drive_root, "temp", "awgil_clientstructs", "ida"))
+        add_candidate(os.path.join(drive_root, "_research", "FFXIVClientStructs", "ida"))
+
+    add_candidate(os.path.join(SCRIPT_ROOT, "..", "..", "awgil_clientstructs", "ida"))
+    add_candidate(os.path.join(SCRIPT_ROOT, "..", "..", "FFXIVClientStructs", "ida"))
+    add_candidate(os.path.join(SCRIPT_ROOT, "..", "..", "_research", "FFXIVClientStructs", "ida"))
+
+    return candidates
 
 
 def parse_args() -> argparse.Namespace:
@@ -88,8 +123,9 @@ def resolve_game_root(explicit_root: str, plan: dict) -> str:
 
 
 def bootstrap_luminapie() -> LuminapieBindings:
+    candidates = get_luminapie_candidates()
     results: list[LuminapieCandidateResult] = []
-    for candidate in LUMINAPIE_CANDIDATES:
+    for candidate in candidates:
         exists = os.path.isdir(candidate)
         package_exists = os.path.isfile(os.path.join(candidate, "luminapie", "__init__.py"))
         result = LuminapieCandidateResult(
@@ -168,6 +204,7 @@ def write_summary(summary_path: str, payload: dict) -> None:
 def main() -> int:
     args = parse_args()
     plan = load_plan(args.plan)
+    candidates = get_luminapie_candidates()
 
     try:
         bindings = bootstrap_luminapie()
@@ -224,7 +261,7 @@ def main() -> int:
 
         print(f"Game root: {game_root}")
         print(f"Luminapie root: {bindings.source_root}")
-        print(f"Checked luminapie candidates: {', '.join(LUMINAPIE_CANDIDATES)}")
+        print(f"Checked luminapie candidates: {', '.join(candidates)}")
         print(f"Extracted {summary['counts']['extractedJobIconFiles']} / {summary['counts']['requestedJobIconFiles']} requested job icon texture(s).")
         if summary["failedFiles"]:
             print(f"Failed {summary['counts']['failedJobIconFiles']} file(s). See {args.summary}.")
@@ -237,7 +274,8 @@ def main() -> int:
             "generatedAtUtc": plan.get("generatedAtUtc"),
             "samePcCaptured": bool(plan.get("samePcCaptured")),
             "gameRoot": args.game_root or str(plan.get("gameInstallPath") or ""),
-            "luminapieCandidates": LUMINAPIE_CANDIDATES,
+            "scriptRoot": SCRIPT_ROOT,
+            "luminapieCandidates": candidates,
             "errorType": type(exc).__name__,
             "error": str(exc),
             "planSummary": {
@@ -253,6 +291,7 @@ def main() -> int:
         }
 
         if isinstance(exc, LuminapieBootstrapError):
+            failure_summary["hint"] = exc.hint
             failure_summary["luminapieProbeResults"] = [
                 {
                     "candidate": result.candidate,
