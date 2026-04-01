@@ -6,7 +6,7 @@ namespace TTSL;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 2;
+    public int Version { get; set; } = 3;
     public bool OverlayEnabled { get; set; } = true;
     public bool DtrBarEnabled { get; set; } = true;
     public int DtrBarMode { get; set; } = 0;
@@ -18,6 +18,12 @@ public sealed class Configuration : IPluginConfiguration
     public bool ShowPartyStatus { get; set; } = true;
     public bool ShowPartyRadar { get; set; } = true;
     public bool EnumeratePartyMembers { get; set; } = false;
+    public float RadarBoxSizePixels { get; set; } = 160f;
+    public float RadarCombatWidthYalms { get; set; } = 20f;
+    public float RadarCombatHeightYalms { get; set; } = 20f;
+    public float RadarOutOfCombatWidthYalms { get; set; } = 50f;
+    public float RadarOutOfCombatHeightYalms { get; set; } = 50f;
+    // Legacy single-axis radar scale retained for config migration only.
     public float RadarScaleYalms { get; set; } = 35f;
     public bool RemoteServerEnabled { get; set; } = false;
     public string RemoteServerUrl { get; set; } = "http://127.0.0.1:6942";

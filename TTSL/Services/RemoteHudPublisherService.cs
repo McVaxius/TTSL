@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
 
 namespace TTSL.Services;
@@ -463,30 +464,138 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
     private static RemoteMapSnapshot? GetMapSnapshot(uint territoryId)
     {
-        if (territoryId == 0)
-            return null;
+        var resolvedTerritoryId = territoryId;
+        var mapId = Plugin.ClientState.MapId;
+        TryResolveAgentMapIdentity(ref resolvedTerritoryId, ref mapId);
+
+        var texturePathCandidates = BuildMapTexturePathCandidates();
+        short offsetX = 0;
+        short offsetY = 0;
+        ushort sizeFactor = 100;
 
         try
         {
             var sheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
-            if (sheet != null && sheet.TryGetRow(territoryId, out var territory) && territory.Map.IsValid)
+            if (resolvedTerritoryId != 0 && sheet != null && sheet.TryGetRow(resolvedTerritoryId, out var territory) && territory.Map.IsValid)
             {
                 var map = territory.Map.Value;
-                return new RemoteMapSnapshot
-                {
-                    MapId = territory.Map.RowId,
-                    TexturePath = null,
-                    OffsetX = map.OffsetX,
-                    OffsetY = map.OffsetY,
-                    SizeFactor = map.SizeFactor,
-                };
+                if (mapId == 0)
+                    mapId = territory.Map.RowId;
+
+                AddMapTextureCandidatesFromPathLike(texturePathCandidates, map.Id.ToString());
+                offsetX = map.OffsetX;
+                offsetY = map.OffsetY;
+                sizeFactor = map.SizeFactor;
             }
         }
         catch
         {
         }
 
-        return null;
+        if (mapId == 0 && texturePathCandidates.Count == 0)
+            return null;
+
+        return new RemoteMapSnapshot
+        {
+            MapId = mapId,
+            TexturePath = texturePathCandidates.FirstOrDefault(),
+            TexturePathCandidates = texturePathCandidates,
+            OffsetX = offsetX,
+            OffsetY = offsetY,
+            SizeFactor = sizeFactor,
+        };
+    }
+
+    private static unsafe List<string> BuildMapTexturePathCandidates()
+    {
+        var candidates = new List<string>();
+        AddAgentMapTextureCandidates(candidates);
+        return candidates;
+    }
+
+    private static unsafe void TryResolveAgentMapIdentity(ref uint territoryId, ref uint mapId)
+    {
+        try
+        {
+            var agentMap = AgentMap.Instance();
+            if (agentMap == null)
+                return;
+
+            if (territoryId == 0 && agentMap->CurrentTerritoryId != 0)
+                territoryId = agentMap->CurrentTerritoryId;
+
+            if (mapId == 0 && agentMap->CurrentMapId != 0)
+                mapId = agentMap->CurrentMapId;
+        }
+        catch
+        {
+        }
+    }
+
+    private static unsafe void AddAgentMapTextureCandidates(List<string> candidates)
+    {
+        try
+        {
+            var agentMap = AgentMap.Instance();
+            if (agentMap == null)
+                return;
+
+            AddMapTextureCandidatesFromPathLike(candidates, agentMap->CurrentMapBgPath.ToString());
+            AddMapTextureCandidatesFromPathLike(candidates, agentMap->CurrentMapPath.ToString());
+        }
+        catch
+        {
+        }
+    }
+
+    private static void AddMapTextureCandidatesFromPathLike(List<string> candidates, string? rawPath)
+    {
+        var normalized = NormalizeMapPathLike(rawPath);
+        if (string.IsNullOrWhiteSpace(normalized))
+            return;
+
+        if (normalized.EndsWith(".tex", StringComparison.OrdinalIgnoreCase))
+        {
+            TryAddUniqueMapTextureCandidate(candidates, normalized);
+            return;
+        }
+
+        var fileStem = normalized.Replace("/", string.Empty, StringComparison.Ordinal);
+        if (string.IsNullOrWhiteSpace(fileStem))
+            return;
+
+        TryAddUniqueMapTextureCandidate(candidates, $"ui/map/{normalized}/{fileStem}_m.tex");
+        TryAddUniqueMapTextureCandidate(candidates, $"ui/map/{normalized}/{fileStem}_s.tex");
+    }
+
+    private static string? NormalizeMapPathLike(string? rawPath)
+    {
+        if (string.IsNullOrWhiteSpace(rawPath))
+            return null;
+
+        var value = rawPath.Replace('\\', '/').Trim().Trim('\0');
+        if (string.IsNullOrWhiteSpace(value))
+            return null;
+
+        var mapRootIndex = value.IndexOf("ui/map/", StringComparison.OrdinalIgnoreCase);
+        if (mapRootIndex >= 0)
+            value = value[mapRootIndex..];
+
+        if (value.StartsWith("ui/map/", StringComparison.OrdinalIgnoreCase))
+            return value.TrimStart('/').ToLowerInvariant();
+
+        return value.Trim('/').ToLowerInvariant();
+    }
+
+    private static void TryAddUniqueMapTextureCandidate(List<string> candidates, string? candidate)
+    {
+        if (string.IsNullOrWhiteSpace(candidate))
+            return;
+
+        if (candidates.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        candidates.Add(candidate);
     }
 
     private static byte? GetCustomizeValue(ICharacter character, int index)
@@ -715,6 +824,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
     {
         public uint MapId { get; init; }
         public string? TexturePath { get; init; }
+        public List<string>? TexturePathCandidates { get; init; }
         public short OffsetX { get; init; }
         public short OffsetY { get; init; }
         public ushort SizeFactor { get; init; }

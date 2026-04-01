@@ -167,7 +167,7 @@ PAGE = """<!doctype html>
 :root{--bg:#071018;--panel:#101925;--panel2:#152231;--line:rgba(255,255,255,.08);--text:#eaf4ff;--muted:#93a7bc;--ok:#79e58d;--warn:#ffbf74;--bad:#ff7f7f;--accent:#87d7ff;--tank:#78c5ff;--heal:#93f2a5;--dps:#ff9b7a;--util:#d5b7ff}
 *{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",Tahoma,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(135,215,255,.12),transparent 26%),linear-gradient(180deg,#071018,#0b1621 48%,#101925)}
 header{position:sticky;top:0;padding:8px 10px 6px;border-bottom:1px solid var(--line);background:rgba(7,16,24,.9);backdrop-filter:blur(10px);z-index:2}
-h1{margin:0 0 4px;font-size:18px}.toolbar{display:flex;flex-wrap:wrap;gap:6px 10px;color:var(--muted);font-size:11px}.toolbar label{display:inline-flex;align-items:center;gap:5px}.toolbar button{padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(135,215,255,.12);color:var(--text);font:inherit;cursor:pointer}.toolbar button:disabled{opacity:.45;cursor:not-allowed}
+h1{margin:0 0 4px;font-size:18px}.toolbar{display:flex;flex-wrap:wrap;gap:6px 10px;color:var(--muted);font-size:11px}.toolbar label{display:inline-flex;align-items:center;gap:5px}.toolbar button{padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(135,215,255,.12);color:var(--text);font:inherit;cursor:pointer}.toolbar button:disabled{opacity:.45;cursor:not-allowed}.toolbar input[type="number"]{width:64px;padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--text);font:inherit}
 main{padding:8px 10px 10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:8px;align-items:start}
 .card{display:grid;gap:6px;padding:8px;border-radius:11px;background:linear-gradient(180deg,rgba(16,25,37,.96),rgba(11,18,28,.98));border:1px solid var(--line)}
 .head{display:flex;justify-content:space-between;gap:6px;align-items:flex-start}.name{font-weight:700;font-size:14px;line-height:1.15}.zone,.sub,.foot{font-size:10px;color:var(--muted)}
@@ -185,10 +185,10 @@ main{padding:8px 10px 10px;display:grid;grid-template-columns:repeat(auto-fit,mi
 .section{display:grid;gap:4px}.sectionhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .party{display:grid;gap:3px}.member{display:grid;grid-template-columns:20px minmax(0,1fr) 36px 40px;gap:4px;align-items:center;padding:3px 5px;border-radius:7px;background:rgba(255,255,255,.035);font-size:11px}
 .slot,.job,.hp,.dist{text-align:right;color:var(--muted)}.membername{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.radarbox{display:grid;justify-items:center;gap:3px}canvas{width:124px;max-width:100%;aspect-ratio:1/1;background:rgba(6,10,16,.92);border:1px solid var(--line);border-radius:12px}
+.radarbox{display:grid;justify-items:center;gap:3px}canvas{display:block;max-width:100%;aspect-ratio:1/1;background:rgba(6,10,16,.92);border:1px solid var(--line);border-radius:12px}
 .iconimg{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:rgba(255,255,255,.04);object-fit:cover}
-.mapframe{position:relative;width:124px;max-width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,16,.92)}
-.mapimg{width:100%;height:100%;object-fit:cover;display:block}
+.mapframe{position:relative;max-width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,16,.92)}
+.mapimg{position:absolute;display:block;max-width:none;max-height:none}
 .mapdot{position:absolute;width:10px;height:10px;border-radius:999px;background:var(--ok);border:2px solid rgba(7,16,24,.95);transform:translate(-50%,-50%);box-shadow:0 0 0 1px rgba(121,229,141,.24)}
 .aggmembers{display:grid;gap:4px}.aggmember{display:grid;gap:4px;padding:5px 6px;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.04)}.aggmember.stranger{border-color:rgba(255,127,127,.18)}
 .aggmain{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;flex-wrap:wrap}.aggname{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap}
@@ -198,13 +198,17 @@ main{padding:8px 10px 10px;display:grid;grid-template-columns:repeat(auto-fit,mi
 @media (max-width:900px){.aggmeta{grid-template-columns:repeat(2,minmax(0,1fr))}.aggname .membername{max-width:none}}
 @media (max-width:720px){header{padding:8px 10px 6px}main{padding:8px 10px 10px;grid-template-columns:1fr}}
 </style></head><body>
-<header><h1>TTSL Remote HUD</h1><div class="toolbar"><span id="summary">Waiting for clients...</span><span id="stamp">No updates yet.</span><span id="assetPlan">Asset plan pending.</span><span id="extractStatus">Extraction idle.</span><button id="extractAssets" type="button">Extract Assets</button><label><input id="krangle" type="checkbox"> Krangle names/account IDs</label><label><input id="krangleEnemies" type="checkbox"> Krangle enemy names</label><label><input id="showStale" type="checkbox" checked> Show stale/disconnected</label><label><input id="aggregateParties" type="checkbox"> Aggregate parties</label><label><input id="icons" type="checkbox" checked> Icons</label><label><input id="enumerate" type="checkbox"> Enumerate</label></div></header>
+<header><h1>TTSL Remote HUD</h1><div class="toolbar"><span id="summary">Waiting for clients...</span><span id="stamp">No updates yet.</span><span id="assetPlan">Asset plan pending.</span><span id="extractStatus">Extraction idle.</span><button id="extractAssets" type="button">Extract Assets</button><label><input id="krangle" type="checkbox"> Krangle names/account IDs</label><label><input id="krangleEnemies" type="checkbox"> Krangle enemy names</label><label><input id="showStale" type="checkbox" checked> Show stale/disconnected</label><label><input id="aggregateParties" type="checkbox"> Aggregate parties</label><label><input id="icons" type="checkbox" checked> Icons</label><label><input id="enumerate" type="checkbox"> Enumerate</label><label>Box px <input id="mapBoxPx" type="number" min="96" max="320" step="4" value="160"></label><label>Combat W <input id="combatWidth" type="number" min="5" max="300" step="1" value="20"></label><label>Combat H <input id="combatHeight" type="number" min="5" max="300" step="1" value="20"></label><label>Travel W <input id="travelWidth" type="number" min="5" max="500" step="1" value="50"></label><label>Travel H <input id="travelHeight" type="number" min="5" max="500" step="1" value="50"></label></div></header>
 <main id="app"><div class="empty">No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.</div></main>
 <script>
-const app=document.getElementById("app"),summary=document.getElementById("summary"),stamp=document.getElementById("stamp"),assetPlan=document.getElementById("assetPlan"),extractStatus=document.getElementById("extractStatus"),extractAssets=document.getElementById("extractAssets"),krangle=document.getElementById("krangle"),krangleEnemies=document.getElementById("krangleEnemies"),showStale=document.getElementById("showStale"),aggregateParties=document.getElementById("aggregateParties"),icons=document.getElementById("icons"),enumerate=document.getElementById("enumerate");
-const WEB_RADAR_WIDTH_YALMS=20,WEB_RADAR_HALF_RANGE_YALMS=WEB_RADAR_WIDTH_YALMS/2;
+const app=document.getElementById("app"),summary=document.getElementById("summary"),stamp=document.getElementById("stamp"),assetPlan=document.getElementById("assetPlan"),extractStatus=document.getElementById("extractStatus"),extractAssets=document.getElementById("extractAssets"),krangle=document.getElementById("krangle"),krangleEnemies=document.getElementById("krangleEnemies"),showStale=document.getElementById("showStale"),aggregateParties=document.getElementById("aggregateParties"),icons=document.getElementById("icons"),enumerate=document.getElementById("enumerate"),mapBoxPxInput=document.getElementById("mapBoxPx"),combatWidthInput=document.getElementById("combatWidth"),combatHeightInput=document.getElementById("combatHeight"),travelWidthInput=document.getElementById("travelWidth"),travelHeightInput=document.getElementById("travelHeight");
+const UI_STORAGE_PREFIX="ttslhud.",DEFAULT_MAP_BOX_PX=160,DEFAULT_COMBAT_WIDTH_YALMS=20,DEFAULT_COMBAT_HEIGHT_YALMS=20,DEFAULT_TRAVEL_WIDTH_YALMS=50,DEFAULT_TRAVEL_HEIGHT_YALMS=50,MAP_PERCENT_PER_YALM=(41/2048/40)*100;
 const tankJobs=new Set(["GLA","MRD","PLD","WAR","DRK","GNB"]),healJobs=new Set(["CNJ","WHM","SCH","AST","SGE"]),dpsJobs=new Set(["PGL","LNC","ROG","ARC","THM","ACN","MNK","DRG","NIN","SAM","RPR","VPR","BRD","MCH","DNC","BLM","SMN","RDM","PCT","BLU"]);
 let currentAssetCatalog={jobIcons:{},maps:{},warnings:[]};
+const clampNumber=(value,min,max,fallback)=>{const parsed=Number(value);return Number.isFinite(parsed)?Math.max(min,Math.min(max,parsed)):fallback};
+function loadNumericPreference(key,fallback,min,max){try{const stored=window.localStorage.getItem(`${UI_STORAGE_PREFIX}${key}`);return clampNumber(stored,min,max,fallback)}catch{return fallback}}
+function persistNumericPreference(key,value){try{window.localStorage.setItem(`${UI_STORAGE_PREFIX}${key}`,String(value))}catch{}}
+function wireNumericPreference(input,key,fallback,min,max){const apply=()=>{const value=clampNumber(input.value,min,max,fallback);input.value=String(value);persistNumericPreference(key,value);refresh()};input.value=String(loadNumericPreference(key,fallback,min,max));input.addEventListener("change",apply);input.addEventListener("input",apply)}
 const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
 const shortCode=s=>hash(String(s)).toString(36).toUpperCase().padStart(4,"0").slice(0,4);
 const kAcct=s=>krangle.checked?`ACC-${hash(String(s)).toString(16).toUpperCase().padStart(8,"0").slice(0,8)}`:String(s||"");
@@ -225,27 +229,209 @@ function stateChip(text,active,kind=""){const el=document.createElement("span");
 function tile(label,value,kind=""){const el=document.createElement("div");el.className="tile";el.innerHTML=`<div class="label">${label}</div><div class="value ${kind}">${value}</div>`;return el}
 function jobIconAsset(jobIconId){return jobIconId==null?null:(currentAssetCatalog.jobIcons||{})[String(jobIconId)]||null}
 function mapAsset(map){return !map||map.mapId==null?null:(currentAssetCatalog.maps||{})[String(map.mapId)]||null}
+function currentViewportSettings(inCombat){return{boxPx:clampNumber(mapBoxPxInput.value,96,320,DEFAULT_MAP_BOX_PX),widthYalms:clampNumber(inCombat?combatWidthInput.value:travelWidthInput.value,5,500,inCombat?DEFAULT_COMBAT_WIDTH_YALMS:DEFAULT_TRAVEL_WIDTH_YALMS),heightYalms:clampNumber(inCombat?combatHeightInput.value:travelHeightInput.value,5,500,inCombat?DEFAULT_COMBAT_HEIGHT_YALMS:DEFAULT_TRAVEL_HEIGHT_YALMS)}}
+function aggregatePartyInCombat(party){const source=Array.isArray(party?.members)?party.members.find(member=>member.isSource)||party.members.find(member=>!member.isStranger):null;return !!source?.conditions?.inCombat}
+function worldSpanToMapPercent(spanYalms){return Math.max(.5,Math.min(100,Number(spanYalms||0)*MAP_PERCENT_PER_YALM))}
 function mapCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||sizeFactor===0)return null;const scale=Number(sizeFactor)/100;return(41/scale)*(((Number(value)+Number(offset))*scale+1024)/2048)+1}
 function buildMapMarker(position,map){if(!position||!map)return null;const x=mapCoordinate(position.x,map.offsetX,map.sizeFactor),y=mapCoordinate(position.z,map.offsetY,map.sizeFactor);if(x==null||y==null)return null;return{x,y,left:Math.max(0,Math.min(100,((x-1)/40)*100)),top:Math.max(0,Math.min(100,((y-1)/40)*100))}}
+function buildMapViewport(position,map,widthYalms,heightYalms){const marker=buildMapMarker(position,map);if(!marker)return{marker:null};const viewWidthPct=worldSpanToMapPercent(widthYalms),viewHeightPct=worldSpanToMapPercent(heightYalms),scaleX=Math.max(1,100/viewWidthPct),scaleY=Math.max(1,100/viewHeightPct),markerU=marker.left/100,markerV=marker.top/100,offsetX=Math.max(0,Math.min(1-(1/scaleX),markerU-(.5/scaleX))),offsetY=Math.max(0,Math.min(1-(1/scaleY),markerV-(.5/scaleY))),dotLeft=Math.max(0,Math.min(100,(markerU-offsetX)*scaleX*100)),dotTop=Math.max(0,Math.min(100,(markerV-offsetY)*scaleY*100));return{marker,imageWidthPercent:scaleX*100,imageHeightPercent:scaleY*100,imageLeftPercent:-offsetX*scaleX*100,imageTopPercent:-offsetY*scaleY*100,dotLeftPercent:dotLeft,dotTopPercent:dotTop}}
 function renderIdentity(entity){const wrap=document.createElement("div");wrap.className="ident";if(!icons.checked)return wrap;const asset=jobIconAsset(entity.jobIconId);if(asset?.pngUrl){const img=document.createElement("img");img.className="iconimg";img.src=asset.pngUrl;img.alt=entity.job||`Job ${entity.jobIconId}`;img.title=entity.job||`Job ${entity.jobIconId}`;wrap.appendChild(img)}if(entity.job)wrap.appendChild(chip(entity.job,jobKind(entity.job)));if(entity.level!=null)wrap.appendChild(chip(`Lv ${entity.level}`,"util"));if(entity.gender!=null)wrap.appendChild(chip(genderSymbol(entity.gender),"util"));return wrap}
 function buildEnemyPoints(combat){return Array.isArray(combat?.hostiles)?combat.hostiles.filter(enemy=>enemy.position).map((enemy,index)=>({position:enemy.position,color:enemy.isCurrentTarget?"#ff5e7d":enemy.isTargetingTrackedParty?"#ff9b7a":"#ff7f7f",label:enemy.isCurrentTarget?"TGT":`E${index+1}`})):[]}
-function drawRadarBase(canvas,points,origin,labeler){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=w/2-16;ctx.clearRect(0,0,w,h);ctx.fillStyle="#071018";ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(255,255,255,.12)";ctx.strokeRect(9,9,w-18,h-18);ctx.beginPath();ctx.moveTo(cx,14);ctx.lineTo(cx,h-14);ctx.moveTo(14,cy);ctx.lineTo(w-14,cy);ctx.stroke();ctx.fillStyle="#79e58d";ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();if(!origin||points.length===0){ctx.fillStyle="#93a7bc";ctx.font="11px Segoe UI";ctx.fillText("No radar data",34,cy+4);return}for(const point of points){if(!point.position)continue;const dx=point.position.x-origin.x,dz=point.position.z-origin.z,px=cx+Math.max(-1,Math.min(1,dx/WEB_RADAR_HALF_RANGE_YALMS))*r,py=cy+Math.max(-1,Math.min(1,dz/WEB_RADAR_HALF_RANGE_YALMS))*r;ctx.fillStyle=point.color;ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eaf4ff";ctx.font="10px Segoe UI";ctx.fillText(labeler(point),px+5,py+3)}}
-function drawRadar(canvas,client){if(!client.position||!Array.isArray(client.party)||client.party.length===0){const hostiles=buildEnemyPoints(client.combat);if(hostiles.length===0){drawRadarBase(canvas,[],null,()=>"-");return}drawRadarBase(canvas,hostiles,client.position||null,point=>point.label);return}const points=client.party.filter(m=>m.position).map(m=>({position:m.position,color:"#ffbf74",slot:m.slot,name:m.name,world:client.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(client.combat)),client.position,point=>point.label||shortLabel(point.name,point.slot,point.world))}
-function drawAggregateRadar(canvas,party){const source=party.members.find(m=>m.isSource&&m.position)||party.members.find(m=>m.position&&!m.isStranger)||null;if(!source){drawRadarBase(canvas,buildEnemyPoints(party.combat),null,point=>point.label);return}const points=party.members.filter(m=>m.position&&m!==source).map(m=>({position:m.position,color:m.isStranger?"#ff7f7f":m.isSubmitting?"#ffbf74":"#93a7bc",slot:m.slotText,name:m.name,world:m.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(party.combat)),source.position,point=>point.label||shortLabel(point.name,point.slot,point.world))}
+function drawRadarBase(canvas,points,origin,labeler,widthYalms,heightYalms){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=w/2-16,halfWidth=Math.max(1,Number(widthYalms)/2),halfHeight=Math.max(1,Number(heightYalms)/2);ctx.clearRect(0,0,w,h);ctx.fillStyle="#071018";ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(255,255,255,.12)";ctx.strokeRect(9,9,w-18,h-18);ctx.beginPath();ctx.moveTo(cx,14);ctx.lineTo(cx,h-14);ctx.moveTo(14,cy);ctx.lineTo(w-14,cy);ctx.stroke();ctx.fillStyle="#79e58d";ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fill();if(!origin||points.length===0){ctx.fillStyle="#93a7bc";ctx.font="11px Segoe UI";ctx.fillText("No radar data",34,cy+4);return}for(const point of points){if(!point.position)continue;const dx=point.position.x-origin.x,dz=point.position.z-origin.z,px=cx+Math.max(-1,Math.min(1,dx/halfWidth))*r,py=cy+Math.max(-1,Math.min(1,dz/halfHeight))*r;ctx.fillStyle=point.color;ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eaf4ff";ctx.font="10px Segoe UI";ctx.fillText(labeler(point),px+5,py+3)}}
+function drawRadar(canvas,client){const viewport=currentViewportSettings(!!client?.conditions?.inCombat);canvas.width=viewport.boxPx;canvas.height=viewport.boxPx;if(!client.position||!Array.isArray(client.party)||client.party.length===0){const hostiles=buildEnemyPoints(client.combat);if(hostiles.length===0){drawRadarBase(canvas,[],null,()=>"-",viewport.widthYalms,viewport.heightYalms);return}drawRadarBase(canvas,hostiles,client.position||null,point=>point.label,viewport.widthYalms,viewport.heightYalms);return}const points=client.party.filter(m=>m.position).map(m=>({position:m.position,color:"#ffbf74",slot:m.slot,name:m.name,world:client.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(client.combat)),client.position,point=>point.label||shortLabel(point.name,point.slot,point.world),viewport.widthYalms,viewport.heightYalms)}
+function drawAggregateRadar(canvas,party){const viewport=currentViewportSettings(aggregatePartyInCombat(party));canvas.width=viewport.boxPx;canvas.height=viewport.boxPx;const source=party.members.find(m=>m.isSource&&m.position)||party.members.find(m=>m.position&&!m.isStranger)||null;if(!source){drawRadarBase(canvas,buildEnemyPoints(party.combat),null,point=>point.label,viewport.widthYalms,viewport.heightYalms);return}const points=party.members.filter(m=>m.position&&m!==source).map(m=>({position:m.position,color:m.isStranger?"#ff7f7f":m.isSubmitting?"#ffbf74":"#93a7bc",slot:m.slotText,name:m.name,world:m.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(party.combat)),source.position,point=>point.label||shortLabel(point.name,point.slot,point.world),viewport.widthYalms,viewport.heightYalms)}
 function renderParty(client){const wrap=document.createElement("div");wrap.className="party";if(Array.isArray(client.party)&&client.party.length>0){for(const m of client.party){const row=document.createElement("div");row.className="member";const dist=typeof m.distance==="number"?`${m.distance.toFixed(1)}y`:"--";row.innerHTML=`<div class="slot">${m.slot}</div><div class="membername">${displayName(m.name,m.krangledName)}</div><div class="job">${m.job}</div><div class="dist">${dist}</div>`;row.title=`${levelText(m.level)} | HP ${hpText(m.currentHp,m.maxHp)} | MP ${mpText(m.currentMp,m.maxMp)}`;wrap.appendChild(row)}}else{const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No party data captured yet.</div><div class="job">--</div><div class="dist">--</div>`;wrap.appendChild(row)}return wrap}
 function renderStates(client){const wrap=document.createElement("div");wrap.className="states";wrap.append(stateChip("Combat",!!client.conditions?.inCombat),stateChip("Duty",!!client.conditions?.boundByDuty),stateChip("Queue",!!client.conditions?.waitingForDuty),stateChip("Mount",!!client.conditions?.mounted),stateChip("Cast",!!client.conditions?.casting),stateChip("Dead",!!client.conditions?.dead,client.conditions?.dead?"bad":"off"));return wrap}
 function renderThreats(combat){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Threat</div>`;const list=document.createElement("div");list.className="party";const hostiles=[];if(combat?.currentTarget)hostiles.push(combat.currentTarget);for(const hostile of combat?.hostiles||[]){if(!hostiles.some(existing=>existing.dataId===hostile.dataId&&existing.distance===hostile.distance&&existing.name===hostile.name))hostiles.push(hostile)}if(hostiles.length===0){const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No combat telemetry captured.</div><div class="job">--</div><div class="dist">--</div>`;list.appendChild(row);section.appendChild(list);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="member";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const label=hostile.isCurrentTarget?"T":hostile.isTargetingTrackedParty?"A":"E";const hp=pct(hostile.currentHp,hostile.maxHp);row.innerHTML=`<div class="slot">${label}</div><div class="membername">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div class="job">${dist}</div><div class="dist">${hp}</div>`;row.title=`${hostile.isCurrentTarget?"Current target":hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} | ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;list.appendChild(row)}section.appendChild(list);return section}
-function renderMapSection(map,position,title="Map"){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">${title}</div>`;const asset=mapAsset(map);const marker=buildMapMarker(position,map);if(asset?.pngUrl){const frame=document.createElement("div");frame.className="mapframe";const img=document.createElement("img");img.className="mapimg";img.src=asset.pngUrl;img.alt=map?.texturePath||`Map ${map?.mapId??"?"}`;frame.appendChild(img);if(marker){const dot=document.createElement("span");dot.className="mapdot";dot.style.left=`${marker.left}%`;dot.style.top=`${marker.top}%`;dot.title=`${marker.x.toFixed(1)}, ${marker.y.toFixed(1)}`;frame.appendChild(dot)}section.appendChild(frame)}else{const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">${map?.mapId!=null?"Map texture not extracted yet.":"No map data captured yet."}</div><div class="job">--</div><div class="dist">--</div>`;section.appendChild(row)}const meta=document.createElement("div");meta.className="meta";meta.append(tile("Map",marker?`${marker.x.toFixed(1)}, ${marker.y.toFixed(1)}`:map?.mapId!=null?`Map ${map.mapId}`:"Unavailable",marker||map?.mapId!=null?"":"bad"));meta.append(tile("Texture",map?.texturePath?String(map.texturePath).split("/").pop()||String(map.texturePath):"Unavailable",map?.texturePath?"":"bad"));section.appendChild(meta);return section}
-function renderClient(client){const card=document.createElement("section");card.className="card";const head=document.createElement("div");head.className="head";const info=document.createElement("div");info.innerHTML=`<div class="name">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div class="zone">${client.territoryName||"Unknown zone"} (${client.territoryId??0})</div><div class="sub">${kAcct(client.accountId)}</div>`;info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender}));const badges=document.createElement("div");badges.className="badges";badges.appendChild(chip(client.isDisconnected?"Disconnected":client.stale?"Stale":"Live",client.isDisconnected?"bad":client.stale?"warn":"ok"));badges.appendChild(chip(`${client.ageSeconds.toFixed(1)}s`,""));const metrics=document.createElement("div");metrics.className="meta";metrics.append(tile("HP",hpText(client.player?.currentHp,client.player?.maxHp),client.player?.currentHp==null?"bad":""),tile("MP",mpText(client.player?.currentMp,client.player?.maxMp),client.player?.currentMp==null?"bad":""),tile("Position",posText(client.position),client.position?"" :"bad"),tile("Repair",client.repair?`${client.repair.minCondition}% min | ${client.repair.averageCondition}% avg`:"Unavailable",client.repair?"" :"bad"));const stateSection=document.createElement("div");stateSection.className="section";stateSection.innerHTML=`<div class="sectionhead">Status</div>`;stateSection.appendChild(renderStates(client));const partySection=document.createElement("div");partySection.className="section";partySection.innerHTML=`<div class="sectionhead">Party</div>`;partySection.appendChild(renderParty(client));const radarSection=document.createElement("div");radarSection.className="radarbox";radarSection.innerHTML=`<div class="sectionhead">Radar</div>`;const radar=document.createElement("canvas");radar.width=140;radar.height=140;radarSection.appendChild(radar);const foot=document.createElement("div");foot.className="foot";foot.textContent=`Last update ${client.lastSeenUtc} | ${client.updateKind}`;head.append(info,badges);card.append(head,metrics,stateSection,partySection,renderMapSection(client.map,client.position,"Map"),renderThreats(client.combat),radarSection,foot);requestAnimationFrame(()=>drawRadar(radar,client));return card}
+function renderMapSection(map,position,title="Map",inCombat=false){
+  const section=document.createElement("div");
+  section.className="section";
+  section.innerHTML=`<div class="sectionhead">${title}</div>`;
+
+  const viewport=currentViewportSettings(inCombat);
+  const asset=mapAsset(map);
+  const mapViewport=buildMapViewport(position,map,viewport.widthYalms,viewport.heightYalms);
+
+  if(asset?.pngUrl){
+    const frame=document.createElement("div");
+    frame.className="mapframe";
+    frame.style.width=`${viewport.boxPx}px`;
+    frame.style.height=`${viewport.boxPx}px`;
+
+    const img=document.createElement("img");
+    img.className="mapimg";
+    img.src=asset.pngUrl;
+    img.alt=asset.texturePath||map?.texturePath||`Map ${map?.mapId??"?"}`;
+
+    if(mapViewport.marker){
+      img.style.width=`${mapViewport.imageWidthPercent}%`;
+      img.style.height=`${mapViewport.imageHeightPercent}%`;
+      img.style.left=`${mapViewport.imageLeftPercent}%`;
+      img.style.top=`${mapViewport.imageTopPercent}%`;
+    }else{
+      img.style.width="100%";
+      img.style.height="100%";
+      img.style.left="0";
+      img.style.top="0";
+    }
+
+    frame.appendChild(img);
+
+    if(mapViewport.marker){
+      const dot=document.createElement("span");
+      dot.className="mapdot";
+      dot.style.left=`${mapViewport.dotLeftPercent}%`;
+      dot.style.top=`${mapViewport.dotTopPercent}%`;
+      dot.title=`${mapViewport.marker.x.toFixed(1)}, ${mapViewport.marker.y.toFixed(1)}`;
+      frame.appendChild(dot);
+    }
+
+    section.appendChild(frame);
+  }else{
+    const row=document.createElement("div");
+    row.className="member";
+    row.innerHTML=`<div class="slot">-</div><div class="membername">${map?.mapId!=null?"Map texture not extracted yet.":"No map data captured yet."}</div><div class="job">--</div><div class="dist">--</div>`;
+    section.appendChild(row);
+  }
+
+  const textureLabel=asset?.texturePath||map?.texturePath;
+  const meta=document.createElement("div");
+  meta.className="meta";
+  meta.append(
+    tile(
+      "Map",
+      mapViewport.marker?`${mapViewport.marker.x.toFixed(1)}, ${mapViewport.marker.y.toFixed(1)}`:map?.mapId!=null?`Map ${map.mapId}`:"Unavailable",
+      mapViewport.marker||map?.mapId!=null?"":"bad"
+    ),
+    tile("View",`${viewport.widthYalms.toFixed(0)}y x ${viewport.heightYalms.toFixed(0)}y`,""),
+    tile(
+      "Texture",
+      textureLabel?String(textureLabel).split("/").pop()||String(textureLabel):asset?.pngUrl?"Extracted":"Unavailable",
+      textureLabel||asset?.pngUrl?"":"bad"
+    )
+  );
+  section.appendChild(meta);
+  return section;
+}
+function renderClient(client){
+  const card=document.createElement("section");
+  card.className="card";
+
+  const head=document.createElement("div");
+  head.className="head";
+
+  const info=document.createElement("div");
+  info.innerHTML=`<div class="name">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div class="zone">${client.territoryName||"Unknown zone"} (${client.territoryId??0})</div><div class="sub">${kAcct(client.accountId)}</div>`;
+  info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender}));
+
+  const badges=document.createElement("div");
+  badges.className="badges";
+  badges.appendChild(chip(client.isDisconnected?"Disconnected":client.stale?"Stale":"Live",client.isDisconnected?"bad":client.stale?"warn":"ok"));
+  badges.appendChild(chip(`${client.ageSeconds.toFixed(1)}s`,""));
+
+  const metrics=document.createElement("div");
+  metrics.className="meta";
+  metrics.append(
+    tile("HP",hpText(client.player?.currentHp,client.player?.maxHp),client.player?.currentHp==null?"bad":""),
+    tile("MP",mpText(client.player?.currentMp,client.player?.maxMp),client.player?.currentMp==null?"bad":""),
+    tile("Position",posText(client.position),client.position?"":"bad"),
+    tile("Repair",client.repair?`${client.repair.minCondition}% min | ${client.repair.averageCondition}% avg`:"Unavailable",client.repair?"":"bad")
+  );
+
+  const stateSection=document.createElement("div");
+  stateSection.className="section";
+  stateSection.innerHTML=`<div class="sectionhead">Status</div>`;
+  stateSection.appendChild(renderStates(client));
+
+  const partySection=document.createElement("div");
+  partySection.className="section";
+  partySection.innerHTML=`<div class="sectionhead">Party</div>`;
+  partySection.appendChild(renderParty(client));
+
+  const viewport=currentViewportSettings(!!client?.conditions?.inCombat);
+  const radarSection=document.createElement("div");
+  radarSection.className="radarbox";
+  radarSection.innerHTML=`<div class="sectionhead">Radar | ${viewport.widthYalms.toFixed(0)}y x ${viewport.heightYalms.toFixed(0)}y</div>`;
+  const radar=document.createElement("canvas");
+  radarSection.appendChild(radar);
+
+  const foot=document.createElement("div");
+  foot.className="foot";
+  foot.textContent=`Last update ${client.lastSeenUtc} | ${client.updateKind}`;
+
+  head.append(info,badges);
+  card.append(
+    head,
+    metrics,
+    stateSection,
+    partySection,
+    renderMapSection(client.map,client.position,"Map",!!client?.conditions?.inCombat),
+    renderThreats(client.combat),
+    radarSection,
+    foot
+  );
+
+  requestAnimationFrame(()=>drawRadar(radar,client));
+  return card;
+}
 function renderAggregateMember(member){const row=document.createElement("div");row.className=`aggmember ${member.isStranger?"stranger":""}`.trim();const main=document.createElement("div");main.className="aggmain";const info=document.createElement("div");info.className="aggname";info.innerHTML=`<span class="slot">${member.slotText}</span><span class="membername">${displayCharacter(member.name,member.worldName,member.krangledName)}</span><span class="job">${member.job||"--"}</span><span class="lvl">${levelText(member.level)}</span>`;info.appendChild(renderIdentity(member));const badges=document.createElement("div");badges.className="badges";if(member.isStranger){badges.append(chip("Stranger","bad"),chip("Limited data","warn"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"));badges.append(chip(member.isSubmitting?"Submitting":"Monitored",member.isSubmitting?"ok":"warn"));if(member.isSource)badges.append(chip("Source","ok"))}main.append(info,badges);const meta=document.createElement("div");meta.className="aggmeta";meta.append(tile("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null?"bad":""),tile("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null?"bad":""),tile("Position",posText(member.position),member.position?"" :"bad"),tile("Extra",member.isStranger?"Conditions/repair unavailable":member.repair?`${member.repair.minCondition}% min | ${member.repair.averageCondition}% avg`:"No repair data",member.isStranger||!member.repair?"bad":""));row.append(main,meta);if(!member.isStranger){const states=renderStates(member);row.append(states);const note=document.createElement("div");note.className="aggnote";note.textContent=`${member.territoryName||"Unknown zone"} (${member.territoryId??0}) | Last update ${member.lastSeenUtc} | ${member.updateKind}`;row.append(note)}else{const note=document.createElement("div");note.className="aggnote bad";note.textContent="Only party-list fields are available for strangers: name, position, HP, MP, level, and job.";row.append(note)}return row}
-function renderAggregateParty(party){const card=document.createElement("section");card.className="card";const head=document.createElement("div");head.className="head";const info=document.createElement("div");info.innerHTML=`<div class="name">Party | ${party.territoryName||"Unknown zone"}</div><div class="zone">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}</div><div class="sub">${party.monitoredCount} monitored | ${party.strangerCount} stranger</div>`;const badges=document.createElement("div");badges.className="badges";badges.append(chip(`${party.liveCount} live`,`ok`),chip(`${party.staleCount} stale`,`warn`),chip(`${party.disconnectedCount} disconnected`,`bad`));const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Aggregated Party</div>`;const radarSection=document.createElement("div");radarSection.className="radarbox";radarSection.innerHTML=`<div class="sectionhead">Party Radar</div>`;const radar=document.createElement("canvas");radar.width=140;radar.height=140;radarSection.appendChild(radar);const members=document.createElement("div");members.className="aggmembers";for(const member of party.members)members.appendChild(renderAggregateMember(member));section.append(renderMapSection(party.map,party.sourcePosition,"Source Map"),radarSection,members,renderThreats(party.combat));const foot=document.createElement("div");foot.className="foot";foot.textContent=`Stranger source locked to first monitored client: ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)} | Connected ${party.sourceConnectedAtUtc}`;head.append(info,badges);card.append(head,section,foot);requestAnimationFrame(()=>drawAggregateRadar(radar,party));return card}
+function renderAggregateParty(party){
+  const card=document.createElement("section");
+  card.className="card";
+
+  const head=document.createElement("div");
+  head.className="head";
+
+  const info=document.createElement("div");
+  info.innerHTML=`<div class="name">Party | ${party.territoryName||"Unknown zone"}</div><div class="zone">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}</div><div class="sub">${party.monitoredCount} monitored | ${party.strangerCount} stranger</div>`;
+
+  const badges=document.createElement("div");
+  badges.className="badges";
+  badges.append(
+    chip(`${party.liveCount} live`,"ok"),
+    chip(`${party.staleCount} stale`,"warn"),
+    chip(`${party.disconnectedCount} disconnected`,"bad")
+  );
+
+  const section=document.createElement("div");
+  section.className="section";
+  section.innerHTML=`<div class="sectionhead">Aggregated Party</div>`;
+
+  const radarViewport=currentViewportSettings(aggregatePartyInCombat(party));
+  const radarSection=document.createElement("div");
+  radarSection.className="radarbox";
+  radarSection.innerHTML=`<div class="sectionhead">Party Radar | ${radarViewport.widthYalms.toFixed(0)}y x ${radarViewport.heightYalms.toFixed(0)}y</div>`;
+  const radar=document.createElement("canvas");
+  radarSection.appendChild(radar);
+
+  const members=document.createElement("div");
+  members.className="aggmembers";
+  for(const member of party.members)
+    members.appendChild(renderAggregateMember(member));
+
+  section.append(
+    renderMapSection(party.map,party.sourcePosition,"Source Map",aggregatePartyInCombat(party)),
+    radarSection,
+    members,
+    renderThreats(party.combat)
+  );
+
+  const foot=document.createElement("div");
+  foot.className="foot";
+  foot.textContent=`Stranger source locked to first monitored client: ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)} | Connected ${party.sourceConnectedAtUtc}`;
+
+  head.append(info,badges);
+  card.append(head,section,foot);
+  requestAnimationFrame(()=>drawAggregateRadar(radar,party));
+  return card;
+}
 function flattenGroups(groups){return groups.flatMap(group=>group.clients.map(client=>({...client,accountId:group.accountId})))}
 function pathSummary(info){if(!info||!info.captured)return"same-PC game path not captured yet";return`same-PC game path ready from ${displayCharacter(info.sourceCharacterName,info.sourceWorldName,info.sourceKrangledName)}`}
 function assetSummary(plan,catalog){const warning=(catalog?.warnings||[])[0];if(!plan||!plan.summary)return warning||"Asset plan pending.";const s=plan.summary;const readyIcons=Object.keys(catalog?.jobIcons||{}).length;const readyMaps=Object.keys(catalog?.maps||{}).length;const base=`Asset plan: ${s.jobIcons} icon tex path(s), ${s.maps} map texture(s), ${s.races} race id(s), ${s.tribes} tribe id(s), ${s.enemies} enemy id(s) | web cache ${readyIcons} icon png(s), ${readyMaps} map png(s)`;return warning?`${base} | ${warning}`:base}
 function extractionSummary(state){if(!state)return"Extraction idle.";if(state.running)return`Extraction running: ${state.message||"working..."}`;if(state.lastCompletedUtc)return`Extraction ${state.lastExitCode===0?"ready":"failed"}: ${state.message||"see server log"}`;return state.message||"Extraction idle."}
 async function triggerExtract(){try{extractAssets.disabled=true;const res=await fetch("/api/extract-assets",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const payload=await res.json();if(!res.ok||!payload.ok)throw new Error(payload.error||`HTTP ${res.status}`);extractStatus.textContent=payload.message||"Extraction started.";await refresh()}catch(err){extractStatus.textContent=`Extraction request failed: ${err}`;extractAssets.disabled=false}}
 async function refresh(){try{const res=await fetch("/api/state",{cache:"no-store"});if(!res.ok)throw new Error(`HTTP ${res.status}`);const state=await res.json();currentAssetCatalog=state.assetCatalog||{jobIcons:{},maps:{},warnings:[]};const clients=flattenGroups(state.accountGroups).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const live=clients.filter(c=>!c.stale&&!c.isDisconnected).length;const aggregate=Array.isArray(state.aggregateParties)?state.aggregateParties:[];const looseFromServer=Array.isArray(state.looseClients)?state.looseClients:clients;const visibleLoose=(showStale.checked?looseFromServer:looseFromServer.filter(c=>!c.stale&&!c.isDisconnected)).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const visibleAggregate=aggregateParties.checked?(showStale.checked?aggregate:aggregate.filter(p=>p.liveCount>0)):[];summary.textContent=`${clients.length} client(s) tracked | ${live} live | ${clients.length-live} stale/disconnected${aggregateParties.checked?` | ${aggregate.length} party group(s)`:""}`;stamp.textContent=`Generated ${state.generatedAtUtc} | stale after ${state.staleSeconds}s | ${pathSummary(state.gamePathInfo)}`;assetPlan.textContent=assetSummary(state.assetPlan,currentAssetCatalog);extractStatus.textContent=extractionSummary(state.assetExtraction);extractAssets.textContent=state.assetExtraction?.running?"Extracting...":"Extract Assets";extractAssets.disabled=!!state.assetExtraction?.running||!state.gamePathInfo?.captured;app.replaceChildren();if(aggregateParties.checked){for(const party of visibleAggregate)app.appendChild(renderAggregateParty(party));for(const client of visibleLoose)app.appendChild(renderClient(client));if(visibleAggregate.length===0&&visibleLoose.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent=clients.length===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.":"All tracked clients are stale or disconnected.";app.appendChild(empty)}return}const visible=showStale.checked?clients:clients.filter(c=>!c.stale&&!c.isDisconnected);if(visible.length===0){const empty=document.createElement("div");empty.className="empty";empty.textContent=clients.length===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.":"All tracked clients are stale or disconnected.";app.appendChild(empty);return}for(const client of visible)app.appendChild(renderClient(client))}catch(err){summary.textContent="Refresh failed";stamp.textContent=String(err);assetPlan.textContent="Asset plan unavailable.";extractStatus.textContent="Extraction status unavailable.";extractAssets.disabled=false}}
-extractAssets.addEventListener("click",triggerExtract);krangle.addEventListener("change",refresh);krangleEnemies.addEventListener("change",refresh);showStale.addEventListener("change",refresh);aggregateParties.addEventListener("change",refresh);icons.addEventListener("change",refresh);enumerate.addEventListener("change",refresh);refresh();setInterval(refresh,1000);
+wireNumericPreference(mapBoxPxInput,"mapBoxPx",DEFAULT_MAP_BOX_PX,96,320);wireNumericPreference(combatWidthInput,"combatWidth",DEFAULT_COMBAT_WIDTH_YALMS,5,300);wireNumericPreference(combatHeightInput,"combatHeight",DEFAULT_COMBAT_HEIGHT_YALMS,5,300);wireNumericPreference(travelWidthInput,"travelWidth",DEFAULT_TRAVEL_WIDTH_YALMS,5,500);wireNumericPreference(travelHeightInput,"travelHeight",DEFAULT_TRAVEL_HEIGHT_YALMS,5,500);extractAssets.addEventListener("click",triggerExtract);krangle.addEventListener("change",refresh);krangleEnemies.addEventListener("change",refresh);showStale.addEventListener("change",refresh);aggregateParties.addEventListener("change",refresh);icons.addEventListener("change",refresh);enumerate.addEventListener("change",refresh);refresh();setInterval(refresh,1000);
 </script></body></html>"""
 
 
@@ -420,7 +606,7 @@ class TTSLStateStore:
     def _build_asset_plan_locked(self, snapshot_clients: list[dict], generated_at: datetime) -> dict:
         territory_ids: set[int] = set()
         map_ids: set[int] = set()
-        map_textures: dict[int, dict] = {}
+        map_textures: dict[str, dict] = {}
         race_ids: set[int] = set()
         tribe_ids: set[int] = set()
         job_ids: set[int] = set()
@@ -443,7 +629,10 @@ class TTSLStateStore:
             f"ui/icon/{(icon_id // 1000) * 1000:06d}/{icon_id:06d}_hr1.tex"
             for icon_id in sorted(job_icon_ids)
         ]
-        ordered_map_textures = [map_textures[map_id] for map_id in sorted(map_textures)]
+        ordered_map_textures = sorted(
+            map_textures.values(),
+            key=lambda entry: (int(entry.get("mapId") or 0), str(entry.get("texturePath") or "")),
+        )
         asset_plan = {
             "generatedAtUtc": utc_iso(generated_at),
             "samePcCaptured": self._session_game_path is not None,
@@ -677,7 +866,7 @@ class TTSLStateStore:
         entity: dict,
         territory_ids: set[int],
         map_ids: set[int],
-        map_textures: dict[int, dict],
+        map_textures: dict[str, dict],
         race_ids: set[int],
         tribe_ids: set[int],
         job_ids: set[int],
@@ -688,22 +877,37 @@ class TTSLStateStore:
         map_info = entity.get("map")
         if isinstance(map_info, dict):
             self._append_numeric(map_info.get("mapId"), map_ids)
+            texture_candidates: list[str] = []
             texture_path = str(map_info.get("texturePath") or "").strip()
+            if texture_path:
+                texture_candidates.append(texture_path)
+
+            for candidate in map_info.get("texturePathCandidates") or []:
+                candidate_text = str(candidate or "").strip()
+                if candidate_text and candidate_text not in texture_candidates:
+                    texture_candidates.append(candidate_text)
+
             map_id = map_info.get("mapId")
-            if texture_path and map_id not in (None, ""):
+            map_id_value = 0
+            if map_id not in (None, ""):
                 try:
                     map_id_value = int(map_id)
                 except (TypeError, ValueError):
                     map_id_value = 0
 
-                if map_id_value > 0:
-                    map_textures[map_id_value] = {
-                        "mapId": map_id_value,
-                        "texturePath": texture_path,
-                        "offsetX": map_info.get("offsetX"),
-                        "offsetY": map_info.get("offsetY"),
-                        "sizeFactor": map_info.get("sizeFactor"),
-                    }
+            if texture_candidates:
+                map_key = f"map:{map_id_value}" if map_id_value > 0 else f"texture:{texture_candidates[0].casefold()}"
+                existing = map_textures.get(map_key)
+                replacement = {
+                    "mapId": map_id_value if map_id_value > 0 else map_info.get("mapId"),
+                    "texturePath": texture_candidates[0],
+                    "texturePathCandidates": texture_candidates,
+                    "offsetX": map_info.get("offsetX"),
+                    "offsetY": map_info.get("offsetY"),
+                    "sizeFactor": map_info.get("sizeFactor"),
+                }
+                if existing is None or len(texture_candidates) > len(existing.get("texturePathCandidates") or []):
+                    map_textures[map_key] = replacement
         self._append_numeric(entity.get("raceId"), race_ids)
         self._append_numeric(entity.get("tribeId"), tribe_ids)
         self._append_numeric(entity.get("jobId"), job_ids)

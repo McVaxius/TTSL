@@ -380,6 +380,21 @@ def write_file(output_root: str, relative_path: str, data: bytes) -> str:
     return destination
 
 
+def get_map_texture_candidates(map_texture: dict) -> list[str]:
+    candidates: list[str] = []
+
+    primary = str(map_texture.get("texturePath") or "").strip()
+    if primary:
+        candidates.append(primary)
+
+    for candidate in map_texture.get("texturePathCandidates") or []:
+        value = str(candidate or "").strip()
+        if value and value not in candidates:
+            candidates.append(value)
+
+    return candidates
+
+
 def build_summary(plan: dict, game_root: str, luminapie_root: str) -> dict:
     return {
         "planGeneratedAtUtc": plan.get("generatedAtUtc"),
@@ -420,7 +435,7 @@ def main() -> int:
         summary["status"] = "ok"
         summary["extractedFiles"] = []
         summary["failedFiles"] = []
-        map_textures = [entry for entry in plan.get("mapTextures", []) if isinstance(entry, dict) and str(entry.get("texturePath") or "").strip()]
+        map_textures = [entry for entry in plan.get("mapTextures", []) if isinstance(entry, dict) and get_map_texture_candidates(entry)]
         summary["unresolvedTargets"] = {
             "mapTiles": {
                 "status": "needs_live_map_texture_paths" if not map_textures else "extracting",
@@ -458,32 +473,49 @@ def main() -> int:
                 )
 
         for map_texture in map_textures:
-            relative_path = str(map_texture.get("texturePath") or "").strip()
-            if not relative_path:
+            candidate_paths = get_map_texture_candidates(map_texture)
+            if not candidate_paths:
                 continue
 
-            try:
-                raw_data = extract_raw_file(game_data, bindings.parsed_file_name_type, relative_path)
-                destination = write_file(args.output_root, relative_path, raw_data)
-                summary["extractedFiles"].append(
-                    {
-                        "kind": "mapTexture",
-                        "mapId": map_texture.get("mapId"),
-                        "relativePath": relative_path,
-                        "outputPath": destination,
-                        "size": len(raw_data),
-                        "offsetX": map_texture.get("offsetX"),
-                        "offsetY": map_texture.get("offsetY"),
-                        "sizeFactor": map_texture.get("sizeFactor"),
-                    }
-                )
-            except Exception as exc:
+            extracted = False
+            candidate_failures: list[dict[str, str]] = []
+
+            for relative_path in candidate_paths:
+                try:
+                    raw_data = extract_raw_file(game_data, bindings.parsed_file_name_type, relative_path)
+                    destination = write_file(args.output_root, relative_path, raw_data)
+                    summary["extractedFiles"].append(
+                        {
+                            "kind": "mapTexture",
+                            "mapId": map_texture.get("mapId"),
+                            "relativePath": relative_path,
+                            "candidatePaths": candidate_paths,
+                            "outputPath": destination,
+                            "size": len(raw_data),
+                            "offsetX": map_texture.get("offsetX"),
+                            "offsetY": map_texture.get("offsetY"),
+                            "sizeFactor": map_texture.get("sizeFactor"),
+                        }
+                    )
+                    extracted = True
+                    break
+                except Exception as exc:
+                    candidate_failures.append(
+                        {
+                            "relativePath": relative_path,
+                            "error": str(exc),
+                        }
+                    )
+
+            if not extracted:
                 summary["failedFiles"].append(
                     {
                         "kind": "mapTexture",
                         "mapId": map_texture.get("mapId"),
-                        "relativePath": relative_path,
-                        "error": str(exc),
+                        "relativePath": candidate_paths[0],
+                        "candidatePaths": candidate_paths,
+                        "candidateFailures": candidate_failures,
+                        "error": "; ".join(f"{entry['relativePath']}: {entry['error']}" for entry in candidate_failures),
                     }
                 )
 

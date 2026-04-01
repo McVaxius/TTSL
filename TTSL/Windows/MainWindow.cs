@@ -264,16 +264,26 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     private void DrawRadarPanel(ICharacter localPlayer, IReadOnlyList<PartySnapshot> snapshots)
     {
         ImGui.TextColored(new Vector4(0.85f, 0.8f, 1f, 1f), "Radar");
-        ImGui.TextDisabled(plugin.Configuration.EnumeratePartyMembers ? "Labels use party slots." : "Labels use party names.");
+        var inCombat = Plugin.Condition[ConditionFlag.InCombat];
+        var spanWidth = MathF.Max(5f, inCombat
+            ? plugin.Configuration.RadarCombatWidthYalms
+            : plugin.Configuration.RadarOutOfCombatWidthYalms);
+        var spanHeight = MathF.Max(5f, inCombat
+            ? plugin.Configuration.RadarCombatHeightYalms
+            : plugin.Configuration.RadarOutOfCombatHeightYalms);
+        var radarMode = inCombat ? "combat" : "travel";
+        ImGui.TextDisabled($"{(plugin.Configuration.EnumeratePartyMembers ? "Labels use party slots." : "Labels use party names.")} Showing {spanWidth:F0}y x {spanHeight:F0}y ({radarMode}).");
 
         var availableWidth = MathF.Max(140f, ImGui.GetContentRegionAvail().X);
-        var canvasEdge = MathF.Min(availableWidth, 156f);
+        var desiredEdge = Math.Clamp(plugin.Configuration.RadarBoxSizePixels, 96f, 320f);
+        var canvasEdge = MathF.Min(availableWidth, desiredEdge);
         var canvasSize = new Vector2(canvasEdge, canvasEdge);
         var drawList = ImGui.GetWindowDrawList();
         var topLeft = ImGui.GetCursorScreenPos();
         var bottomRight = topLeft + canvasSize;
         var center = topLeft + (canvasSize / 2f);
-        var scale = MathF.Max(5f, plugin.Configuration.RadarScaleYalms);
+        var halfSpanWidth = spanWidth / 2f;
+        var halfSpanHeight = spanHeight / 2f;
         var radius = (canvasSize.X / 2f) - 12f;
 
         drawList.AddRectFilled(topLeft, bottomRight, ImGui.GetColorU32(new Vector4(0.08f, 0.08f, 0.11f, 1f)), 6f);
@@ -288,7 +298,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
                 continue;
 
             var relative = snapshot.Character.Position - localPlayer.Position;
-            var normalized = new Vector2(relative.X / scale, relative.Z / scale);
+            var normalized = new Vector2(relative.X / halfSpanWidth, relative.Z / halfSpanHeight);
             normalized = Vector2.Clamp(normalized, new Vector2(-1f, -1f), new Vector2(1f, 1f));
             var dotPosition = center + new Vector2(normalized.X * radius, normalized.Y * radius);
 

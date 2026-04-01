@@ -221,6 +221,45 @@ public sealed class Plugin : IDalamudPlugin
             changed = true;
         }
 
+        if (Configuration.Version < 3)
+        {
+            var migratedLegacyScale = Math.Clamp(Configuration.RadarScaleYalms, 5f, 200f);
+            var useLegacyScale = Math.Abs(migratedLegacyScale - 35f) > 0.01f;
+
+            if (Configuration.RadarBoxSizePixels <= 0f)
+            {
+                Configuration.RadarBoxSizePixels = 160f;
+                changed = true;
+            }
+
+            if (Configuration.RadarCombatWidthYalms <= 0f)
+            {
+                Configuration.RadarCombatWidthYalms = useLegacyScale ? migratedLegacyScale : 20f;
+                changed = true;
+            }
+
+            if (Configuration.RadarCombatHeightYalms <= 0f)
+            {
+                Configuration.RadarCombatHeightYalms = useLegacyScale ? migratedLegacyScale : 20f;
+                changed = true;
+            }
+
+            if (Configuration.RadarOutOfCombatWidthYalms <= 0f)
+            {
+                Configuration.RadarOutOfCombatWidthYalms = useLegacyScale ? migratedLegacyScale : 50f;
+                changed = true;
+            }
+
+            if (Configuration.RadarOutOfCombatHeightYalms <= 0f)
+            {
+                Configuration.RadarOutOfCombatHeightYalms = useLegacyScale ? migratedLegacyScale : 50f;
+                changed = true;
+            }
+
+            Configuration.Version = 3;
+            changed = true;
+        }
+
         if (changed)
             Configuration.Save();
     }

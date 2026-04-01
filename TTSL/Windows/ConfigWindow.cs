@@ -85,12 +85,43 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
             changed = true;
         }
 
-        var radarScale = cfg.RadarScaleYalms;
-        if (ImGui.SliderFloat("Radar scale (yalms)", ref radarScale, 10f, 80f, "%.0f"))
+        var radarBoxSize = (int)MathF.Round(cfg.RadarBoxSizePixels);
+        if (ImGui.InputInt("Radar box size (px)", ref radarBoxSize, 8, 24))
         {
-            cfg.RadarScaleYalms = radarScale;
+            cfg.RadarBoxSizePixels = Math.Clamp(radarBoxSize, 96, 320);
             changed = true;
         }
+        ImGui.TextDisabled("Display size of the local HUD radar box.");
+
+        var radarCombatWidth = cfg.RadarCombatWidthYalms;
+        if (ImGui.InputFloat("Combat radar width (yalms)", ref radarCombatWidth, 1f, 5f, "%.0f"))
+        {
+            cfg.RadarCombatWidthYalms = Math.Clamp(radarCombatWidth, 5f, 300f);
+            changed = true;
+        }
+
+        var radarCombatHeight = cfg.RadarCombatHeightYalms;
+        if (ImGui.InputFloat("Combat radar height (yalms)", ref radarCombatHeight, 1f, 5f, "%.0f"))
+        {
+            cfg.RadarCombatHeightYalms = Math.Clamp(radarCombatHeight, 5f, 300f);
+            changed = true;
+        }
+
+        var radarTravelWidth = cfg.RadarOutOfCombatWidthYalms;
+        if (ImGui.InputFloat("Travel radar width (yalms)", ref radarTravelWidth, 1f, 5f, "%.0f"))
+        {
+            cfg.RadarOutOfCombatWidthYalms = Math.Clamp(radarTravelWidth, 5f, 500f);
+            changed = true;
+        }
+
+        var radarTravelHeight = cfg.RadarOutOfCombatHeightYalms;
+        if (ImGui.InputFloat("Travel radar height (yalms)", ref radarTravelHeight, 1f, 5f, "%.0f"))
+        {
+            cfg.RadarOutOfCombatHeightYalms = Math.Clamp(radarTravelHeight, 5f, 500f);
+            changed = true;
+        }
+
+        ImGui.TextDisabled("Default view is 20y x 20y in combat and 50y x 50y out of combat.");
 
         ImGui.Separator();
         ImGui.TextColored(new Vector4(0.85f, 0.55f, 1f, 1f), "Remote HUD Server");
@@ -146,6 +177,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
 
         ImGui.TextDisabled("Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0.");
         ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
+        ImGui.TextDisabled("The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar.");
         ImGui.TextDisabled("For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first.");
         ImGui.TextDisabled("The server will cache the first same-PC game path it sees for the rest of that monitoring session.");
         ImGui.TextDisabled($"Current account ID: {plugin.GetCurrentAccountId()}");
