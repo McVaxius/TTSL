@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Numerics;
@@ -8,13 +10,19 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
+using Lumina.Excel.Sheets;
 
 namespace TTSL.Services;
 
 internal sealed class RemoteHudPublisherService : IDisposable
 {
     private const int MaxMana = 10000;
+    private const int MaxCombatHostiles = 8;
+    private const float CombatTelemetryRangeYalms = 55f;
+    private const int CustomizeRaceIndex = 0;
+    private const int CustomizeTribeIndex = 4;
     private static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan MaxRetryBackoff = TimeSpan.FromSeconds(15);
 
@@ -187,13 +195,24 @@ internal sealed class RemoteHudPublisherService : IDisposable
             AccountId = identity.AccountId,
             CharacterName = identity.CharacterName,
             WorldName = identity.WorldName,
+            KrangledName = KrangleService.KrangleName($"{identity.CharacterName}@{identity.WorldName}"),
+            HostName = Environment.MachineName,
+            GameInstallPath = GetGameInstallPath(),
+            EnumeratePartyMembers = plugin.Configuration.EnumeratePartyMembers,
+            Job = GetJobAbbreviation(localPlayer),
+            JobId = localPlayer.ClassJob.RowId,
+            Gender = (byte)Plugin.PlayerState.Sex,
             TerritoryId = Plugin.ClientState.TerritoryType,
             TerritoryName = plugin.GetTerritoryName(Plugin.ClientState.TerritoryType),
+            MapId = GetMapId(Plugin.ClientState.TerritoryType),
             Position = new Vector3Snapshot(localPlayer.Position.X, localPlayer.Position.Y, localPlayer.Position.Z),
-            Player = new PlayerStatsSnapshot(localPlayer.CurrentHp, localPlayer.MaxHp, localPlayer.CurrentMp, MaxMana),
+            Player = new PlayerStatsSnapshot(localPlayer.CurrentHp, localPlayer.MaxHp, localPlayer.CurrentMp, MaxMana, localPlayer.Level),
+            RaceId = GetCustomizeValue(localPlayer, CustomizeRaceIndex),
+            TribeId = GetCustomizeValue(localPlayer, CustomizeTribeIndex),
             Conditions = BuildConditionSnapshot(),
             Repair = BuildRepairSnapshot(),
             Party = BuildPartyMembers(localPlayer),
+            Combat = BuildCombatSnapshot(localPlayer),
         };
     }
 
@@ -210,10 +229,20 @@ internal sealed class RemoteHudPublisherService : IDisposable
             AccountId = identity.AccountId,
             CharacterName = identity.CharacterName,
             WorldName = identity.WorldName,
+            KrangledName = KrangleService.KrangleName($"{identity.CharacterName}@{identity.WorldName}"),
+            HostName = Environment.MachineName,
+            EnumeratePartyMembers = plugin.Configuration.EnumeratePartyMembers,
+            Job = GetJobAbbreviation(localPlayer),
+            JobId = localPlayer.ClassJob.RowId,
+            Gender = (byte)Plugin.PlayerState.Sex,
             TerritoryId = Plugin.ClientState.TerritoryType,
             TerritoryName = plugin.GetTerritoryName(Plugin.ClientState.TerritoryType),
+            MapId = GetMapId(Plugin.ClientState.TerritoryType),
             Position = new Vector3Snapshot(localPlayer.Position.X, localPlayer.Position.Y, localPlayer.Position.Z),
-            Player = new PlayerStatsSnapshot(localPlayer.CurrentHp, localPlayer.MaxHp, localPlayer.CurrentMp, MaxMana),
+            Player = new PlayerStatsSnapshot(localPlayer.CurrentHp, localPlayer.MaxHp, localPlayer.CurrentMp, MaxMana, localPlayer.Level),
+            RaceId = GetCustomizeValue(localPlayer, CustomizeRaceIndex),
+            TribeId = GetCustomizeValue(localPlayer, CustomizeTribeIndex),
+            Combat = BuildCombatSnapshot(localPlayer),
         };
     }
 
@@ -261,16 +290,23 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
             var character = FindPartyCharacter(member.Address, originalName);
             var job = member.ClassJob.IsValid ? member.ClassJob.Value.Abbreviation.ToString() : "UNK";
+            var jobId = member.ClassJob.RowId;
 
             members.Add(new RemotePartyMemberSnapshot
             {
                 Slot = i + 1,
                 Name = originalName,
+                KrangledName = KrangleService.KrangleName(originalName),
                 Job = job,
+                JobId = jobId == 0 ? null : jobId,
+                JobIconId = GetJobIconId(jobId),
+                Level = member.Level,
                 CurrentHp = character?.CurrentHp,
                 MaxHp = character?.MaxHp,
                 CurrentMp = character?.CurrentMp,
                 MaxMp = character == null ? null : MaxMana,
+                RaceId = character == null ? null : GetCustomizeValue(character, CustomizeRaceIndex),
+                TribeId = character == null ? null : GetCustomizeValue(character, CustomizeTribeIndex),
                 Position = character == null
                     ? null
                     : new Vector3Snapshot(character.Position.X, character.Position.Y, character.Position.Z),
@@ -279,6 +315,98 @@ internal sealed class RemoteHudPublisherService : IDisposable
         }
 
         return members;
+    }
+
+    private RemoteCombatSnapshot? BuildCombatSnapshot(ICharacter localPlayer)
+    {
+        var trackedAddresses = BuildTrackedPartyAddresses();
+        var hostileSnapshots = Plugin.ObjectTable
+            .OfType<IBattleChara>()
+            .Where(obj => obj.ObjectKind == ObjectKind.BattleNpc)
+            .Where(obj => obj.Address != localPlayer.Address && obj.CurrentHp > 0)
+            .Select(obj => BuildEnemySnapshot(localPlayer, obj, trackedAddresses, isCurrentTarget: Plugin.TargetManager.Target?.Address == obj.Address))
+            .Where(snapshot => snapshot != null)
+            .Cast<RemoteEnemySnapshot>()
+            .OrderByDescending(snapshot => snapshot.IsTargetingTrackedParty)
+            .ThenByDescending(snapshot => snapshot.IsCurrentTarget)
+            .ThenBy(snapshot => snapshot.Distance ?? float.MaxValue)
+            .Take(MaxCombatHostiles)
+            .ToList();
+
+        var currentTarget = Plugin.TargetManager.Target as IBattleChara;
+        var currentTargetSnapshot = currentTarget == null || currentTarget.ObjectKind != ObjectKind.BattleNpc || currentTarget.CurrentHp == 0
+            ? null
+            : BuildEnemySnapshot(localPlayer, currentTarget, trackedAddresses, isCurrentTarget: true);
+
+        if (currentTargetSnapshot == null && hostileSnapshots.Count == 0)
+            return null;
+
+        return new RemoteCombatSnapshot
+        {
+            CurrentTarget = currentTargetSnapshot,
+            Hostiles = hostileSnapshots,
+        };
+    }
+
+    private static HashSet<nint> BuildTrackedPartyAddresses()
+    {
+        var trackedAddresses = new HashSet<nint>();
+
+        var localPlayer = Plugin.ObjectTable.LocalPlayer;
+        if (localPlayer != null)
+            trackedAddresses.Add(localPlayer.Address);
+
+        for (var i = 0; i < Plugin.PartyList.Length; i++)
+        {
+            var member = Plugin.PartyList[i];
+            if (member == null)
+                continue;
+
+            var name = member.Name.TextValue;
+            if (string.IsNullOrWhiteSpace(name))
+                continue;
+
+            var character = FindPartyCharacter(member.Address, name);
+            if (character != null)
+                trackedAddresses.Add(character.Address);
+        }
+
+        return trackedAddresses;
+    }
+
+    private static RemoteEnemySnapshot? BuildEnemySnapshot(
+        ICharacter localPlayer,
+        IBattleChara hostile,
+        HashSet<nint> trackedAddresses,
+        bool isCurrentTarget)
+    {
+        var distance = Vector3.Distance(localPlayer.Position, hostile.Position);
+        if (distance > CombatTelemetryRangeYalms)
+            return null;
+
+        var targetObject = hostile.TargetObject;
+        var isTargetingTrackedParty = targetObject != null && trackedAddresses.Contains(targetObject.Address);
+        var isTargetingLocalPlayer = targetObject?.Address == localPlayer.Address;
+        var castRemaining = hostile.IsCasting ? Math.Max(0f, hostile.TotalCastTime - hostile.CurrentCastTime) : (float?)null;
+
+        return new RemoteEnemySnapshot
+        {
+            Name = hostile.Name.TextValue,
+            KrangledName = KrangleService.KrangleName(hostile.Name.TextValue),
+            DataId = hostile.BaseId,
+            CurrentHp = hostile.CurrentHp,
+            MaxHp = hostile.MaxHp,
+            Distance = distance,
+            Position = new Vector3Snapshot(hostile.Position.X, hostile.Position.Y, hostile.Position.Z),
+            IsCurrentTarget = isCurrentTarget,
+            IsTargetingTrackedParty = isTargetingTrackedParty,
+            IsTargetingLocalPlayer = isTargetingLocalPlayer,
+            TargetName = targetObject?.Name.TextValue,
+            KrangledTargetName = targetObject == null ? null : KrangleService.KrangleName(targetObject.Name.TextValue),
+            IsCasting = hostile.IsCasting,
+            CastActionId = hostile.IsCasting ? hostile.CastActionId : null,
+            CastTimeRemaining = castRemaining,
+        };
     }
 
     private static ICharacter? FindPartyCharacter(nint memberAddress, string name)
@@ -316,6 +444,66 @@ internal sealed class RemoteHudPublisherService : IDisposable
         return string.Equals(left.AccountId, right.AccountId, StringComparison.Ordinal) &&
                string.Equals(left.CharacterName, right.CharacterName, StringComparison.Ordinal) &&
                string.Equals(left.WorldName, right.WorldName, StringComparison.Ordinal);
+    }
+
+    private static uint? GetJobIconId(uint jobId)
+    {
+        if (jobId == 0)
+            return null;
+        return 62000u + jobId;
+    }
+
+    private static uint? GetMapId(uint territoryId)
+    {
+        if (territoryId == 0)
+            return null;
+
+        try
+        {
+            var sheet = Plugin.DataManager.GetExcelSheet<TerritoryType>();
+            if (sheet != null && sheet.TryGetRow(territoryId, out var territory) && territory.Map.IsValid)
+                return territory.Map.RowId;
+        }
+        catch
+        {
+        }
+
+        return null;
+    }
+
+    private static byte? GetCustomizeValue(ICharacter character, int index)
+    {
+        try
+        {
+            var customize = character.Customize;
+            if (index >= 0 && index < customize.Length)
+                return customize[index];
+        }
+        catch
+        {
+        }
+
+        return null;
+    }
+
+    private static string GetJobAbbreviation(ICharacter character)
+        => character.ClassJob.IsValid ? character.ClassJob.Value.Abbreviation.ToString() : "UNK";
+
+    private static string? GetGameInstallPath()
+    {
+        try
+        {
+            var executablePath = Process.GetCurrentProcess().MainModule?.FileName;
+            if (string.IsNullOrWhiteSpace(executablePath))
+                return null;
+
+            var directory = Path.GetDirectoryName(executablePath);
+            return string.IsNullOrWhiteSpace(directory) ? null : directory;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private async Task SendAsync<T>(string path, T payload)
@@ -451,13 +639,24 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string AccountId { get; init; } = string.Empty;
         public string CharacterName { get; init; } = string.Empty;
         public string WorldName { get; init; } = string.Empty;
+        public string KrangledName { get; init; } = string.Empty;
+        public string HostName { get; init; } = string.Empty;
+        public string? GameInstallPath { get; init; }
+        public bool EnumeratePartyMembers { get; init; }
+        public string Job { get; init; } = string.Empty;
+        public uint JobId { get; init; }
+        public byte Gender { get; init; }
         public uint TerritoryId { get; init; }
         public string TerritoryName { get; init; } = string.Empty;
+        public uint? MapId { get; init; }
         public Vector3Snapshot? Position { get; init; }
         public PlayerStatsSnapshot? Player { get; init; }
+        public byte? RaceId { get; init; }
+        public byte? TribeId { get; init; }
         public RemoteConditionSnapshot? Conditions { get; init; }
         public RemoteRepairSnapshot? Repair { get; init; }
         public List<RemotePartyMemberSnapshot>? Party { get; init; }
+        public RemoteCombatSnapshot? Combat { get; init; }
     }
 
     private sealed class Vector3Snapshot
@@ -476,18 +675,20 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
     private sealed class PlayerStatsSnapshot
     {
-        public PlayerStatsSnapshot(uint currentHp, uint maxHp, uint currentMp, int maxMp)
+        public PlayerStatsSnapshot(uint currentHp, uint maxHp, uint currentMp, int maxMp, uint level)
         {
             CurrentHp = currentHp;
             MaxHp = maxHp;
             CurrentMp = currentMp;
             MaxMp = maxMp;
+            Level = level;
         }
 
         public uint CurrentHp { get; init; }
         public uint MaxHp { get; init; }
         public uint CurrentMp { get; init; }
         public int MaxMp { get; init; }
+        public uint Level { get; init; }
     }
 
     private sealed class RemoteConditionSnapshot
@@ -511,12 +712,43 @@ internal sealed class RemoteHudPublisherService : IDisposable
     {
         public int Slot { get; init; }
         public string Name { get; init; } = string.Empty;
+        public string KrangledName { get; init; } = string.Empty;
         public string Job { get; init; } = string.Empty;
+        public uint? JobId { get; init; }
+        public uint? JobIconId { get; init; }
+        public uint Level { get; init; }
         public uint? CurrentHp { get; init; }
         public uint? MaxHp { get; init; }
         public uint? CurrentMp { get; init; }
         public int? MaxMp { get; init; }
+        public byte? RaceId { get; init; }
+        public byte? TribeId { get; init; }
         public Vector3Snapshot? Position { get; init; }
         public float? Distance { get; init; }
+    }
+
+    private sealed class RemoteCombatSnapshot
+    {
+        public RemoteEnemySnapshot? CurrentTarget { get; init; }
+        public List<RemoteEnemySnapshot> Hostiles { get; init; } = [];
+    }
+
+    private sealed class RemoteEnemySnapshot
+    {
+        public string Name { get; init; } = string.Empty;
+        public string KrangledName { get; init; } = string.Empty;
+        public uint DataId { get; init; }
+        public uint CurrentHp { get; init; }
+        public uint MaxHp { get; init; }
+        public float? Distance { get; init; }
+        public Vector3Snapshot? Position { get; init; }
+        public bool IsCurrentTarget { get; init; }
+        public bool IsTargetingTrackedParty { get; init; }
+        public bool IsTargetingLocalPlayer { get; init; }
+        public string? TargetName { get; init; }
+        public string? KrangledTargetName { get; init; }
+        public bool IsCasting { get; init; }
+        public uint? CastActionId { get; init; }
+        public float? CastTimeRemaining { get; init; }
     }
 }

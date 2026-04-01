@@ -131,6 +131,8 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
 
         ImGui.TextDisabled("Default Python server: python .\\server\\ttsl_server.py --host 0.0.0.0 --port 6942");
         ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
+        ImGui.TextDisabled("For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first.");
+        ImGui.TextDisabled("The server will cache the first same-PC game path it sees for the rest of that monitoring session.");
         ImGui.TextDisabled($"Current account ID: {plugin.GetCurrentAccountId()}");
 
         var remoteStatusColor = cfg.RemoteServerEnabled

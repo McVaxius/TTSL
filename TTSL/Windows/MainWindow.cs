@@ -173,7 +173,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             DrawMetricCell("State", GetRemoteStateText(cfg, publisher));
             DrawMetricCell("Cadence", $"{Math.Max(100, cfg.RemotePositionIntervalMs)} ms | {Math.Max(500, cfg.RemoteFullSnapshotIntervalMs)} ms");
             DrawMetricCell("Server", cfg.RemoteServerUrl);
-            DrawMetricCell("Client", publisher.LastCharacterKey ?? "Waiting");
+            DrawMetricCell("Client", publisher.LastCharacterKey == null ? "Waiting" : plugin.GetDisplayName(publisher.LastCharacterKey));
             DrawMetricCell("Account", publisher.LastAccountId ?? plugin.GetCurrentAccountId());
             DrawMetricCell("Last OK", publisher.LastSuccessUtc.HasValue
                 ? publisher.LastSuccessUtc.Value.ToLocalTime().ToString("HH:mm:ss")

@@ -10,6 +10,8 @@ x86/
 .vs/
 .vscode/
 .idea/
+__pycache__/
+*.pyc
 
 ## Generated plugin binaries
 *.dll
@@ -23,3 +25,9 @@ dev-notes/
 draft-*.md
 WIP-*.md
 TODO-*.md
+
+## Local TTSL extraction/cache artifacts
+server/extracted/
+server/cache/
+server/ttsl_asset_plan.json
+server/ttsl_asset_extract_summary.json
