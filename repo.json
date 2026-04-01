@@ -1,0 +1,24 @@
+[
+  {
+    "$schema": "https://raw.githubusercontent.com/goatcorp/Dalamud/master/Dalamud/Configuration/PluginManifest/pluginmanifest.schema.json",
+    "Author": "DhogGPT",
+    "Name": "Thick Thighs Save Lives",
+    "Punchline": "Keep critical HUD state visible when the world gets stripped down.",
+    "Description": "An essential-state HUD for monitoring zone, position, combat state, durability, and party awareness when your main rendering setup is intentionally reduced.",
+    "InternalName": "TTSL",
+    "AssemblyVersion": "0.0.0.1",
+    "TestingAssemblyVersion": "0.0.0.1",
+    "RepoUrl": "https://github.com/McVaxius/TTSL",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 14,
+    "Tags": [
+      "hud",
+      "overlay",
+      "party",
+      "utility"
+    ],
+    "CategoryTags": [
+      "utility"
+    ]
+  }
+]
