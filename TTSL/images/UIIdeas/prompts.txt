@@ -1,0 +1,58 @@
+draw me a HQ image that is appoximately the ratio of a regular display I want it to represent a HUD in the centre is a map. and on the sides are a chart of players with stats, x,y,z and other things similar to the McVaxius "Thick Thighs Save Lives" plugin the purpose is for UI design
+
+
+draw me a HQ image that is appoximately the ratio of a regular display I want it to represent a HUD in the centre is a map. and on the sides are a chart of players with stats, x,y,z and other things similar to the McVaxius "Thick Thighs Save Lives" plugin the purpose is for UI design
+I want the player boxes to be equally sized, 4 on the left and 4 on the right
+The status to show specifically are
+ - HP MANA
+ - XYZ
+ - RACE-JOB-LVL
+ - Buttons [CCTV] [SS] [CMD]
+
+draw me a HQ image that is appoximately the ratio of a regular display I want it to represent a HUD in the centre is a map. and on the sides are a chart of players with stats, x,y,z and other things similar to the McVaxius "Thick Thighs Save Lives" plugin the purpose is for UI design
+I want the player boxes to be equally sized, 4 characters on the left and 4 characters on the right
+The status to show specifically are
+ - HP MANA
+ - XYZ
+ - RACE-JOB-LVL
+ - Buttons [CCTV] [SS] [CMD]
+also a small portrait image of the characters face should appear in the upper left of their ui box
+
+[did below one a bunch]
+draw me a HQ image that is appoximately the ratio of a regular display I want it to represent a HUD in the centre is a map. and on the sides are a chart of players with stats, x,y,z and other things similar to the McVaxius "Thick Thighs Save Lives" plugin the purpose is for UI design
+I want the player boxes to be equally sized, 4 characters on the left and 4 characters on the right
+The status to show specifically are
+ - HP MANA
+ - XYZ
+ - RACE-JOB-LVL
+ - Buttons [CCTV] [SS] [CMD]
+also a small portrait image of the characters face should appear in the upper left of their ui box
+i want this to be FF14 themed
+and instead of a world map in the middle. its just a dungeon map
+
+
+[did below one a bunch]
+draw me a HQ image that is appoximately the ratio of a regular display I want it to represent a HUD in the centre is a map. and on the sides are a chart of players with stats, x,y,z and other things similar to the McVaxius "Thick Thighs Save Lives" plugin the purpose is for UI design
+I want the player boxes to be equally sized, 4 characters on the left and 4 characters on the right
+The status to show specifically are
+ - HP MANA
+ - XYZ
+ - RACE-JOB-LVL
+ - Buttons [CCTV] [SS] [CMD]
+also a small portrait image of the characters face should appear in the upper left of their ui box
+i want this to be FF14 themed
+and instead of a world map in the middle. its just a dungeon map
+surprise me with a feature i didn't ask for
+
+
+draw me a HQ image that is appoximately the ratio of a regular display I want it to represent a HUD in the centre is a map. and on the sides are a chart of players with stats, x,y,z and other things similar to the McVaxius "Thick Thighs Save Lives" plugin the purpose is for UI design
+I want the player boxes to be equally sized, 4 characters on the left and 4 characters on the right
+The status to show specifically are
+ - HP MANA
+ - XYZ
+ - RACE-JOB-LVL
+ - Buttons [CCTV] [SS] [CMD]
+also a small portrait image of the characters face should appear in the upper left of their ui box
+i want this to be FF14 themed
+and instead of a world map in the middle. its just a dungeon map
+include the enmity list at the bottom in 2 columns
