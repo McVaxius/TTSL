@@ -6,8 +6,10 @@ import base64
 import io
 import importlib
 import json
+import hashlib
 import mimetypes
 import os
+import re
 import shutil
 import socket
 import struct
@@ -17,9 +19,12 @@ import threading
 import time
 from copy import deepcopy
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import unquote, urlparse
+from urllib.error import HTTPError, URLError
+from urllib.parse import unquote, urlencode, urljoin, urlparse
+from urllib.request import Request, urlopen
 
 
 def utc_now() -> datetime:
@@ -42,6 +47,11 @@ CACHE_ROOT = os.path.join(SERVER_ROOT, "cache")
 SCREENSHOT_CACHE_ROOT = os.path.join(CACHE_ROOT, "screenshots")
 LOCAL_PYTHON_DEPS_ROOT = os.path.join(SERVER_ROOT, "_pydeps")
 AUTO_EXTRACT_RETRY_COOLDOWN_SECONDS = 30.0
+DEFAULT_LODESTONE_CACHE_HOURS = 24.0
+MIN_LODESTONE_CACHE_HOURS = 1.0
+LODESTONE_BASE_URL = "https://na.finalfantasyxiv.com"
+LODESTONE_SEARCH_PATH = "/lodestone/character/"
+LODESTONE_REQUEST_TIMEOUT_SECONDS = 20.0
 TEX_HEADER_SIZE = 80
 TEX_FORMAT_A8R8G8B8 = 5200
 TEX_FORMAT_DXT1 = 13344
@@ -242,6 +252,467 @@ def build_cache_url(cache_path: str) -> str:
     return f"/assets/{relative_path}?v={version}"
 
 
+class LodestoneSearchParser(HTMLParser):
+    CHARACTER_PATH_RE = re.compile(r"/lodestone/character/(\d+)/?$")
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.entries: list[dict] = []
+        self._current: dict | None = None
+        self._capture_field: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr_map = {key: value or "" for key, value in attrs}
+        href = attr_map.get("href", "")
+        match = self.CHARACTER_PATH_RE.search(href)
+        if tag == "a" and match and self._current is None:
+            self._current = {
+                "characterId": match.group(1),
+                "characterUrl": urljoin(LODESTONE_BASE_URL, href),
+                "faceSourceUrl": "",
+                "name": "",
+                "worldLine": "",
+            }
+            return
+
+        if self._current is None:
+            return
+
+        class_tokens = set(attr_map.get("class", "").split())
+        if tag == "p" and "entry__name" in class_tokens:
+            self._capture_field = "name"
+        elif tag == "p" and "entry__world" in class_tokens:
+            self._capture_field = "worldLine"
+        elif tag == "img" and not self._current["faceSourceUrl"]:
+            source_url = attr_map.get("src", "").strip()
+            if source_url:
+                self._current["faceSourceUrl"] = urljoin(LODESTONE_BASE_URL, source_url)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._current is None:
+            return
+
+        if tag == "p":
+            self._capture_field = None
+            return
+
+        if tag == "a":
+            entry = {
+                "characterId": self._current.get("characterId", ""),
+                "characterUrl": self._current.get("characterUrl", ""),
+                "faceSourceUrl": self._current.get("faceSourceUrl", ""),
+                "name": str(self._current.get("name", "")).strip(),
+                "worldLine": str(self._current.get("worldLine", "")).strip(),
+            }
+            if entry["characterId"] and entry["characterUrl"] and entry["name"]:
+                self.entries.append(entry)
+            self._current = None
+            self._capture_field = None
+
+    def handle_data(self, data: str) -> None:
+        if self._current is None or self._capture_field is None:
+            return
+        self._current[self._capture_field] = f"{self._current.get(self._capture_field, '')}{data}"
+
+
+class LodestoneCharacterPageParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.face_source_url = ""
+        self.portrait_source_url = ""
+        self._face_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attr_map = {key: value or "" for key, value in attrs}
+        class_tokens = set(attr_map.get("class", "").split())
+
+        if tag == "meta" and attr_map.get("property") == "og:image":
+            source_url = attr_map.get("content", "").strip()
+            if source_url:
+                self.portrait_source_url = urljoin(LODESTONE_BASE_URL, source_url)
+            return
+
+        if tag == "div":
+            if self._face_depth > 0:
+                self._face_depth += 1
+            elif "frame__chara__face" in class_tokens:
+                self._face_depth = 1
+            return
+
+        if self._face_depth > 0 and tag == "img" and not self.face_source_url:
+            source_url = attr_map.get("src", "").strip()
+            if source_url:
+                self.face_source_url = urljoin(LODESTONE_BASE_URL, source_url)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "div" and self._face_depth > 0:
+            self._face_depth -= 1
+
+
+class LodestonePortraitCache:
+    IMAGE_EXTENSIONS = {".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"}
+    WORLD_SUFFIX_RE = re.compile(r"\s*\[[^\]]+\]\s*$")
+    REQUEST_HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
+
+    def __init__(self, cache_root: str, cache_hours: float) -> None:
+        self._cache_root = os.path.join(cache_root, "lodestone")
+        self._ttl_seconds = max(MIN_LODESTONE_CACHE_HOURS, float(cache_hours)) * 3600.0
+        self._metadata_cache: dict[str, dict] = {}
+        self._inflight: set[str] = set()
+        self._lock = threading.Lock()
+        os.makedirs(self._cache_root, exist_ok=True)
+
+    def decorate_snapshot(self, snapshot: dict) -> None:
+        for group in snapshot.get("accountGroups") or []:
+            for client in group.get("clients") or []:
+                client["lodestone"] = self.get_visual(client.get("characterName"), client.get("worldName"))
+
+        for client in snapshot.get("looseClients") or []:
+            client["lodestone"] = self.get_visual(client.get("characterName"), client.get("worldName"))
+
+        for party in snapshot.get("aggregateParties") or []:
+            party["sourceLodestone"] = self.get_visual(party.get("sourceCharacterName"), party.get("sourceWorldName"))
+            for member in party.get("members") or []:
+                member["lodestone"] = self.get_visual(member.get("name"), member.get("worldName"))
+
+    def get_visual(self, character_name: object, world_name: object) -> dict:
+        raw_name = str(character_name or "").strip()
+        raw_world = str(world_name or "").strip()
+        if not raw_name or not raw_world:
+            return {"status": "unavailable"}
+
+        identity_key = self._identity_key(raw_name, raw_world)
+        now_unix = time.time()
+        start_lookup = False
+
+        with self._lock:
+            metadata = self._load_metadata_locked(identity_key, raw_name, raw_world)
+            is_expired = float(metadata.get("expiresAtUnix", 0.0)) <= now_unix
+            needs_assets = not self._metadata_has_assets(metadata)
+            needs_refresh = self._metadata_needs_refresh(metadata)
+            should_lookup = (not metadata) or is_expired or needs_assets or needs_refresh
+            if should_lookup and identity_key not in self._inflight:
+                self._inflight.add(identity_key)
+                start_lookup = True
+            output = self._build_visual_payload(metadata, raw_name, raw_world)
+
+        if start_lookup:
+            threading.Thread(
+                target=self._refresh_identity,
+                args=(raw_name, raw_world, identity_key),
+                daemon=True,
+            ).start()
+
+        return output
+
+    @staticmethod
+    def _normalize_text(value: object) -> str:
+        return " ".join(str(value or "").strip().split()).casefold()
+
+    @classmethod
+    def _normalize_world_text(cls, value: object) -> str:
+        raw = " ".join(str(value or "").strip().split())
+        if not raw:
+            return ""
+        return cls._normalize_text(cls.WORLD_SUFFIX_RE.sub("", raw))
+
+    @classmethod
+    def _identity_key(cls, character_name: object, world_name: object) -> str:
+        return f"{cls._normalize_text(character_name)}@{cls._normalize_world_text(world_name)}"
+
+    @staticmethod
+    def _slug_fragment(value: object) -> str:
+        slug = re.sub(r"[^a-z0-9]+", "-", str(value or "").strip().casefold()).strip("-")
+        return slug[:32] or "unknown"
+
+    def _identity_dir(self, identity_key: str, character_name: str, world_name: str) -> str:
+        digest = hashlib.sha1(identity_key.encode("utf-8"), usedforsecurity=False).hexdigest()[:12]
+        folder = f"{self._slug_fragment(character_name)}_{self._slug_fragment(world_name)}_{digest}"
+        return os.path.join(self._cache_root, folder)
+
+    def _metadata_path(self, identity_key: str, character_name: str, world_name: str) -> str:
+        return os.path.join(self._identity_dir(identity_key, character_name, world_name), "metadata.json")
+
+    def _load_metadata_locked(self, identity_key: str, character_name: str, world_name: str) -> dict:
+        cached = self._metadata_cache.get(identity_key)
+        if cached is not None:
+            return deepcopy(cached)
+
+        metadata_path = self._metadata_path(identity_key, character_name, world_name)
+        metadata: dict = {}
+        if os.path.isfile(metadata_path):
+            try:
+                with open(metadata_path, "r", encoding="utf-8") as handle:
+                    payload = json.load(handle)
+                if isinstance(payload, dict):
+                    metadata = payload
+            except (OSError, json.JSONDecodeError):
+                metadata = {}
+
+        self._metadata_cache[identity_key] = deepcopy(metadata)
+        return deepcopy(metadata)
+
+    def _store_metadata_locked(self, identity_key: str, character_name: str, world_name: str, metadata: dict) -> None:
+        metadata_path = self._metadata_path(identity_key, character_name, world_name)
+        os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+        temp_path = f"{metadata_path}.tmp"
+        with open(temp_path, "w", encoding="utf-8") as handle:
+            json.dump(metadata, handle, ensure_ascii=False, indent=2, sort_keys=True)
+        os.replace(temp_path, metadata_path)
+        self._metadata_cache[identity_key] = deepcopy(metadata)
+
+    def _metadata_has_assets(self, metadata: dict) -> bool:
+        for field_name in ("faceCachePath", "portraitCachePath"):
+            cache_path = str(metadata.get(field_name) or "").strip()
+            if cache_path and os.path.isfile(cache_path):
+                return True
+        return False
+
+    def _metadata_needs_refresh(self, metadata: dict) -> bool:
+        if not metadata:
+            return False
+
+        face_source_url = str(metadata.get("faceSourceUrl") or "").strip()
+        portrait_source_url = str(metadata.get("portraitSourceUrl") or "").strip()
+        expected_body_source_url = self._derive_full_body_source_url(face_source_url)
+        return bool(expected_body_source_url and portrait_source_url and portrait_source_url not in {face_source_url, expected_body_source_url})
+
+    def _cache_url_from_path(self, cache_path: object) -> str | None:
+        normalized_path = str(cache_path or "").strip()
+        if not normalized_path or not os.path.isfile(normalized_path):
+            return None
+        try:
+            cache_root = os.path.normpath(CACHE_ROOT)
+            candidate = os.path.normpath(normalized_path)
+            if os.path.commonpath([cache_root, candidate]) != cache_root:
+                return None
+        except ValueError:
+            return None
+        return build_cache_url(normalized_path)
+
+    def _build_visual_payload(self, metadata: dict, character_name: str, world_name: str) -> dict:
+        if not metadata:
+            return {
+                "status": "pending",
+                "characterName": character_name,
+                "worldName": world_name,
+                "faceUrl": None,
+                "portraitUrl": None,
+                "characterUrl": None,
+            }
+
+        return {
+            "status": str(metadata.get("status") or "pending"),
+            "characterId": metadata.get("characterId"),
+            "characterName": metadata.get("characterName") or character_name,
+            "worldName": metadata.get("worldName") or world_name,
+            "characterUrl": metadata.get("characterUrl"),
+            "faceUrl": self._cache_url_from_path(metadata.get("faceCachePath")),
+            "portraitUrl": self._cache_url_from_path(metadata.get("portraitCachePath")),
+            "resolvedAtUtc": metadata.get("resolvedAtUtc"),
+            "expiresAtUtc": metadata.get("expiresAtUtc"),
+            "error": metadata.get("lastError"),
+        }
+
+    def _fetch_text(self, url: str) -> str:
+        request = Request(url, headers=self.REQUEST_HEADERS)
+        with urlopen(request, timeout=LODESTONE_REQUEST_TIMEOUT_SECONDS) as response:
+            body = response.read()
+            encoding = response.headers.get_content_charset() or "utf-8"
+        return body.decode(encoding, errors="replace")
+
+    @staticmethod
+    def _derive_full_body_source_url(face_source_url: object) -> str:
+        raw_url = str(face_source_url or "").strip()
+        if not raw_url:
+            return ""
+
+        parsed = urlparse(raw_url)
+        file_name = os.path.basename(parsed.path)
+        if not file_name:
+            return ""
+
+        derived_name = re.sub(r"fc0(\.[A-Za-z0-9]+)$", r"fl0\1", file_name)
+        if derived_name == file_name:
+            return ""
+
+        return parsed._replace(path=parsed.path[: -len(file_name)] + derived_name).geturl()
+
+    def _download_image(self, url: str, destination_dir: str, stem: str) -> str:
+        request = Request(url, headers=self.REQUEST_HEADERS)
+        with urlopen(request, timeout=LODESTONE_REQUEST_TIMEOUT_SECONDS) as response:
+            body = response.read()
+            content_type = response.headers.get_content_type() or ""
+
+        parsed = urlparse(url)
+        extension = os.path.splitext(parsed.path)[1].lower()
+        if extension not in self.IMAGE_EXTENSIONS:
+            guessed = mimetypes.guess_extension(content_type) or ".jpg"
+            extension = ".jpg" if guessed == ".jpe" else guessed
+
+        os.makedirs(destination_dir, exist_ok=True)
+        file_name = f"{stem}{extension or '.jpg'}"
+        final_path = os.path.join(destination_dir, file_name)
+        for existing_name in os.listdir(destination_dir):
+            if existing_name.startswith(f"{stem}.") and existing_name != file_name:
+                try:
+                    os.remove(os.path.join(destination_dir, existing_name))
+                except OSError:
+                    pass
+
+        with open(final_path, "wb") as handle:
+            handle.write(body)
+        return final_path
+
+    def _download_first_available_image(self, urls: list[str], destination_dir: str, stem: str) -> tuple[str, str]:
+        last_error: Exception | None = None
+        seen: set[str] = set()
+        for raw_url in urls:
+            url = str(raw_url or "").strip()
+            if not url or url in seen:
+                continue
+
+            seen.add(url)
+            try:
+                return self._download_image(url, destination_dir, stem), url
+            except (HTTPError, URLError, OSError, ValueError) as exc:
+                last_error = exc
+
+        if last_error is not None:
+            raise last_error
+        return "", ""
+
+    def _select_search_entry(self, entries: list[dict], character_name: str, world_name: str) -> dict | None:
+        target_name = self._normalize_text(character_name)
+        target_world = self._normalize_world_text(world_name)
+        for entry in entries:
+            if (
+                self._normalize_text(entry.get("name")) == target_name
+                and self._normalize_world_text(entry.get("worldLine")) == target_world
+            ):
+                return entry
+        return None
+
+    def _refresh_identity(self, character_name: str, world_name: str, identity_key: str) -> None:
+        existing_metadata = {}
+        now = utc_now()
+        now_unix = time.time()
+        try:
+            with self._lock:
+                existing_metadata = self._load_metadata_locked(identity_key, character_name, world_name)
+
+            log_event(f"Lodestone resolve queued for {character_name}@{world_name}")
+            search_url = f"{LODESTONE_BASE_URL}{LODESTONE_SEARCH_PATH}?{urlencode({'q': character_name, 'worldname': world_name})}"
+            search_html = self._fetch_text(search_url)
+            search_parser = LodestoneSearchParser()
+            search_parser.feed(search_html)
+            search_entry = self._select_search_entry(search_parser.entries, character_name, world_name)
+            if search_entry is None:
+                metadata = {
+                    "status": "not_found",
+                    "characterName": character_name,
+                    "worldName": world_name,
+                    "resolvedAtUtc": utc_iso(now),
+                    "expiresAtUnix": now_unix + self._ttl_seconds,
+                    "expiresAtUtc": utc_iso(datetime.fromtimestamp(now_unix + self._ttl_seconds, tz=timezone.utc)),
+                    "lastError": "No exact Lodestone search match was found for this character and world.",
+                }
+                with self._lock:
+                    self._store_metadata_locked(identity_key, character_name, world_name, metadata)
+                log_event(f"Lodestone resolve not found for {character_name}@{world_name}")
+                return
+
+            character_html = self._fetch_text(search_entry["characterUrl"])
+            character_parser = LodestoneCharacterPageParser()
+            character_parser.feed(character_html)
+
+            face_source_url = character_parser.face_source_url or search_entry.get("faceSourceUrl") or ""
+            page_portrait_source_url = character_parser.portrait_source_url or ""
+            derived_portrait_source_url = self._derive_full_body_source_url(face_source_url)
+            portrait_source_url = derived_portrait_source_url or page_portrait_source_url or face_source_url
+            if not face_source_url and portrait_source_url:
+                face_source_url = portrait_source_url
+            if not portrait_source_url and face_source_url:
+                portrait_source_url = face_source_url
+
+            if not face_source_url and not portrait_source_url:
+                raise RuntimeError("Lodestone profile page did not expose a face or portrait image.")
+
+            destination_dir = self._identity_dir(identity_key, character_name, world_name)
+            resolved_face_source_url = face_source_url
+            face_cache_path = self._download_image(face_source_url, destination_dir, "face") if face_source_url else ""
+            portrait_cache_path = face_cache_path
+            resolved_portrait_source_url = resolved_face_source_url
+            if portrait_source_url:
+                portrait_candidates = [portrait_source_url, page_portrait_source_url, face_source_url]
+                portrait_cache_path, resolved_portrait_source_url = self._download_first_available_image(
+                    portrait_candidates,
+                    destination_dir,
+                    "portrait",
+                )
+                if face_cache_path and resolved_portrait_source_url == resolved_face_source_url:
+                    portrait_cache_path = face_cache_path
+
+            if not face_cache_path and portrait_cache_path:
+                face_cache_path = portrait_cache_path
+                resolved_face_source_url = resolved_portrait_source_url
+
+            expires_unix = now_unix + self._ttl_seconds
+            metadata = {
+                "status": "ready",
+                "characterId": search_entry.get("characterId"),
+                "characterName": character_name,
+                "worldName": world_name,
+                "searchWorldLine": search_entry.get("worldLine"),
+                "characterUrl": search_entry.get("characterUrl"),
+                "faceSourceUrl": resolved_face_source_url,
+                "portraitSourceUrl": resolved_portrait_source_url,
+                "pagePortraitSourceUrl": page_portrait_source_url,
+                "derivedPortraitSourceUrl": derived_portrait_source_url,
+                "faceCachePath": face_cache_path,
+                "portraitCachePath": portrait_cache_path,
+                "resolvedAtUtc": utc_iso(now),
+                "expiresAtUnix": expires_unix,
+                "expiresAtUtc": utc_iso(datetime.fromtimestamp(expires_unix, tz=timezone.utc)),
+                "lastError": "",
+            }
+            with self._lock:
+                self._store_metadata_locked(identity_key, character_name, world_name, metadata)
+            log_event(
+                "Lodestone portraits cached for "
+                f"{character_name}@{world_name} (id {search_entry.get('characterId')})"
+            )
+        except (HTTPError, URLError, OSError, RuntimeError, ValueError) as exc:
+            expires_unix = now_unix + self._ttl_seconds
+            metadata = deepcopy(existing_metadata)
+            metadata.update(
+                {
+                    "status": "ready" if self._metadata_has_assets(existing_metadata) else "error",
+                    "characterName": character_name,
+                    "worldName": world_name,
+                    "resolvedAtUtc": utc_iso(now),
+                    "expiresAtUnix": expires_unix,
+                    "expiresAtUtc": utc_iso(datetime.fromtimestamp(expires_unix, tz=timezone.utc)),
+                    "lastError": str(exc),
+                }
+            )
+            with self._lock:
+                self._store_metadata_locked(identity_key, character_name, world_name, metadata)
+            log_event(f"Lodestone resolve failed for {character_name}@{world_name}: {exc}")
+        finally:
+            with self._lock:
+                self._inflight.discard(identity_key)
+
+
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TTSL Remote HUD</title>
@@ -269,9 +740,10 @@ main{padding:12px;display:grid;gap:12px;align-items:start}.layout-classic{grid-t
 .operator-shell{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:12px}.operator-rail,.operator-detail{align-content:start}.oplist{display:grid;gap:8px}.opitem{width:100%;text-align:left;padding:9px 10px;border-radius:11px}.opitem.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent),rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14))}.oprow{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.opname{font-weight:700;font-size:13px}.opsub,.opmeta{color:var(--muted);font-size:10px;line-height:1.35}
 .command-shell{display:grid;gap:12px}.command-columns{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,.9fr);gap:12px}.command-stage,.command-side{display:grid;gap:12px}.command-board-grid{display:grid;gap:12px}.command-board,.selectable-card{border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:var(--shadow);outline:none}.command-board{display:grid;gap:10px;padding:10px;cursor:pointer}.command-board.active,.selectable-card.active{border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14));background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,transparent),var(--panel2))}.command-board:focus-visible,.selectable-card:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 52%,transparent),var(--shadow)}.command-board-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}.command-board-title{display:grid;gap:3px}.compactgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
 .matrix-shell{display:grid;gap:12px}.matrix-layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:12px}.matrixtable{display:grid;gap:6px}.matrixhead,.matrix-row{display:grid;grid-template-columns:72px minmax(170px,1.4fr) minmax(120px,1fr) 96px 120px 96px 78px;gap:8px;align-items:center}.matrixhead{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}.matrix-row{width:100%;text-align:left;padding:9px 10px;border-radius:10px}.matrix-row.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 15%,transparent),rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14))}.matrixcell{min-width:0;font-size:11px;line-height:1.25;word-break:break-word}.matrixcell.mono{font-family:Consolas,"Courier New",monospace}.kindtag{display:inline-flex;align-items:center;justify-content:center;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);font-size:10px;font-weight:700;text-transform:uppercase}
-@media (max-width:1180px){.statusbar,.overviewgrid,.operator-shell,.command-columns,.matrix-layout{grid-template-columns:1fr}}
-@media (max-width:900px){.aggmeta,.meta.wide{grid-template-columns:repeat(2,minmax(0,1fr))}.aggname .membername{max-width:none}.matrixhead,.dense-head{display:none}.matrix-row,.dense-row{grid-template-columns:repeat(2,minmax(0,1fr))}.matrixcell::before,.densecell::before{content:attr(data-label);display:block;color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}}
-@media (max-width:720px){header{padding:10px 12px 8px}main,.layout-classic{grid-template-columns:1fr}.statusbar,.overviewgrid,.meta,.meta.wide,.aggmeta,.compactgrid{grid-template-columns:1fr}.factrow{grid-template-columns:1fr;gap:3px}}
+.board-summary{display:grid;gap:12px}.solo-board{display:grid;grid-template-columns:minmax(280px,1.08fr) minmax(220px,.92fr);gap:12px;align-items:stretch}.solo-column,.solo-visual{display:grid;gap:10px}.hero-face{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}.hero-title{display:grid;gap:4px}.hero-note{font-size:11px;color:var(--muted);line-height:1.4}.faceframe,.portrait-frame{position:relative;overflow:hidden;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));display:grid;place-items:center;color:var(--muted);font-family:var(--font-display);font-weight:700;letter-spacing:.08em}.faceframe{width:72px;height:72px;font-size:22px}.faceframe.small{width:56px;height:56px;font-size:18px;border-radius:12px}.portrait-frame{min-height:320px;padding:12px;font-size:28px}.faceframe img,.portrait-frame img{width:100%;height:100%;display:block;object-fit:cover}.portrait-frame img{object-fit:contain;background:radial-gradient(circle at top,rgba(255,255,255,.12),rgba(255,255,255,0) 60%)}.faceframe.placeholder,.portrait-frame.placeholder{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}.quickstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mini-actions{display:flex;flex-wrap:wrap;gap:6px}.mini-actions button{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--text);font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease}.mini-actions button:disabled{opacity:.38;cursor:not-allowed;transform:none}.mini-actions button:not(:disabled):hover{background:color-mix(in srgb,var(--accent) 16%,rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.14))}.mini-actions .placeholder{border-style:dashed}.party-board{display:grid;gap:12px}.solo-party-board{max-width:780px}.party-board-main{display:grid;grid-template-columns:minmax(0,.9fr) minmax(280px,1.1fr) minmax(0,.9fr);gap:12px;align-items:start}.party-column{display:grid;gap:10px}.party-slot-card{display:grid;gap:8px;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04)}.party-slot-card.source{border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.06))}.party-slot-card.stranger{border-color:rgba(255,127,127,.18)}.party-slot-card.stale{border-color:rgba(255,191,116,.24)}.party-slot-card.disconnected{border-color:rgba(255,127,127,.24)}.party-slot-top{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start}.member-body{display:grid;gap:4px;min-width:0}.member-card-name{font-size:13px;font-weight:700;line-height:1.2}.member-line{font-size:10px;color:var(--muted);line-height:1.35}.member-badges{display:flex;flex-wrap:wrap;gap:5px}.member-microstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.microstat{padding:6px 7px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)}.microstat.bad .microstat-value{color:var(--bad)}.microstat-label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.microstat-value{margin-top:2px;font-size:11px;font-weight:700;line-height:1.25;word-break:break-word}.board-hub{display:grid;gap:10px;padding:12px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}.board-hub-top{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center}.board-hub-copy{display:grid;gap:4px}.board-hub-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.board-map-section{background:rgba(6,10,16,.42)}.board-map-section .mapframe{margin:0 auto}.board-enmity .sectionhead{margin-bottom:2px}.enmity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.enmity-row{display:grid;gap:4px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}.enmity-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.enmity-name{font-size:12px;font-weight:700;line-height:1.25}.enmity-note{font-size:10px;color:var(--muted);line-height:1.35}.compact-client-head{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start}.compact-client-copy{display:grid;gap:3px}
+@media (max-width:1180px){.statusbar,.overviewgrid,.operator-shell,.command-columns,.matrix-layout,.solo-board,.party-board-main{grid-template-columns:1fr}}
+@media (max-width:900px){.aggmeta,.meta.wide,.board-hub-stats,.member-microstats,.quickstats,.enmity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.aggname .membername{max-width:none}.board-hub-top,.hero-face,.compact-client-head,.party-slot-top{grid-template-columns:1fr}.matrixhead,.dense-head{display:none}.matrix-row,.dense-row{grid-template-columns:repeat(2,minmax(0,1fr))}.matrixcell::before,.densecell::before{content:attr(data-label);display:block;color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}}
+@media (max-width:720px){header{padding:10px 12px 8px}main,.layout-classic{grid-template-columns:1fr}.statusbar,.overviewgrid,.meta,.meta.wide,.aggmeta,.compactgrid,.board-hub-stats,.member-microstats,.quickstats,.enmity-grid{grid-template-columns:1fr}.factrow{grid-template-columns:1fr;gap:3px}}
 </style></head><body>
 <header><div class="masthead"><div><div class="eyebrow">Remote Monitor + Command Relay</div><h1>TTSL Remote HUD</h1></div><div class="modebar"><button class="modechip" type="button" data-mode="classic">Classic</button><button class="modechip" type="button" data-mode="operator">Operator</button><button class="modechip" type="button" data-mode="command">Command</button><button class="modechip" type="button" data-mode="matrix">Matrix</button><button id="detailsToggle" class="modechip" type="button" aria-pressed="false">Show Details</button></div></div><div id="headerDetails" class="header-details hidden"><div class="headline-note">Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix.</div><div class="statusbar"><div id="summary" class="statuspill">Waiting for clients...</div><div id="stamp" class="statuspill">No updates yet.</div><div id="assetPlan" class="statuspill">Asset plan pending.</div><div id="extractStatus" class="statuspill">Extraction idle.</div></div><div class="toolbar"><button id="extractAssets" type="button">Extract Assets</button><label><input id="krangle" type="checkbox"> Krangle names/account IDs</label><label><input id="krangleEnemies" type="checkbox"> Krangle enemy names</label><label><input id="showStale" type="checkbox" checked> Show stale/disconnected</label><label><input id="aggregateParties" type="checkbox"> Aggregate parties</label><label><input id="icons" type="checkbox" checked> Icons</label><label><input id="enumerate" type="checkbox"> Enumerate</label><label>Box px <input id="mapBoxPx" type="number" min="96" max="320" step="4" value="160"></label><label>Combat W <input id="combatWidth" type="number" min="5" max="300" step="1" value="20"></label><label>Combat H <input id="combatHeight" type="number" min="5" max="300" step="1" value="20"></label><label>Travel W <input id="travelWidth" type="number" min="5" max="500" step="1" value="50"></label><label>Travel H <input id="travelHeight" type="number" min="5" max="500" step="1" value="50"></label></div></div></header>
 <main id="app" class="layout-operator"><div class="empty">No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor.</div></main>
@@ -314,6 +786,12 @@ function stateChip(text,active,kind=""){const el=document.createElement("span");
 function tile(label,value,kind="",title=""){const el=document.createElement("div");el.className="tile";if(title)el.title=title;el.innerHTML=`<div class="label">${label}</div><div class="value ${kind}">${value}</div>`;return el}
 const formatAge=value=>typeof value==="number"&&Number.isFinite(value)?`${value.toFixed(1)}s`:"--";
 const pathLeaf=value=>{const normalized=String(value||"").trim().replace(/\\\\/g,"/");if(!normalized)return"Unavailable";const parts=normalized.split("/").filter(Boolean);return parts.length>=2?parts.slice(-2).join("/"):parts[0]};
+const krangleToken=(prefix,value)=>{const raw=String(value||"").trim();return raw?`${prefix}-${hash(raw).toString(16).toUpperCase().padStart(8,"0").slice(0,8)}`:""};
+const displayHost=value=>{const raw=String(value||"").trim();if(!raw)return"Unknown host";return krangle.checked?krangleToken("HOST",raw):raw};
+const displayPathLeaf=value=>{const raw=String(value||"").trim();if(!raw)return"Unavailable";return krangle.checked?krangleToken("PATH",raw):pathLeaf(raw)};
+const displayPathTitle=value=>{const raw=String(value||"").trim();if(!raw)return"";return krangle.checked?displayPathLeaf(raw):raw};
+const compactResourceText=(cur,max)=>cur==null||max==null?"Unavailable":`${Number(cur).toLocaleString()}/${Number(max).toLocaleString()}`;
+const compactVitalsText=(currentHp,maxHp,currentMp,maxMp)=>`HP ${compactResourceText(currentHp,maxHp)} | MP ${compactResourceText(currentMp,maxMp)}`;
 const repairText=repair=>!repair?"Unavailable":`${repair.minCondition}% min | ${repair.averageCondition}% avg | ${repair.equippedCount??0} slots`;
 const policyText=policy=>{const bits=[];if(policy?.allowEchoCommands)bits.push("Text");if(policy?.allowScreenshotRequests)bits.push("Screens");return bits.length>0?bits.join(" + "):"Locked"};
 const queueStateText=entity=>entity?.conditions?.boundByDuty?"In duty":entity?.conditions?.waitingForDuty?"Queued":entity?.conditions?.inCombat?"Combat":"Travel";
@@ -337,6 +815,21 @@ function mapTextureCoordinate(value,offset,sizeFactor){if(value==null||offset==n
 function buildMapMarker(position,map){if(!position||!map)return null;const leftUnit=mapTextureCoordinate(position.x,map.offsetX,map.sizeFactor),topUnit=mapTextureCoordinate(position.z,map.offsetY,map.sizeFactor),mapX=mapVisibleCoordinate(position.x,map.offsetX,map.sizeFactor),mapY=mapVisibleCoordinate(position.z,map.offsetY,map.sizeFactor);if(leftUnit==null||topUnit==null)return null;return{left:leftUnit*100,top:topUnit*100,x:mapX,y:mapY}}
 function buildMapViewport(position,map,widthYalms,heightYalms){const marker=buildMapMarker(position,map);if(!marker)return{marker:null};const halfWidth=Math.max(.5,Number(widthYalms||0)/2),halfHeight=Math.max(.5,Number(heightYalms||0)/2),leftUnit=mapTextureCoordinate(Number(position.x)-halfWidth,map.offsetX,map.sizeFactor),rightUnit=mapTextureCoordinate(Number(position.x)+halfWidth,map.offsetX,map.sizeFactor),topUnit=mapTextureCoordinate(Number(position.z)-halfHeight,map.offsetY,map.sizeFactor),bottomUnit=mapTextureCoordinate(Number(position.z)+halfHeight,map.offsetY,map.sizeFactor);if(leftUnit==null||rightUnit==null||topUnit==null||bottomUnit==null)return{marker};const leftPct=Math.max(0,Math.min(100,Math.min(leftUnit,rightUnit)*100)),rightPct=Math.max(0,Math.min(100,Math.max(leftUnit,rightUnit)*100)),topPct=Math.max(0,Math.min(100,Math.min(topUnit,bottomUnit)*100)),bottomPct=Math.max(0,Math.min(100,Math.max(topUnit,bottomUnit)*100)),viewWidthPct=Math.max(.5,rightPct-leftPct),viewHeightPct=Math.max(.5,bottomPct-topPct),scaleX=Math.max(1,100/viewWidthPct),scaleY=Math.max(1,100/viewHeightPct),markerU=marker.left/100,markerV=marker.top/100,offsetX=Math.max(0,Math.min(1-(1/scaleX),markerU-(.5/scaleX))),offsetY=Math.max(0,Math.min(1-(1/scaleY),markerV-(.5/scaleY))),dotLeft=Math.max(0,Math.min(100,(markerU-offsetX)*scaleX*100)),dotTop=Math.max(0,Math.min(100,(markerV-offsetY)*scaleY*100));return{marker,imageWidthPercent:scaleX*100,imageHeightPercent:scaleY*100,imageLeftPercent:-offsetX*scaleX*100,imageTopPercent:-offsetY*scaleY*100,dotLeftPercent:dotLeft,dotTopPercent:dotTop,scaleX,scaleY,offsetXUnit:offsetX,offsetYUnit:offsetY}}
 function renderIdentity(entity){const wrap=document.createElement("div");wrap.className="ident";if(!icons.checked)return wrap;const appendIcon=(asset,label)=>{const url=assetUrl(asset);if(!url)return;const img=document.createElement("img");img.className="iconimg";img.src=url;img.alt=label;img.title=label;wrap.appendChild(img)};const jobAsset=jobIconAsset(entity.jobIconId);if(jobAsset)appendIcon(jobAsset,entity.job||`Job ${entity.jobIconId}`);const ancestryAsset=tribeIconAsset(entity.tribeId)||raceIconAsset(entity.raceId);const ancestryName=localizedAssetName(ancestryAsset,entity.gender);if(ancestryAsset&&ancestryName)appendIcon(ancestryAsset,ancestryName);if(entity.job)wrap.appendChild(chip(entity.job,jobKind(entity.job)));if(entity.level!=null)wrap.appendChild(chip(`Lv ${entity.level}`,"util"));if(entity.gender!=null)wrap.appendChild(chip(genderSymbol(entity.gender),"util"));return wrap}
+const entityDisplayCharacter=entity=>displayCharacter(entity?.characterName??entity?.name??entity?.sourceCharacterName,entity?.worldName??entity?.sourceWorldName,entity?.krangledName??entity?.sourceKrangledName);
+const entityLevelValue=entity=>entity?.level??entity?.player?.level??null;
+const entityLodestone=entity=>entity?.lodestone||entity?.sourceLodestone||null;
+const entityAncestryText=entity=>localizedAssetName(tribeIconAsset(entity?.tribeId)||raceIconAsset(entity?.raceId),entity?.gender)||"Unknown race";
+const entityIdentityLine=entity=>`${entityAncestryText(entity)} | ${entity?.job||"--"} | ${levelText(entityLevelValue(entity))}`;
+const entityInitials=entity=>{const parts=String(entity?.characterName??entity?.name??entity?.sourceCharacterName??"?").trim().split(/\\s+/).filter(Boolean);const letters=`${parts[0]?.[0]||"?"}${parts[1]?.[0]||""}`;return letters.toUpperCase()||"?"};
+function portraitUrlFor(entity,kind="face"){const lodestone=entityLodestone(entity);if(!lodestone)return null;return kind==="portrait"?(lodestone.portraitUrl||lodestone.faceUrl||null):(lodestone.faceUrl||lodestone.portraitUrl||null)}
+function renderPortraitFrame(entity,{kind="face",className="faceframe",label="",title=""}={}){const frame=document.createElement("div");frame.className=className;const altLabel=label||entityDisplayCharacter(entity);const sourceUrl=portraitUrlFor(entity,kind);if(sourceUrl){const img=document.createElement("img");img.src=sourceUrl;img.alt=altLabel;img.loading="lazy";frame.appendChild(img)}else{frame.classList.add("placeholder");frame.textContent=entityInitials(entity)}const lodestone=entityLodestone(entity);const stateText=lodestone?.status&&lodestone.status!=="ready"?` | Lodestone ${lodestone.status}`:"";frame.title=title||`${altLabel}${stateText}`;return frame}
+function buildRemoteTarget(target){if(!target)return null;const accountId=String(target.accountId||target.sourceAccountId||"").trim(),characterName=String(target.characterName||target.name||target.sourceCharacterName||"").trim(),worldName=String(target.worldName||target.sourceWorldName||"").trim();if(!accountId||!characterName||!worldName)return null;return{accountId,characterName,worldName,policy:target.policy||target.sourcePolicy||{},lastScreenshot:target.lastScreenshot||target.sourceLastScreenshot||null}}
+function stopEvent(event){event.preventDefault();event.stopPropagation()}
+async function requestShortcutScreenshot(target){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowScreenshotRequests)return;await queueRemoteAction(remote,"requestScreenshot")}
+async function promptShortcutCommand(target,label){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowEchoCommands)return;const draftKey=remoteControlKey(remote);const seeded=String(remoteControlDrafts.get(draftKey)||"");const input=window.prompt(`Send text or slash command to ${label}`,seeded);if(input==null)return;const text=String(input).trim();if(!text)return;remoteControlDrafts.set(draftKey,text);const ok=await queueRemoteAction(remote,"echoCommand",text);if(ok)remoteControlDrafts.delete(draftKey)}
+function renderShortcutStrip(target,label){const controls=document.createElement("div");controls.className="mini-actions";const remote=buildRemoteTarget(target);const placeholder=document.createElement("button");placeholder.type="button";placeholder.className="placeholder";placeholder.textContent="CCTV";placeholder.disabled=true;placeholder.title="Reserved for the later streaming pass.";const screenshot=document.createElement("button");screenshot.type="button";screenshot.textContent="SS";screenshot.disabled=!remote?.policy?.allowScreenshotRequests;screenshot.title=screenshot.disabled?"Screenshot requests are not allowed for this client.":`Request a screenshot from ${label}`;screenshot.addEventListener("click",event=>{stopEvent(event);screenshot.disabled=true;requestShortcutScreenshot(remote).finally(()=>{screenshot.disabled=!remote?.policy?.allowScreenshotRequests})});const command=document.createElement("button");command.type="button";command.textContent="CMD";command.disabled=!remote?.policy?.allowEchoCommands;command.title=command.disabled?"Web text or slash commands are not allowed for this client.":`Open a command prompt for ${label}`;command.addEventListener("click",event=>{stopEvent(event);void promptShortcutCommand(remote,label)});controls.append(placeholder,screenshot,command);return controls}
+function microStat(label,value,bad=false){const stat=document.createElement("div");stat.className=`microstat ${bad?"bad":""}`.trim();stat.innerHTML=`<div class="microstat-label">${label}</div><div class="microstat-value">${value}</div>`;return stat}
+function collectHostiles(combat){const hostiles=[];if(combat?.currentTarget)hostiles.push(combat.currentTarget);for(const hostile of combat?.hostiles||[]){if(!hostiles.some(existing=>existing.dataId===hostile.dataId&&existing.distance===hostile.distance&&existing.name===hostile.name))hostiles.push(hostile)}return hostiles}
 function buildEnemyPoints(combat){return Array.isArray(combat?.hostiles)?combat.hostiles.filter(enemy=>enemy.position).map((enemy,index)=>({position:enemy.position,color:enemy.isCurrentTarget?"#ff5e7d":enemy.isTargetingTrackedParty?"#ff9b7a":"#ff7f7f",label:enemy.isCurrentTarget?"TGT":`E${index+1}`})):[]}
 function drawFacingCone(ctx,x,y,rotation,color,size){
   if(typeof rotation!=="number"||!Number.isFinite(rotation))return;
@@ -378,9 +871,10 @@ function drawAggregateRadar(canvas,party){const viewport=currentViewportSettings
 function renderParty(client){const wrap=document.createElement("div");wrap.className="party";if(Array.isArray(client.party)&&client.party.length>0){for(const m of client.party){const row=document.createElement("div");row.className="member";const dist=typeof m.distance==="number"?`${m.distance.toFixed(1)}y`:"--";row.innerHTML=`<div class="slot">${m.slot}</div><div class="membername">${displayName(m.name,m.krangledName)}</div><div class="job">${m.job}</div><div class="dist">${dist}</div>`;row.title=`${levelText(m.level)} | HP ${hpText(m.currentHp,m.maxHp)} | MP ${mpText(m.currentMp,m.maxMp)}`;wrap.appendChild(row)}}else{const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No party data captured yet.</div><div class="job">--</div><div class="dist">--</div>`;wrap.appendChild(row)}return wrap}
 function renderStates(client){const wrap=document.createElement("div");wrap.className="states";wrap.append(stateChip("Combat",!!client.conditions?.inCombat),stateChip("Duty",!!client.conditions?.boundByDuty),stateChip("Queue",!!client.conditions?.waitingForDuty),stateChip("Mount",!!client.conditions?.mounted),stateChip("Cast",!!client.conditions?.casting),stateChip("Dead",!!client.conditions?.dead,client.conditions?.dead?"bad":"off"));return wrap}
 function combatHeadline(combat){const target=combat?.currentTarget;if(!target)return"No current target";const name=displayEnemyName(target.name,target.krangledName);const targetText=target.isTargetingLocalPlayer?"targeting you":target.isTargetingTrackedParty?`targeting ${displayName(target.targetName||"party",target.krangledTargetName||"")}`:target.targetName?`targeting ${displayName(target.targetName,target.krangledTargetName)}`:"no tracked target";const castText=target.isCasting?` | cast ${target.castActionId??"?"} ${target.castTimeRemaining?.toFixed(1)??"?"}s`:"";return`${name} | ${targetText}${castText}`}
-function renderClientTelemetry(client){if(!showDetails)return null;return factSection("Telemetry",[{label:"Connected",value:client.connectedAtUtc||"Unknown"},{label:"Last update",value:`${client.lastSeenUtc||"Unknown"} | ${client.updateKind||"full"}`},{label:"Host",value:client.hostName||"Unknown host",kind:client.hostName?"":"bad"},{label:"Game path",value:pathLeaf(client.gameInstallPath),title:client.gameInstallPath||"",kind:client.gameInstallPath?"":"bad"},{label:"Labels",value:client.enumeratePartyMembers?"Slot numbers":"Names"},{label:"Controls",value:policyText(client.policy)},{label:"Queue",value:queueStateText(client)},{label:"Focus",value:combatHeadline(client.combat),title:combatHeadline(client.combat)}])}
-function renderThreats(combat){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Threat</div>`;const list=document.createElement("div");list.className="party";const hostiles=[];if(combat?.currentTarget)hostiles.push(combat.currentTarget);for(const hostile of combat?.hostiles||[]){if(!hostiles.some(existing=>existing.dataId===hostile.dataId&&existing.distance===hostile.distance&&existing.name===hostile.name))hostiles.push(hostile)}if(hostiles.length===0){const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No combat telemetry captured.</div><div class="job">--</div><div class="dist">--</div>`;list.appendChild(row);section.appendChild(list);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="member";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const label=hostile.isCurrentTarget?"T":hostile.isTargetingTrackedParty?"A":"E";const hp=pct(hostile.currentHp,hostile.maxHp);row.innerHTML=`<div class="slot">${label}</div><div class="membername">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div class="job">${dist}</div><div class="dist">${hp}</div>`;row.title=`${hostile.isCurrentTarget?"Current target":hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} | ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;list.appendChild(row)}section.appendChild(list);return section}
-function renderClientSummary(client){const wrap=document.createElement("div");wrap.className="inspector-stack";const status=document.createElement("div");status.className="section";status.innerHTML=`<div class="sectionhead">Status</div>`;status.appendChild(renderStates(client));wrap.append(status,factSection("Snapshot",[{label:"Queue",value:queueStateText(client)},{label:"Party",value:Array.isArray(client.party)&&client.party.length>0?`${client.party.length} member rows captured`:"No party data",kind:Array.isArray(client.party)&&client.party.length>0?"":"bad"},{label:"Focus",value:combatHeadline(client.combat),title:combatHeadline(client.combat)},{label:"Position",value:posText(client.position),kind:client.position?"":"bad"}]));return wrap}
+function renderClientTelemetry(client){if(!showDetails)return null;return factSection("Telemetry",[{label:"Connected",value:client.connectedAtUtc||"Unknown"},{label:"Last update",value:`${client.lastSeenUtc||"Unknown"} | ${client.updateKind||"full"}`},{label:"Host",value:displayHost(client.hostName),kind:client.hostName?"":"bad"},{label:"Game path",value:displayPathLeaf(client.gameInstallPath),title:displayPathTitle(client.gameInstallPath),kind:client.gameInstallPath?"":"bad"},{label:"Queue",value:queueStateText(client)},{label:"Focus",value:combatHeadline(client.combat),title:combatHeadline(client.combat)}])}
+function renderThreats(combat){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Threat</div>`;const list=document.createElement("div");list.className="party";const hostiles=collectHostiles(combat);if(hostiles.length===0){const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No combat telemetry captured.</div><div class="job">--</div><div class="dist">--</div>`;list.appendChild(row);section.appendChild(list);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="member";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const label=hostile.isCurrentTarget?"T":hostile.isTargetingTrackedParty?"A":"E";const hp=hpText(hostile.currentHp,hostile.maxHp);row.innerHTML=`<div class="slot">${label}</div><div class="membername">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div class="job">${dist}</div><div class="dist">${hp}</div>`;row.title=`${hostile.isCurrentTarget?"Current target":hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} | ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;list.appendChild(row)}section.appendChild(list);return section}
+function renderEnmityBoard(combat,title="Enmity"){const section=document.createElement("div");section.className="section board-enmity";section.innerHTML=`<div class="sectionhead">${title}</div>`;const grid=document.createElement("div");grid.className="enmity-grid";const hostiles=collectHostiles(combat);if(hostiles.length===0){const row=document.createElement("div");row.className="enmity-row";row.innerHTML=`<div class="enmity-name">No combat telemetry captured.</div><div class="enmity-note">The tracked client does not currently expose target or hostile data.</div>`;grid.appendChild(row);section.appendChild(grid);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="enmity-row";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const top=document.createElement("div");top.className="enmity-top";top.innerHTML=`<div class="enmity-name">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div>${""}</div>`;top.querySelector("div:last-child").replaceWith(chip(hostile.isCurrentTarget?"TARGET":hostile.isTargetingTrackedParty?"ALLY":"HOSTILE",hostile.isCurrentTarget?"bad":hostile.isTargetingTrackedParty?"warn":""));const note=document.createElement("div");note.className="enmity-note";note.textContent=`${hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} in ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;const stats=document.createElement("div");stats.className="member-microstats";stats.append(microStat("HP",hpText(hostile.currentHp,hostile.maxHp),hostile.currentHp==null),microStat("Dist",dist,dist==="--"),microStat("Label",hostile.isCurrentTarget?"TGT":hostile.isTargetingTrackedParty?"ALLY":"HOST"));row.append(top,note,stats);grid.appendChild(row)}section.appendChild(grid);return section}
+function renderClientSummary(client){const wrap=document.createElement("div");wrap.className="board-summary";const board=document.createElement("div");board.className="party-board solo-party-board";const main=document.createElement("div");main.className="party-board-main";main.style.gridTemplateColumns="minmax(0,1fr) minmax(280px,1.02fr)";const left=document.createElement("div");left.className="party-column";left.appendChild(renderPartyMemberCard(buildSoloSurfaceMember(client)));const portraitSection=document.createElement("div");portraitSection.className="board-hub";portraitSection.innerHTML=`<div class="sectionhead">Character</div>`;const portrait=renderPortraitFrame(client,{kind:"portrait",className:"portrait-frame",label:entityDisplayCharacter(client),title:`Lodestone body image for ${entityDisplayCharacter(client)}`});portrait.style.width="100%";portrait.style.maxWidth="220px";portrait.style.minHeight="220px";portrait.style.justifySelf="center";portraitSection.appendChild(portrait);left.appendChild(portraitSection);const right=document.createElement("div");right.className="party-column";const mapSection=renderMinimapSection(client.map,client.position,"Field Map",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU");mapSection.classList.add("board-map-section");right.appendChild(mapSection);main.append(left,right);board.appendChild(main);wrap.append(board,renderEnmityBoard(client.combat));return wrap}
 function renderClientPartyModule(client){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Party</div>`;section.appendChild(renderParty(client));return section}
 function renderClientModule(client,allowActions){switch(getInspectorModule("client",allowActions)){case"map":return renderMinimapSection(client.map,client.position,"Minimap",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU");case"party":return renderClientPartyModule(client);case"threat":return renderThreats(client.combat);case"actions":return renderRemoteControlSection(client,"Remote Control");default:return renderClientSummary(client)}}
 function renderMinimapSection(map,position,title="Minimap",inCombat=false,points=[],sourceLabel=""){
@@ -483,7 +977,7 @@ function renderClient(client,options={}){
     tile("Repair",repairText(client.repair),client.repair?"":"bad")
   );
   if(showDetails)
-    metrics.append(tile("Policy",policyText(client.policy),client.policy?.allowEchoCommands||client.policy?.allowScreenshotRequests?"":"warn"),tile("Path",pathLeaf(client.gameInstallPath),client.gameInstallPath?"":"bad",client.gameInstallPath||""),tile("Focus",focusText,"",focusText));
+    metrics.append(tile("Policy",policyText(client.policy),client.policy?.allowEchoCommands||client.policy?.allowScreenshotRequests?"":"warn"),tile("Path",displayPathLeaf(client.gameInstallPath),client.gameInstallPath?"":"bad",displayPathTitle(client.gameInstallPath)),tile("Focus",focusText,"",focusText));
 
   const foot=document.createElement("div");
   foot.className="foot";
@@ -499,13 +993,16 @@ function renderClient(client,options={}){
   return card;
 }
 function renderAggregateMember(member){const row=document.createElement("div");row.className=`aggmember ${member.isStranger?"stranger":""}`.trim();const main=document.createElement("div");main.className="aggmain";const info=document.createElement("div");info.className="aggname";info.innerHTML=`<span class="slot">${member.slotText}</span><span class="membername">${displayCharacter(member.name,member.worldName,member.krangledName)}</span><span class="job">${member.job||"--"}</span><span class="lvl">${levelText(member.level)}</span>`;info.appendChild(renderIdentity(member));const badges=document.createElement("div");badges.className="badges";if(member.isStranger){badges.append(chip("Stranger","bad"),chip("Limited data","warn"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"));badges.append(chip(member.isSubmitting?"Submitting":"Monitored",member.isSubmitting?"ok":"warn"));if(member.isSource)badges.append(chip("Source","ok"))}main.append(info,badges);const meta=document.createElement("div");meta.className="aggmeta";meta.append(tile("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null?"bad":""),tile("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null?"bad":""),tile("Position",posText(member.position),member.position?"" :"bad"),tile("Extra",member.isStranger?"Conditions/repair unavailable":member.repair?repairText(member.repair):"No repair data",member.isStranger||!member.repair?"bad":""));row.append(main,meta);if(!member.isStranger){const states=renderStates(member);row.append(states);const note=document.createElement("div");note.className="aggnote";note.textContent=`${member.territoryName||"Unknown zone"} (${member.territoryId??0}) | Last update ${member.lastSeenUtc} | ${member.updateKind}`;row.append(note)}else{const note=document.createElement("div");note.className="aggnote bad";note.textContent="Only party-list fields are available for strangers: name, position, HP, MP, level, and job.";row.append(note)}return row}
-function renderAggregateTelemetry(party){if(!showDetails)return null;return factSection("Source",[{label:"Connected",value:party.sourceConnectedAtUtc||"Unknown"},{label:"Age",value:formatAge(party.sourceAgeSeconds)},{label:"Host",value:party.sourceHostName||"Unknown host",kind:party.sourceHostName?"":"bad"},{label:"Game path",value:pathLeaf(party.sourceGameInstallPath),title:party.sourceGameInstallPath||"",kind:party.sourceGameInstallPath?"":"bad"},{label:"Labels",value:party.sourceEnumeratePartyMembers?"Slot numbers":"Names"},{label:"Controls",value:policyText(party.sourcePolicy)},{label:"Routing",value:"Stranger actions route through the source client."},{label:"Focus",value:combatHeadline(party.combat),title:combatHeadline(party.combat)}])}
+function renderAggregateTelemetry(party){if(!showDetails)return null;return factSection("Source",[{label:"Connected",value:party.sourceConnectedAtUtc||"Unknown"},{label:"Age",value:formatAge(party.sourceAgeSeconds)},{label:"Host",value:displayHost(party.sourceHostName),kind:party.sourceHostName?"":"bad"},{label:"Game path",value:displayPathLeaf(party.sourceGameInstallPath),title:displayPathTitle(party.sourceGameInstallPath),kind:party.sourceGameInstallPath?"":"bad"},{label:"Focus",value:combatHeadline(party.combat),title:combatHeadline(party.combat)}])}
+function aggregateSourceMember(party){return party.members.find(member=>member.isSource&&member.position)||party.members.find(member=>member.isSource)||party.members.find(member=>member.position&&!member.isStranger)||party.members.find(member=>!member.isStranger)||null}
+function buildSoloSurfaceMember(client){return{...client,name:client.characterName,level:entityLevelValue(client),currentHp:client.player?.currentHp,maxHp:client.player?.maxHp,currentMp:client.player?.currentMp,maxMp:client.player?.maxMp,isSolo:true,isSource:false,isSubmitting:!client.stale&&!client.isDisconnected,isStranger:false}}
+function renderPartyMemberCard(member){const card=document.createElement("div");card.className=`party-slot-card ${member.isSource||member.isSolo?"source":""} ${member.stale?"stale":""} ${member.isDisconnected?"disconnected":""} ${member.isStranger?"stranger":""}`.trim();const top=document.createElement("div");top.className="party-slot-top";const body=document.createElement("div");body.className="member-body";body.innerHTML=`<div class="member-card-name">${entityDisplayCharacter(member)}</div><div class="member-line">${entityIdentityLine(member)}</div><div class="member-line">${member.isStranger?"Party-only telemetry | direct actions disabled":`${member.territoryName||"Unknown zone"} | ${member.lastSeenUtc||"Unknown"}`}</div>`;const badges=document.createElement("div");badges.className="member-badges";if(member.isSolo)badges.appendChild(chip("Solo","ok"));else if(member.isSource)badges.appendChild(chip("Source","ok"));if(member.isStranger){badges.append(chip("Stranger","bad"),chip("Limited","warn"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"),chip(member.isSubmitting?"Tracked":"Paused",member.isSubmitting?"ok":"warn"))}body.appendChild(badges);top.append(renderPortraitFrame(member,{kind:"face",className:"faceframe small",label:entityDisplayCharacter(member)}),body);const stats=document.createElement("div");stats.className="member-microstats";stats.append(microStat("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null),microStat("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null),microStat("XYZ",posText(member.position),!member.position));card.append(top,stats,renderShortcutStrip(member,entityDisplayCharacter(member)));return card}
 function denseCell(label,value,extraClass=""){const cell=document.createElement("div");cell.className=`densecell ${extraClass}`.trim();cell.dataset.label=label;cell.textContent=value;return cell}
 function aggregateMemberDistance(sourceMember,member){if(member===sourceMember||member?.isSource)return"SRC";if(!sourceMember?.position||!member?.position)return"--";const dx=Number(member.position.x)-Number(sourceMember.position.x),dz=Number(member.position.z)-Number(sourceMember.position.z);return`${Math.hypot(dx,dz).toFixed(1)}y`}
 function aggregateMemberStatus(member){if(member.isStranger)return"Stranger";const liveState=member.isDisconnected?"Disc":member.stale?"Stale":"Live";if(member.isSource)return`Source | ${liveState}`;return member.isSubmitting?`Sub | ${liveState}`:liveState}
-function renderAggregatePartyTable(party,title="Party"){const section=document.createElement("div");section.className="section";if(title)section.innerHTML=`<div class="sectionhead">${title}</div>`;const table=document.createElement("div");table.className="dense-table";const head=document.createElement("div");head.className="dense-head";head.innerHTML=`<div>Slot</div><div>Name</div><div>Job</div><div>Status</div><div>HP</div><div>Dist</div>`;table.appendChild(head);const sourceMember=party.members.find(member=>member.isSource&&member.position)||party.members.find(member=>member.position&&!member.isStranger)||null;for(const member of party.members){const row=document.createElement("div");row.className=`dense-row ${member.isSource?"source":member.isStranger?"stranger":""}`.trim();row.append(denseCell("Slot",member.slotText||"--","mono"),denseCell("Name",displayCharacter(member.name,member.worldName,member.krangledName)),denseCell("Job",`${member.job||"--"} ${levelText(member.level)}`.trim()),denseCell("Status",aggregateMemberStatus(member)),denseCell("HP",pct(member.currentHp,member.maxHp),"mono"),denseCell("Dist",aggregateMemberDistance(sourceMember,member),"mono"));row.title=member.isStranger?"Only party-list fields are available for this member.":`${member.territoryName||"Unknown zone"} | Last update ${member.lastSeenUtc||"Unknown"} | ${member.updateKind||"full"}`;table.appendChild(row)}section.appendChild(table);return section}
-function renderAggregateSummary(party){const wrap=document.createElement("div");wrap.className="inspector-stack";const status=document.createElement("div");status.className="section";status.innerHTML=`<div class="sectionhead">Party Status</div>`;const chips=document.createElement("div");chips.className="states";chips.append(chip(`${party.liveCount} live`,"ok"),chip(`${party.staleCount} stale`,"warn"),chip(`${party.disconnectedCount} disconnected`,"bad"),chip(`${party.strangerCount} stranger`,party.strangerCount>0?"warn":""));status.appendChild(chips);wrap.append(status,factSection("Summary",[{label:"Source",value:displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)},{label:"Members",value:`${party.members.length} total | ${party.monitoredCount} monitored`},{label:"Focus",value:combatHeadline(party.combat),title:combatHeadline(party.combat)},{label:"Routing",value:"Actions route through the source client."}]));return wrap}
-function renderAggregateModule(party,allowActions){const sourceMember=party.members.find(member=>member.isSource&&member.position)||party.members.find(member=>member.position&&!member.isStranger)||null;switch(getInspectorModule("party",allowActions)){case"map":return renderMinimapSection(party.map,party.sourcePosition,"Source Minimap",aggregatePartyInCombat(party),buildAggregateMinimapPoints(party,sourceMember),sourceMember?"SRC":"");case"party":return renderAggregatePartyTable(party,"Party");case"threat":return renderThreats(party.combat);case"actions":return renderRemoteControlSection({accountId:party.sourceAccountId,characterName:party.sourceCharacterName,worldName:party.sourceWorldName,sourcePolicy:party.sourcePolicy,sourceLastScreenshot:party.sourceLastScreenshot},"Source Remote Control","Aggregate-party stranger actions route through the source client.");default:return renderAggregateSummary(party)}}
+function renderAggregatePartyTable(party,title="Party"){const section=document.createElement("div");section.className="section";if(title)section.innerHTML=`<div class="sectionhead">${title}</div>`;const table=document.createElement("div");table.className="dense-table";const head=document.createElement("div");head.className="dense-head";head.innerHTML=`<div>Slot</div><div>Name</div><div>Job</div><div>Status</div><div>HP</div><div>MP</div><div>Dist</div>`;table.appendChild(head);const sourceMember=party.members.find(member=>member.isSource&&member.position)||party.members.find(member=>member.position&&!member.isStranger)||null;for(const member of party.members){const row=document.createElement("div");row.className=`dense-row ${member.isSource?"source":member.isStranger?"stranger":""}`.trim();row.append(denseCell("Slot",member.slotText||"--","mono"),denseCell("Name",displayCharacter(member.name,member.worldName,member.krangledName)),denseCell("Job",`${member.job||"--"} ${levelText(member.level)}`.trim()),denseCell("Status",aggregateMemberStatus(member)),denseCell("HP",compactResourceText(member.currentHp,member.maxHp),"mono"),denseCell("MP",compactResourceText(member.currentMp,member.maxMp),"mono"),denseCell("Dist",aggregateMemberDistance(sourceMember,member),"mono"));row.title=member.isStranger?"Only party-list fields are available for this member.":`${member.territoryName||"Unknown zone"} | Last update ${member.lastSeenUtc||"Unknown"} | ${member.updateKind||"full"}`;table.appendChild(row)}section.appendChild(table);return section}
+function renderAggregateSummary(party){const wrap=document.createElement("div");wrap.className="board-summary";const board=document.createElement("div");board.className="party-board";const main=document.createElement("div");main.className="party-board-main";const left=document.createElement("div");left.className="party-column";const right=document.createElement("div");right.className="party-column";const source=aggregateSourceMember(party);const leftMembers=(party.members||[]).slice(0,4),rightMembers=(party.members||[]).slice(4);for(const member of leftMembers)left.appendChild(renderPartyMemberCard(member));for(const member of rightMembers)right.appendChild(renderPartyMemberCard(member));const center=document.createElement("div");center.className="board-hub";const hubTop=document.createElement("div");hubTop.className="board-hub-top";const hubCopy=document.createElement("div");hubCopy.className="board-hub-copy";hubCopy.innerHTML=`<div class="sectionhead">Party Surface</div><div class="name">${party.territoryName||"Unknown zone"}</div><div class="hero-note">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)} | ${party.members.length} slots | ${formatAge(party.sourceAgeSeconds)}</div>`;if(source)hubCopy.appendChild(renderIdentity(source));hubTop.append(renderPortraitFrame(source||party,{kind:"face",className:"faceframe",label:`Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}`}),hubCopy);const stats=document.createElement("div");stats.className="board-hub-stats";stats.append(microStat("Live",String(party.liveCount),party.liveCount===0),microStat("Stale",String(party.staleCount),party.staleCount>0),microStat("Disc",String(party.disconnectedCount),party.disconnectedCount>0),microStat("Strangers",String(party.strangerCount),party.strangerCount>0));const mapSection=renderMinimapSection(party.map,party.sourcePosition,"Field Map",aggregatePartyInCombat(party),buildAggregateMinimapPoints(party,source),source?"SRC":"");mapSection.classList.add("board-map-section");center.append(hubTop,stats,mapSection,Object.assign(document.createElement("div"),{className:"hint",textContent:"SS and CMD target monitored members directly. Stranger buttons stay visible but disabled until that slot is represented by a tracked client."}));main.append(left,center,right);board.appendChild(main);wrap.append(board,renderEnmityBoard(party.combat));return wrap}
+function renderAggregateModule(party,allowActions){const sourceMember=aggregateSourceMember(party);switch(getInspectorModule("party",allowActions)){case"map":return renderMinimapSection(party.map,party.sourcePosition,"Source Minimap",aggregatePartyInCombat(party),buildAggregateMinimapPoints(party,sourceMember),sourceMember?"SRC":"");case"party":return renderAggregatePartyTable(party,"Party");case"threat":return renderThreats(party.combat);case"actions":return renderRemoteControlSection({accountId:party.sourceAccountId,characterName:party.sourceCharacterName,worldName:party.sourceWorldName,sourcePolicy:party.sourcePolicy,sourceLastScreenshot:party.sourceLastScreenshot},"Source Remote Control","Aggregate-party stranger actions route through the source client.");default:return renderAggregateSummary(party)}}
 function renderAggregateParty(party,options={}){
   const allowActions=!!options.allowActions;
   const card=document.createElement("section");
@@ -533,7 +1030,7 @@ function renderAggregateParty(party,options={}){
     tile("Age",formatAge(party.sourceAgeSeconds))
   );
   if(showDetails)
-    metrics.append(tile("Source host",party.sourceHostName||"Unknown",party.sourceHostName?"":"bad"),tile("Policy",policyText(party.sourcePolicy),party.sourcePolicy?.allowEchoCommands||party.sourcePolicy?.allowScreenshotRequests?"":"warn"),tile("Path",pathLeaf(party.sourceGameInstallPath),party.sourceGameInstallPath?"":"bad",party.sourceGameInstallPath||""));
+    metrics.append(tile("Source host",displayHost(party.sourceHostName),party.sourceHostName?"":"bad"),tile("Policy",policyText(party.sourcePolicy),party.sourcePolicy?.allowEchoCommands||party.sourcePolicy?.allowScreenshotRequests?"":"warn"),tile("Path",displayPathLeaf(party.sourceGameInstallPath),party.sourceGameInstallPath?"":"bad",displayPathTitle(party.sourceGameInstallPath)));
 
   const foot=document.createElement("div");
   foot.className="foot";
@@ -553,17 +1050,17 @@ function renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,
 function buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose){return aggregateParties.checked?[...visibleAggregate.map(party=>({key:partyKey(party),kind:"party",item:party})),...visibleLoose.map(client=>({key:clientKey(client),kind:"client",item:client}))]:visibleClients.map(client=>({key:clientKey(client),kind:"client",item:client}))}
 function resolveSelectedEntry(entries){if(entries.length===0){selectedEntityKey="";persistStringPreference("selectedEntity","");return null}const found=entries.find(entry=>entry.key===selectedEntityKey);if(found)return found;selectedEntityKey=entries[0].key;persistStringPreference("selectedEntity",selectedEntityKey);return entries[0]}
 function wireSelectableSurface(element,key){element.tabIndex=0;element.setAttribute("role","button");element.addEventListener("click",()=>selectEntity(key));element.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();selectEntity(key)}})}
-function renderOperatorItem(entry,active){const button=document.createElement("button");button.type="button";button.className=`opitem ${active?"active":""}`.trim();button.addEventListener("click",()=>selectEntity(entry.key));if(entry.kind==="party"){const party=entry.item;const partyMeta=showDetails?`${party.monitoredCount} monitored | ${party.strangerCount} stranger | ${formatAge(party.sourceAgeSeconds)} | ${party.sourceHostName||"Unknown host"}`:`${party.monitoredCount} monitored | ${party.strangerCount} stranger | ${formatAge(party.sourceAgeSeconds)}`;button.innerHTML=`<div class="oprow"><div class="opname">Party | ${party.territoryName||"Unknown zone"}</div><div>${""}</div></div><div class="opsub">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}</div><div class="opmeta">${partyMeta}</div>`;button.querySelector(".oprow div:last-child").replaceWith(chip(`${party.liveCount} live`,party.liveCount>0?"ok":"bad"));return button}const client=entry.item;const clientMeta=showDetails?`${formatAge(client.ageSeconds)} | ${client.hostName||"Unknown host"} | ${policyText(client.policy)}`:formatAge(client.ageSeconds);button.innerHTML=`<div class="oprow"><div class="opname">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div>${""}</div></div><div class="opsub">${client.territoryName||"Unknown zone"} | ${client.job||"UNK"} | ${queueStateText(client)}</div><div class="opmeta">${clientMeta}</div>`;button.querySelector(".oprow div:last-child").replaceWith(chip(clientStatusText(client),clientStatusKind(client)));return button}
+function renderOperatorItem(entry,active){const button=document.createElement("button");button.type="button";button.className=`opitem ${active?"active":""}`.trim();button.addEventListener("click",()=>selectEntity(entry.key));if(entry.kind==="party"){const party=entry.item;const partyMeta=showDetails?`${party.monitoredCount} monitored | ${party.strangerCount} stranger | ${formatAge(party.sourceAgeSeconds)} | ${displayHost(party.sourceHostName)}`:`${party.monitoredCount} monitored | ${party.strangerCount} stranger | ${formatAge(party.sourceAgeSeconds)}`;button.innerHTML=`<div class="oprow"><div class="opname">Party | ${party.territoryName||"Unknown zone"}</div><div>${""}</div></div><div class="opsub">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}</div><div class="opmeta">${partyMeta}</div>`;button.querySelector(".oprow div:last-child").replaceWith(chip(`${party.liveCount} live`,party.liveCount>0?"ok":"bad"));return button}const client=entry.item;const clientMeta=showDetails?`${formatAge(client.ageSeconds)} | ${displayHost(client.hostName)} | ${policyText(client.policy)}`:formatAge(client.ageSeconds);button.innerHTML=`<div class="oprow"><div class="opname">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div>${""}</div></div><div class="opsub">${client.territoryName||"Unknown zone"} | ${client.job||"UNK"} | ${queueStateText(client)}</div><div class="opmeta">${clientMeta}</div>`;button.querySelector(".oprow div:last-child").replaceWith(chip(clientStatusText(client),clientStatusKind(client)));return button}
 function renderOperatorLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const shell=document.createElement("div");shell.className="operator-shell";const rail=document.createElement("aside");rail.className="operator-rail";if(showDetails){rail.append(renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients),Object.assign(document.createElement("div"),{className:"hint",textContent:"Select a client or aggregate party surface to inspect the detail pane."}))}const entries=buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose);const detail=document.createElement("section");detail.className="operator-detail";if(entries.length===0){detail.appendChild(renderEmptyState(totalClients));shell.append(rail,detail);return shell}const selected=resolveSelectedEntry(entries);const list=document.createElement("div");list.className="oplist";for(const entry of entries)list.appendChild(renderOperatorItem(entry,entry.key===selected?.key));rail.appendChild(list);detail.appendChild(selected.kind==="party"?renderAggregateParty(selected.item,{allowActions:true}):renderClient(selected.item,{allowActions:true}));shell.append(rail,detail);return shell}
-function renderCompactClientCard(client,active=false,selectable=false){const card=document.createElement("section");card.className=`card ${selectable?"selectable-card":""} ${active?"active":""}`.trim();const head=document.createElement("div");head.className="head";const info=document.createElement("div");info.innerHTML=`<div class="name">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div class="zone">${client.territoryName||"Unknown zone"}</div><div class="sub">${client.hostName||"Unknown host"} | ${formatAge(client.ageSeconds)}</div>`;info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender,raceId:client.raceId,tribeId:client.tribeId}));const badges=document.createElement("div");badges.className="badges";badges.append(chip(clientStatusText(client),clientStatusKind(client)),chip(queueStateText(client),client.conditions?.waitingForDuty?"warn":client.conditions?.boundByDuty?"ok":""));head.append(info,badges);const meta=document.createElement("div");meta.className="meta wide";meta.append(tile("HP",hpText(client.player?.currentHp,client.player?.maxHp),client.player?.currentHp==null?"bad":""),tile("MP",mpText(client.player?.currentMp,client.player?.maxMp),client.player?.currentMp==null?"bad":""),tile("Repair",repairText(client.repair),client.repair?"":"bad"));card.append(head,meta,renderStates(client));if(selectable)wireSelectableSurface(card,clientKey(client));return card}
-function renderCommandPartyBoard(party,active){const board=document.createElement("section");board.className=`command-board ${active?"active":""}`.trim();wireSelectableSurface(board,partyKey(party));const head=document.createElement("div");head.className="command-board-head";const title=document.createElement("div");title.className="command-board-title";title.innerHTML=`<div class="name">Party | ${party.territoryName||"Unknown zone"}</div><div class="sub">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}</div>`;const badges=document.createElement("div");badges.className="badges";badges.append(chip(`${party.liveCount} live`,"ok"),chip(`${party.strangerCount} stranger`,party.strangerCount>0?"warn":""),chip(formatAge(party.sourceAgeSeconds),""));head.append(title,badges);board.append(head,renderAggregatePartyTable(party,""));return board}
+function renderCompactClientCard(client,active=false,selectable=false){const card=document.createElement("section");card.className=`card ${selectable?"selectable-card":""} ${active?"active":""}`.trim();const head=document.createElement("div");head.className="head";const infoWrap=document.createElement("div");infoWrap.className="compact-client-head";const info=document.createElement("div");info.className="compact-client-copy";info.innerHTML=`<div class="name">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div class="zone">${client.territoryName||"Unknown zone"}</div><div class="sub">${displayHost(client.hostName)} | ${formatAge(client.ageSeconds)}</div>`;info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender,raceId:client.raceId,tribeId:client.tribeId}));infoWrap.append(renderPortraitFrame(client,{kind:"face",className:"faceframe small",label:entityDisplayCharacter(client)}),info);const badges=document.createElement("div");badges.className="badges";badges.append(chip(clientStatusText(client),clientStatusKind(client)),chip(queueStateText(client),client.conditions?.waitingForDuty?"warn":client.conditions?.boundByDuty?"ok":""));head.append(infoWrap,badges);const meta=document.createElement("div");meta.className="meta wide";meta.append(tile("HP",hpText(client.player?.currentHp,client.player?.maxHp),client.player?.currentHp==null?"bad":""),tile("MP",mpText(client.player?.currentMp,client.player?.maxMp),client.player?.currentMp==null?"bad":""),tile("Repair",repairText(client.repair),client.repair?"":"bad"));card.append(head,meta,renderStates(client));if(selectable)wireSelectableSurface(card,clientKey(client));return card}
+function renderCommandPartyBoard(party,active){const board=document.createElement("section");board.className=`command-board ${active?"active":""}`.trim();wireSelectableSurface(board,partyKey(party));board.appendChild(renderAggregateSummary(party));return board}
 function renderCommandLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const shell=document.createElement("div");shell.className="command-shell";const entries=buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose);if(entries.length===0){shell.appendChild(renderEmptyState(totalClients));return shell}const selected=resolveSelectedEntry(entries);if(showDetails)shell.appendChild(renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients));const columns=document.createElement("div");columns.className="command-columns";const stage=document.createElement("div");stage.className="command-stage";const side=document.createElement("div");side.className="command-side";if(aggregateParties.checked&&visibleAggregate.length>0){const boards=document.createElement("div");boards.className="command-board-grid";for(const party of visibleAggregate)boards.appendChild(renderCommandPartyBoard(party,selected?.key===partyKey(party)));stage.appendChild(boards);if(visibleLoose.length>0){const reserve=document.createElement("section");reserve.className="overviewpanel";reserve.innerHTML=`<div class="sectionhead">Loose Clients</div><div class="hint">Clients not currently represented inside an aggregate party surface.</div>`;const grid=document.createElement("div");grid.className="compactgrid";for(const client of visibleLoose)grid.appendChild(renderCompactClientCard(client,selected?.key===clientKey(client),true));reserve.appendChild(grid);stage.appendChild(reserve)}}else{const note=document.createElement("section");note.className="overviewpanel";note.innerHTML=`<div class="sectionhead">Command View</div><div class="hint">${aggregateParties.checked?"No aggregate party surfaces are available right now, so command view is showing compact client cards.":"Aggregate parties are disabled. Enable the toggle above to unlock the full party command board."}</div>`;stage.appendChild(note);const grid=document.createElement("div");grid.className="compactgrid";const source=aggregateParties.checked?visibleLoose:visibleClients;if(source.length===0)stage.appendChild(renderEmptyState(totalClients));else{for(const client of source)grid.appendChild(renderCompactClientCard(client,selected?.key===clientKey(client),true));stage.appendChild(grid)}}side.appendChild(selected.kind==="party"?renderAggregateParty(selected.item,{allowActions:true}):renderClient(selected.item,{allowActions:true}));columns.append(stage,side);shell.appendChild(columns);return shell}
 function matrixCell(label,value,extraClass=""){const cell=document.createElement("div");cell.className=`matrixcell ${extraClass}`.trim();cell.dataset.label=label;cell.textContent=value;return cell}
-function renderMatrixRow(entry,active){const button=document.createElement("button");button.type="button";button.className=`matrix-row ${active?"active":""}`.trim();button.addEventListener("click",()=>selectEntity(entry.key));if(entry.kind==="party"){const party=entry.item;const kind=document.createElement("div");kind.className="matrixcell";kind.dataset.label="Type";kind.appendChild(Object.assign(document.createElement("span"),{className:"kindtag",textContent:"Party"}));button.append(kind,matrixCell("Name",`Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}`),matrixCell("Zone",party.territoryName||"Unknown zone"),matrixCell("Status",`${party.liveCount}/${party.staleCount}/${party.disconnectedCount}`),matrixCell("Flow",aggregatePartyInCombat(party)?"Combat":"Travel"),matrixCell("Vitals",`Mon ${party.monitoredCount} | Str ${party.strangerCount}`,"mono"),matrixCell("Age",formatAge(party.sourceAgeSeconds),"mono"));return button}const client=entry.item;const kind=document.createElement("div");kind.className="matrixcell";kind.dataset.label="Type";kind.appendChild(Object.assign(document.createElement("span"),{className:"kindtag",textContent:"Client"}));button.append(kind,matrixCell("Name",displayCharacter(client.characterName,client.worldName,client.krangledName)),matrixCell("Zone",client.territoryName||"Unknown zone"),matrixCell("Status",clientStatusText(client)),matrixCell("Flow",`${queueStateText(client)}${client.conditions?.inCombat?" | Hot":""}`),matrixCell("Vitals",pct(client.player?.currentHp,client.player?.maxHp),"mono"),matrixCell("Age",formatAge(client.ageSeconds),"mono"));return button}
+function renderMatrixRow(entry,active){const button=document.createElement("button");button.type="button";button.className=`matrix-row ${active?"active":""}`.trim();button.addEventListener("click",()=>selectEntity(entry.key));if(entry.kind==="party"){const party=entry.item;const kind=document.createElement("div");kind.className="matrixcell";kind.dataset.label="Type";kind.appendChild(Object.assign(document.createElement("span"),{className:"kindtag",textContent:"Party"}));button.append(kind,matrixCell("Name",`Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}`),matrixCell("Zone",party.territoryName||"Unknown zone"),matrixCell("Status",`${party.liveCount}/${party.staleCount}/${party.disconnectedCount}`),matrixCell("Flow",aggregatePartyInCombat(party)?"Combat":"Travel"),matrixCell("Vitals",`Mon ${party.monitoredCount} | Str ${party.strangerCount}`,"mono"),matrixCell("Age",formatAge(party.sourceAgeSeconds),"mono"));return button}const client=entry.item;const kind=document.createElement("div");kind.className="matrixcell";kind.dataset.label="Type";kind.appendChild(Object.assign(document.createElement("span"),{className:"kindtag",textContent:"Client"}));button.append(kind,matrixCell("Name",displayCharacter(client.characterName,client.worldName,client.krangledName)),matrixCell("Zone",client.territoryName||"Unknown zone"),matrixCell("Status",clientStatusText(client)),matrixCell("Flow",`${queueStateText(client)}${client.conditions?.inCombat?" | Hot":""}`),matrixCell("Vitals",compactVitalsText(client.player?.currentHp,client.player?.maxHp,client.player?.currentMp,client.player?.maxMp),"mono"),matrixCell("Age",formatAge(client.ageSeconds),"mono"));return button}
 function renderMatrixLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const shell=document.createElement("div");shell.className="matrix-shell";if(showDetails)shell.appendChild(renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients));const entries=buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose);if(entries.length===0){shell.appendChild(renderEmptyState(totalClients));return shell}const selected=resolveSelectedEntry(entries);const layout=document.createElement("div");layout.className="matrix-layout";const left=document.createElement("section");left.className="matrixpane";left.innerHTML=`<div class="sectionhead">Surface Matrix</div>`;const table=document.createElement("div");table.className="matrixtable";const head=document.createElement("div");head.className="matrixhead";head.innerHTML=`<div>Type</div><div>Name</div><div>Zone</div><div>Status</div><div>Flow</div><div>Vitals</div><div>Age</div>`;table.appendChild(head);for(const entry of entries)table.appendChild(renderMatrixRow(entry,entry.key===selected?.key));left.appendChild(table);layout.appendChild(left);if(showDetails){const right=document.createElement("section");right.className="matrixpane";right.innerHTML=`<div class="sectionhead">Inspector</div>`;right.appendChild(selected.kind==="party"?renderAggregateParty(selected.item,{allowActions:true}):renderClient(selected.item,{allowActions:true}));layout.appendChild(right)}shell.appendChild(layout);return shell}
 function renderSurface(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){if(currentLayoutMode==="classic"){const fragment=document.createDocumentFragment();if(aggregateParties.checked){for(const party of visibleAggregate)fragment.appendChild(renderAggregateParty(party));for(const client of visibleLoose)fragment.appendChild(renderClient(client));if(visibleAggregate.length===0&&visibleLoose.length===0)fragment.appendChild(renderEmptyState(totalClients));return fragment}if(visibleClients.length===0){fragment.appendChild(renderEmptyState(totalClients));return fragment}for(const client of visibleClients)fragment.appendChild(renderClient(client));return fragment}if(currentLayoutMode==="command")return renderCommandLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients);if(currentLayoutMode==="matrix")return renderMatrixLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients);return renderOperatorLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients)}
 function flattenGroups(groups){return groups.flatMap(group=>group.clients.map(client=>({...client,accountId:group.accountId})))}
-function pathSummary(info){if(!info||!info.captured)return"same-PC game path not captured yet";const host=info.sourceHostName?` on ${info.sourceHostName}`:"";return`same-PC game path ready from ${displayCharacter(info.sourceCharacterName,info.sourceWorldName,info.sourceKrangledName)}${host}`}
+function pathSummary(info){if(!info||!info.captured)return"same-PC game path not captured yet";const host=info.sourceHostName?` on ${displayHost(info.sourceHostName)}`:"";return`same-PC game path ready from ${displayCharacter(info.sourceCharacterName,info.sourceWorldName,info.sourceKrangledName)}${host}`}
 function assetSummary(plan,catalog){const warning=(catalog?.warnings||[])[0];if(!plan||!plan.summary)return warning||"Asset plan pending.";const s=plan.summary;const readyJobIcons=Object.keys(catalog?.jobIcons||{}).length;const readyRaceIcons=Object.keys(catalog?.raceIcons||{}).length;const readyTribeIcons=Object.keys(catalog?.tribeIcons||{}).length;const readyMaps=Object.keys(catalog?.maps||{}).length;const base=`Asset plan: ${s.jobIcons} job icon tex path(s), ${s.maps} map texture(s), ${s.races} race id(s), ${s.tribes} tribe id(s), ${s.enemies} enemy id(s) | web cache ${readyJobIcons} job icon(s), ${readyRaceIcons} race icon(s), ${readyTribeIcons} clan icon(s), ${readyMaps} map png(s)`;return warning?`${base} | ${warning}`:base}
 function extractionSummary(state){if(!state)return"Extraction idle.";if(state.running)return`Extraction running: ${state.message||"working..."}`;if(state.lastCompletedUtc)return`Extraction ${state.lastExitCode===0?"ready":"failed"}: ${state.message||"see server log"}`;return state.message||"Extraction idle."}
 async function triggerExtract(){try{extractAssets.disabled=true;const res=await fetch("/api/extract-assets",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const payload=await res.json();if(!res.ok||!payload.ok)throw new Error(payload.error||`HTTP ${res.status}`);extractStatus.textContent=payload.message||"Extraction started.";await refresh()}catch(err){extractStatus.textContent=`Extraction request failed: ${err}`;extractAssets.disabled=false}}
@@ -577,7 +1074,7 @@ wireNumericPreference(mapBoxPxInput,"mapBoxPx",DEFAULT_MAP_BOX_PX,96,320);wireNu
 
 
 class TTSLStateStore:
-    def __init__(self, stale_seconds: int) -> None:
+    def __init__(self, stale_seconds: int, lodestone_cache_hours: float) -> None:
         self.stale_seconds = stale_seconds
         self.retention_seconds = max(stale_seconds * 2, stale_seconds + 60)
         self._clients: dict[tuple[str, str, str], dict] = {}
@@ -598,6 +1095,7 @@ class TTSLStateStore:
             "lastCompletedUtc": None,
             "lastExitCode": None,
         }
+        self._lodestone_cache = LodestonePortraitCache(CACHE_ROOT, lodestone_cache_hours)
         self._lock = threading.Lock()
 
     def update(self, payload: dict) -> None:
@@ -738,6 +1236,7 @@ class TTSLStateStore:
             threading.Thread(target=self._run_asset_extract, daemon=True).start()
             log_event(auto_extract_message)
 
+        self._lodestone_cache.decorate_snapshot(snapshot)
         return snapshot
 
     def _evaluate_auto_extract_locked(
@@ -1615,6 +2114,7 @@ class TTSLStateStore:
         player = client.get("player") or {}
 
         return {
+            "accountId": client.get("accountId", ""),
             "slotText": self._slot_text((fallback_party_member or {}).get("slot")),
             "name": client.get("characterName", ""),
             "worldName": client.get("worldName", ""),
@@ -1632,7 +2132,9 @@ class TTSLStateStore:
             "tribeId": client.get("tribeId"),
             "position": deepcopy(client.get("position")),
             "conditions": deepcopy(client.get("conditions")),
+            "policy": deepcopy(client.get("policy")),
             "repair": deepcopy(client.get("repair")),
+            "lastScreenshot": deepcopy(client.get("lastScreenshot")),
             "territoryId": client.get("territoryId"),
             "territoryName": client.get("territoryName", "Unknown zone"),
             "lastSeenUtc": client.get("lastSeenUtc", "Unknown"),
@@ -1647,6 +2149,7 @@ class TTSLStateStore:
 
     def _build_stranger_member(self, party_member: dict) -> dict:
         return {
+            "accountId": "",
             "slotText": self._slot_text(party_member.get("slot")),
             "name": party_member.get("name", ""),
             "worldName": self._display_world_from_party_member(party_member.get("name")),
@@ -1664,7 +2167,9 @@ class TTSLStateStore:
             "tribeId": party_member.get("tribeId"),
             "position": deepcopy(party_member.get("position")),
             "conditions": None,
+            "policy": None,
             "repair": None,
+            "lastScreenshot": None,
             "territoryId": None,
             "territoryName": "Unavailable",
             "lastSeenUtc": "Unavailable",
@@ -1956,14 +2461,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1", help="Bind host. Use 0.0.0.0 for LAN access.")
     parser.add_argument("--port", type=int, default=6942, help="HTTP port for clients and viewers.")
     parser.add_argument("--stale-seconds", type=int, default=300, help="How long stale clients remain visible.")
+    parser.add_argument(
+        "--lodestone-cache-hours",
+        type=float,
+        default=DEFAULT_LODESTONE_CACHE_HOURS,
+        help="Portrait cache TTL in hours. Minimum 1 hour.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    state = TTSLStateStore(stale_seconds=max(30, args.stale_seconds))
+    lodestone_cache_hours = max(MIN_LODESTONE_CACHE_HOURS, float(args.lodestone_cache_hours))
+    state = TTSLStateStore(
+        stale_seconds=max(30, args.stale_seconds),
+        lodestone_cache_hours=lodestone_cache_hours,
+    )
     server = ThreadingHTTPServer((args.host, args.port), make_handler(state))
-    log_event(f"TTSL remote HUD listening on http://{args.host}:{args.port} (stale {state.stale_seconds}s, prune {state.retention_seconds}s)")
+    log_event(
+        "TTSL remote HUD listening on "
+        f"http://{args.host}:{args.port} (stale {state.stale_seconds}s, "
+        f"prune {state.retention_seconds}s, Lodestone cache {lodestone_cache_hours:.1f}h)"
+    )
     try:
         server.serve_forever()
     except KeyboardInterrupt:
