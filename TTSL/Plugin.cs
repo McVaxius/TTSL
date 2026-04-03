@@ -11,6 +11,8 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using Lumina.Excel.Sheets;
 using TTSL.Services;
 using TTSL.Windows;
+using System.Diagnostics;
+using System.IO;
 
 namespace TTSL;
 
@@ -36,6 +38,8 @@ public sealed class Plugin : IDalamudPlugin
     public ConfigWindow ConfigWindow { get; }
     internal RemoteHudPublisherService RemoteHudPublisher { get; }
 
+    private const string DefaultLocalServerHost = "127.0.0.1";
+    private const int DefaultLocalServerPort = 6942;
     private IDtrBarEntry? dtrEntry;
 
     public Plugin()
@@ -115,6 +119,31 @@ public sealed class Plugin : IDalamudPlugin
 
     public string GetCurrentAccountId()
         => PlayerState.ContentId == 0 ? "Unavailable" : PlayerState.ContentId.ToString("X16");
+
+    public string GetRemoteViewerUrl()
+    {
+        var url = NormalizeRemoteViewerUrl(Configuration.RemoteServerUrl);
+        return string.IsNullOrWhiteSpace(url) ? string.Empty : $"{url}/";
+    }
+
+    public void OpenRemoteViewer()
+    {
+        var url = GetRemoteViewerUrl();
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            Log.Warning("[TTSL] Cannot open the remote web HUD because the server URL is empty.");
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = url,
+            UseShellExecute = true,
+        });
+    }
+
+    public string GetSuggestedServerLaunchCommand()
+        => $"python \"{ResolveServerScriptPath()}\" --host {DefaultLocalServerHost} --port {DefaultLocalServerPort}";
 
     public void UpdateDtrBar()
     {
@@ -273,6 +302,12 @@ public sealed class Plugin : IDalamudPlugin
             changed = true;
         }
 
+        if (Configuration.Version < 6)
+        {
+            Configuration.Version = 6;
+            changed = true;
+        }
+
         if (changed)
             Configuration.Save();
     }
@@ -300,6 +335,63 @@ public sealed class Plugin : IDalamudPlugin
     {
         var contentId = PlayerState.ContentId;
         return contentId == 0 ? null : contentId.ToString("X16");
+    }
+
+    private static string NormalizeRemoteViewerUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return string.Empty;
+
+        var trimmed = url.Trim();
+        if (!trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            trimmed = $"http://{trimmed}";
+        }
+
+        return trimmed.TrimEnd('/');
+    }
+
+    private string ResolveServerScriptPath()
+    {
+        var pluginDirectory = PluginInterface.AssemblyLocation.Directory?.FullName;
+        if (!string.IsNullOrWhiteSpace(pluginDirectory))
+        {
+            var resolved = ProbeServerScriptPath(pluginDirectory);
+            if (!string.IsNullOrWhiteSpace(resolved))
+                return resolved;
+        }
+
+        var codeDirectory = Path.GetDirectoryName(typeof(Plugin).Assembly.Location);
+        if (!string.IsNullOrWhiteSpace(codeDirectory))
+        {
+            var resolved = ProbeServerScriptPath(codeDirectory);
+            if (!string.IsNullOrWhiteSpace(resolved))
+                return resolved;
+        }
+
+        return Path.GetFullPath(Path.Combine(pluginDirectory ?? Environment.CurrentDirectory, "server", "ttsl_server.py"));
+    }
+
+    private static string? ProbeServerScriptPath(string baseDirectory)
+    {
+        var relativeCandidates = new[]
+        {
+            Path.Combine("server", "ttsl_server.py"),
+            Path.Combine("..", "server", "ttsl_server.py"),
+            Path.Combine("..", "..", "server", "ttsl_server.py"),
+            Path.Combine("..", "..", "..", "server", "ttsl_server.py"),
+            Path.Combine("..", "..", "..", "..", "server", "ttsl_server.py"),
+        };
+
+        foreach (var relativePath in relativeCandidates)
+        {
+            var candidate = Path.GetFullPath(Path.Combine(baseDirectory, relativePath));
+            if (File.Exists(candidate))
+                return candidate;
+        }
+
+        return null;
     }
 
     private void OnCommand(string command, string args)

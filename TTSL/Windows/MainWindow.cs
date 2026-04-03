@@ -175,12 +175,17 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             DrawMetricCell("Server", cfg.RemoteServerUrl);
             DrawMetricCell("Client", publisher.LastCharacterKey == null ? "Waiting" : plugin.GetDisplayName(publisher.LastCharacterKey));
             DrawMetricCell("Account", publisher.LastAccountId ?? plugin.GetCurrentAccountId());
-            DrawMetricCell("Web", $"{(cfg.AllowWebEchoCommands ? "Text on" : "Text off")} | {(cfg.AllowWebScreenshotRequests ? "Shot on" : "Shot off")}");
+            DrawMetricCell("Web", $"{(cfg.AllowWebEchoCommands ? "Text on" : "Text off")} | {(cfg.AllowWebScreenshotRequests ? "Shot on" : "Shot off")} | {(cfg.AllowWebCctvStreaming ? "CCTV on" : "CCTV off")}");
             DrawMetricCell("Last OK", publisher.LastSuccessUtc.HasValue
                 ? publisher.LastSuccessUtc.Value.ToLocalTime().ToString("HH:mm:ss")
                 : "None");
             ImGui.EndTable();
         }
+
+        if (ImGui.SmallButton("Open Web HUD"))
+            plugin.OpenRemoteViewer();
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Open the Python remote HUD in your default browser.");
 
         if (!string.IsNullOrWhiteSpace(publisher.LastError))
             ImGui.TextColored(new Vector4(1f, 0.55f, 0.4f, 1f), $"Last error: {publisher.LastError}");

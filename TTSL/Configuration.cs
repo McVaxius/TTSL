@@ -7,7 +7,7 @@ namespace TTSL;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 5;
+    public int Version { get; set; } = 6;
     public string LastAccountId { get; set; } = string.Empty;
     public Dictionary<string, AccountScopedConfiguration> Accounts { get; set; } = new();
     public bool OverlayEnabled { get; set; } = true;
@@ -34,6 +34,7 @@ public sealed class Configuration : IPluginConfiguration
     public int RemoteFullSnapshotIntervalMs { get; set; } = 2000;
     public bool AllowWebEchoCommands { get; set; } = false;
     public bool AllowWebScreenshotRequests { get; set; } = false;
+    public bool AllowWebCctvStreaming { get; set; } = false;
 
     public void Save()
     {
@@ -114,6 +115,7 @@ public sealed class AccountScopedConfiguration
     public int RemoteFullSnapshotIntervalMs { get; set; } = 2000;
     public bool AllowWebEchoCommands { get; set; } = false;
     public bool AllowWebScreenshotRequests { get; set; } = false;
+    public bool AllowWebCctvStreaming { get; set; } = false;
 
     public static AccountScopedConfiguration FromConfiguration(Configuration source)
     {
@@ -142,6 +144,7 @@ public sealed class AccountScopedConfiguration
             RemoteFullSnapshotIntervalMs = source.RemoteFullSnapshotIntervalMs,
             AllowWebEchoCommands = source.AllowWebEchoCommands,
             AllowWebScreenshotRequests = source.AllowWebScreenshotRequests,
+            AllowWebCctvStreaming = source.AllowWebCctvStreaming,
         };
     }
 
@@ -170,5 +173,6 @@ public sealed class AccountScopedConfiguration
         target.RemoteFullSnapshotIntervalMs = RemoteFullSnapshotIntervalMs;
         target.AllowWebEchoCommands = AllowWebEchoCommands;
         target.AllowWebScreenshotRequests = AllowWebScreenshotRequests;
+        target.AllowWebCctvStreaming = AllowWebCctvStreaming;
     }
 }

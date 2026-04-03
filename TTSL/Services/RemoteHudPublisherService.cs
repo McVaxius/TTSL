@@ -33,6 +33,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private const int CustomizeTribeIndex = 4;
     private static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan MaxRetryBackoff = TimeSpan.FromSeconds(15);
+    private const int MinimumReasonableCaptureWidth = 480;
+    private const int MinimumReasonableCaptureHeight = 270;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -56,6 +58,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private string statusText = "Disabled";
     private ClientIdentity? lastIdentity;
     private string? lastLoggedMapSnapshotSignature;
+    private string? lastLoggedCaptureSelectionSignature;
     private bool goodbyeSent;
 
     public RemoteHudPublisherService(Plugin plugin)
@@ -275,6 +278,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         {
             AllowEchoCommands = plugin.Configuration.AllowWebEchoCommands,
             AllowScreenshotRequests = plugin.Configuration.AllowWebScreenshotRequests,
+            AllowCctvStreaming = plugin.Configuration.AllowWebCctvStreaming,
         };
     }
 
@@ -994,7 +998,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
                         break;
 
                     case "requestscreenshot":
-                        await CaptureAndUploadScreenshotAsync(baseUrl, action.ActionId).ConfigureAwait(false);
+                        await CaptureAndUploadScreenshotAsync(baseUrl, action.ActionId, action.CaptureMode, action.CaptureQuality).ConfigureAwait(false);
                         break;
 
                     default:
@@ -1073,15 +1077,43 @@ internal sealed class RemoteHudPublisherService : IDisposable
         return true;
     }
 
-    private async Task CaptureAndUploadScreenshotAsync(string baseUrl, string? actionId)
+    private async Task CaptureAndUploadScreenshotAsync(string baseUrl, string? actionId, string? captureMode, string? captureQuality)
     {
-        if (!plugin.Configuration.AllowWebScreenshotRequests)
+        var isCctv = string.Equals(captureMode, "cctv", StringComparison.OrdinalIgnoreCase);
+        if (isCctv)
+        {
+            if (!plugin.Configuration.AllowWebCctvStreaming)
+            {
+                Plugin.Log.Information("[TTSL] Ignored web CCTV request because the local policy does not allow it.");
+                return;
+            }
+        }
+        else if (!plugin.Configuration.AllowWebScreenshotRequests)
         {
             Plugin.Log.Information("[TTSL] Ignored web screenshot request because the local policy does not allow it.");
             return;
         }
 
-        var imageBytes = CaptureGameWindowPng();
+        string contentType;
+        byte[] imageBytes;
+        string? resolvedQuality = null;
+        using (var bitmap = CaptureGameWindowBitmap(isCctv))
+        {
+            if (isCctv)
+            {
+                var preset = ResolveCctvPreset(captureQuality);
+                resolvedQuality = preset.Name;
+                using var scaledBitmap = ResizeBitmap(bitmap, preset.Scale);
+                imageBytes = EncodeBitmapAsJpeg(scaledBitmap, preset.JpegQuality);
+                contentType = "image/jpeg";
+            }
+            else
+            {
+                imageBytes = EncodeBitmapAsPng(bitmap);
+                contentType = "image/png";
+            }
+        }
+
         var identity = lastIdentity ?? GetCurrentIdentity();
         if (identity == null)
             throw new InvalidOperationException("Cannot upload a web screenshot without a resolved local identity.");
@@ -1093,8 +1125,12 @@ internal sealed class RemoteHudPublisherService : IDisposable
             WorldName = identity.WorldName,
             ActionId = string.IsNullOrWhiteSpace(actionId) ? Guid.NewGuid().ToString("N") : actionId,
             CapturedAtUtc = DateTime.UtcNow,
-            ContentType = "image/png",
-            FileName = $"ttsl_{DateTime.UtcNow:yyyyMMdd_HHmmss}.png",
+            ContentType = contentType,
+            CaptureMode = isCctv ? "cctv" : "screenshot",
+            CaptureQuality = resolvedQuality,
+            FileName = isCctv
+                ? $"ttsl_cctv_{DateTime.UtcNow:yyyyMMdd_HHmmss}.jpg"
+                : $"ttsl_{DateTime.UtcNow:yyyyMMdd_HHmmss}.png",
             ImageBase64 = Convert.ToBase64String(imageBytes),
         };
 
@@ -1107,7 +1143,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
             throw new InvalidOperationException($"HTTP {(int)response.StatusCode} from {baseUrl}/api/upload-screenshot: {TrimForLog(errorBody)}");
         }
 
-        Plugin.Log.Information("[TTSL] Uploaded requested web screenshot for {CharacterKey}.", $"{identity.CharacterName}@{identity.WorldName}");
+        if (!isCctv)
+            Plugin.Log.Information("[TTSL] Uploaded requested web screenshot for {CharacterKey}.", $"{identity.CharacterName}@{identity.WorldName}");
     }
 
     private static string SanitizeWebChatInput(string? text)
@@ -1124,34 +1161,209 @@ internal sealed class RemoteHudPublisherService : IDisposable
         return normalized;
     }
 
-    private static byte[] CaptureGameWindowPng()
+    private Bitmap CaptureGameWindowBitmap(bool isCctv)
     {
-        var windowHandle = Process.GetCurrentProcess().MainWindowHandle;
-        if (windowHandle == nint.Zero)
-            throw new InvalidOperationException("FFXIV main window handle is not available.");
+        if (!TryResolveBestCaptureSelection(out var selection, out var failureReason))
+            throw new InvalidOperationException($"FFXIV game-window capture selection is invalid. {failureReason}");
 
-        if (!GetClientRect(windowHandle, out var clientRect))
-            throw new InvalidOperationException("Failed to read the FFXIV client-area rectangle.");
-
-        var topLeft = new Win32Point(clientRect.Left, clientRect.Top);
-        var bottomRight = new Win32Point(clientRect.Right, clientRect.Bottom);
-        if (!ClientToScreen(windowHandle, ref topLeft) || !ClientToScreen(windowHandle, ref bottomRight))
-            throw new InvalidOperationException("Failed to translate the FFXIV client-area rectangle to screen coordinates.");
-
-        var width = bottomRight.X - topLeft.X;
-        var height = bottomRight.Y - topLeft.Y;
-        if (width <= 0 || height <= 0)
-            throw new InvalidOperationException("FFXIV client-area capture size is invalid.");
-
-        using var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-        using (var graphics = Graphics.FromImage(bitmap))
+        var selectionSignature =
+            $"{selection.Source}|0x{selection.WindowHandle.ToInt64():X}|{selection.BoundsKind}|{selection.Bounds.Width}x{selection.Bounds.Height}";
+        if (!isCctv &&
+            !string.Equals(selectionSignature, lastLoggedCaptureSelectionSignature, StringComparison.Ordinal))
         {
-            graphics.CopyFromScreen(topLeft.X, topLeft.Y, 0, 0, new Size(width, height), CopyPixelOperation.SourceCopy);
+            var message = string.Equals(selection.Source, "ProcessMainWindow", StringComparison.Ordinal)
+                ? "[TTSL] Web capture selected {Source} HWND 0x{Handle:X} using {BoundsKind} bounds {Width}x{Height}."
+                : "[TTSL] Web capture fell back to {Source} HWND 0x{Handle:X} using {BoundsKind} bounds {Width}x{Height}.";
+            Plugin.Log.Information(
+                message,
+                selection.Source,
+                selection.WindowHandle.ToInt64(),
+                selection.BoundsKind,
+                selection.Bounds.Width,
+                selection.Bounds.Height);
+            lastLoggedCaptureSelectionSignature = selectionSignature;
         }
 
+        var bitmap = new Bitmap(selection.Bounds.Width, selection.Bounds.Height, PixelFormat.Format32bppArgb);
+        using (var graphics = Graphics.FromImage(bitmap))
+        {
+            graphics.CopyFromScreen(selection.Bounds.X, selection.Bounds.Y, 0, 0, selection.Bounds.Size, CopyPixelOperation.SourceCopy);
+        }
+
+        return bitmap;
+    }
+
+    private static byte[] EncodeBitmapAsPng(Image image)
+    {
         using var memoryStream = new MemoryStream();
-        bitmap.Save(memoryStream, ImageFormat.Png);
+        image.Save(memoryStream, ImageFormat.Png);
         return memoryStream.ToArray();
+    }
+
+    private static byte[] EncodeBitmapAsJpeg(Image image, long quality)
+    {
+        var encoder = ImageCodecInfo.GetImageEncoders().FirstOrDefault(candidate =>
+            string.Equals(candidate.MimeType, "image/jpeg", StringComparison.OrdinalIgnoreCase));
+        if (encoder == null)
+            throw new InvalidOperationException("JPEG encoder is not available for CCTV capture.");
+
+        using var encoderParameters = new EncoderParameters(1);
+        encoderParameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, Math.Clamp(quality, 25L, 95L));
+        using var memoryStream = new MemoryStream();
+        image.Save(memoryStream, encoder, encoderParameters);
+        return memoryStream.ToArray();
+    }
+
+    private static Bitmap ResizeBitmap(Bitmap source, float scale)
+    {
+        var clampedScale = Math.Clamp(scale, 0.2f, 1f);
+        if (Math.Abs(clampedScale - 1f) < 0.001f)
+            return (Bitmap)source.Clone();
+
+        var width = Math.Max(1, (int)Math.Round(source.Width * clampedScale));
+        var height = Math.Max(1, (int)Math.Round(source.Height * clampedScale));
+        var scaled = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+        using var graphics = Graphics.FromImage(scaled);
+        graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+        graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+        graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+        graphics.DrawImage(source, new Rectangle(0, 0, width, height));
+        return scaled;
+    }
+
+    private static CctvCapturePreset ResolveCctvPreset(string? quality)
+    {
+        return string.Equals(quality, "low", StringComparison.OrdinalIgnoreCase)
+            ? new CctvCapturePreset("low", 0.4f, 42L)
+            : string.Equals(quality, "high", StringComparison.OrdinalIgnoreCase)
+                ? new CctvCapturePreset("high", 0.8f, 80L)
+                : new CctvCapturePreset("medium", 0.6f, 62L);
+    }
+
+    private static bool TryResolveBestCaptureSelection(out CaptureSelection selection, out string failureReason)
+    {
+        selection = null!;
+        failureReason = "No capture-window candidates were available.";
+
+        var diagnostics = new List<string>();
+        var viableSelections = new List<CaptureSelection>();
+        foreach (var candidate in EnumerateCaptureWindowCandidates())
+        {
+            if (TryResolveCaptureBounds(candidate.WindowHandle, out var bounds, out var boundsKind, out var reason))
+            {
+                viableSelections.Add(new CaptureSelection(candidate.WindowHandle, candidate.Source, bounds, boundsKind));
+                diagnostics.Add($"{candidate.Source}=0x{candidate.WindowHandle.ToInt64():X} {boundsKind} {bounds.Width}x{bounds.Height}");
+            }
+            else
+            {
+                diagnostics.Add($"{candidate.Source}=0x{candidate.WindowHandle.ToInt64():X} failed ({reason})");
+            }
+        }
+
+        var bestSelection = viableSelections
+            .Where(candidate => candidate.Bounds.Width >= MinimumReasonableCaptureWidth &&
+                                candidate.Bounds.Height >= MinimumReasonableCaptureHeight)
+            .OrderByDescending(candidate => candidate.Bounds.Width * candidate.Bounds.Height)
+            .FirstOrDefault();
+        if (bestSelection != null)
+        {
+            selection = bestSelection;
+            return true;
+        }
+
+        if (viableSelections.Count > 0)
+        {
+            var fallbackSelection = viableSelections
+                .OrderByDescending(candidate => candidate.Bounds.Width * candidate.Bounds.Height)
+                .First();
+            failureReason =
+                $"Best candidate was {fallbackSelection.Source} HWND 0x{fallbackSelection.WindowHandle.ToInt64():X} " +
+                $"using {fallbackSelection.BoundsKind} bounds {fallbackSelection.Bounds.Width}x{fallbackSelection.Bounds.Height}, " +
+                $"which is below the minimum {MinimumReasonableCaptureWidth}x{MinimumReasonableCaptureHeight}. " +
+                $"Candidates: {string.Join(" | ", diagnostics)}";
+            return false;
+        }
+
+        failureReason = $"No capture candidates resolved valid bounds. Candidates: {string.Join(" | ", diagnostics)}";
+        return false;
+    }
+
+    private static List<WindowHandleCandidate> EnumerateCaptureWindowCandidates()
+    {
+        var currentProcessId = (uint)Process.GetCurrentProcess().Id;
+        var seenHandles = new HashSet<nint>();
+        var candidates = new List<WindowHandleCandidate>();
+
+        void AddCandidate(nint windowHandle, string source)
+        {
+            if (windowHandle == nint.Zero || !seenHandles.Add(windowHandle))
+                return;
+
+            candidates.Add(new WindowHandleCandidate(windowHandle, source));
+        }
+
+        AddCandidate(Process.GetCurrentProcess().MainWindowHandle, "ProcessMainWindow");
+        AddCandidate(Plugin.PluginInterface.UiBuilder.WindowHandlePtr, "UiBuilderWindowHandlePtr");
+
+        EnumWindows((windowHandle, _) =>
+        {
+            if (!IsWindowVisible(windowHandle))
+                return true;
+
+            GetWindowThreadProcessId(windowHandle, out var windowProcessId);
+            if (windowProcessId == currentProcessId)
+                AddCandidate(windowHandle, "EnumWindows");
+
+            return true;
+        }, nint.Zero);
+
+        return candidates;
+    }
+
+    private static bool TryResolveCaptureBounds(nint windowHandle, out Rectangle bounds, out string boundsKind, out string reason)
+    {
+        bounds = Rectangle.Empty;
+        boundsKind = string.Empty;
+        reason = string.Empty;
+
+        if (GetClientRect(windowHandle, out var clientRect))
+        {
+            var topLeft = new Win32Point(0, 0);
+            var bottomRight = new Win32Point(clientRect.Right, clientRect.Bottom);
+            if (ClientToScreen(windowHandle, ref topLeft) && ClientToScreen(windowHandle, ref bottomRight))
+            {
+                var width = bottomRight.X - topLeft.X;
+                var height = bottomRight.Y - topLeft.Y;
+                if (width > 0 && height > 0)
+                {
+                    bounds = new Rectangle(topLeft.X, topLeft.Y, width, height);
+                    boundsKind = "client";
+                    return true;
+                }
+
+                reason = $"Client rect resolved to {width}x{height} for HWND 0x{windowHandle.ToInt64():X}.";
+            }
+            else
+            {
+                reason = $"ClientToScreen failed for HWND 0x{windowHandle.ToInt64():X}.";
+            }
+        }
+
+        if (GetWindowRect(windowHandle, out var windowRect))
+        {
+            var width = windowRect.Right - windowRect.Left;
+            var height = windowRect.Bottom - windowRect.Top;
+            if (width > 0 && height > 0)
+            {
+                bounds = new Rectangle(windowRect.Left, windowRect.Top, width, height);
+                boundsKind = "window";
+                return true;
+            }
+
+            reason = $"{reason} Window rect resolved to {width}x{height}.";
+        }
+
+        return false;
     }
 
     [DllImport("user32.dll")]
@@ -1159,6 +1371,48 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern bool ClientToScreen(nint windowHandle, ref Win32Point point);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc callback, nint lParam);
+
+    [DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(nint windowHandle);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(nint windowHandle, out Win32Rect rect);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(nint windowHandle, out uint processId);
+
+    private delegate bool EnumWindowsProc(nint windowHandle, nint lParam);
+
+    private sealed class WindowHandleCandidate
+    {
+        public WindowHandleCandidate(nint windowHandle, string source)
+        {
+            WindowHandle = windowHandle;
+            Source = source;
+        }
+
+        public nint WindowHandle { get; }
+        public string Source { get; }
+    }
+
+    private sealed class CaptureSelection
+    {
+        public CaptureSelection(nint windowHandle, string source, Rectangle bounds, string boundsKind)
+        {
+            WindowHandle = windowHandle;
+            Source = source;
+            Bounds = bounds;
+            BoundsKind = boundsKind;
+        }
+
+        public nint WindowHandle { get; }
+        public string Source { get; }
+        public Rectangle Bounds { get; }
+        public string BoundsKind { get; }
+    }
 
     private sealed class ClientIdentity
     {
@@ -1185,6 +1439,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string ActionType { get; init; } = string.Empty;
         public string? ActionId { get; init; }
         public string? Text { get; init; }
+        public string? CaptureMode { get; init; }
+        public string? CaptureQuality { get; init; }
     }
 
     private sealed class ScreenshotUploadRequest
@@ -1195,6 +1451,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string ActionId { get; init; } = string.Empty;
         public DateTime CapturedAtUtc { get; init; }
         public string ContentType { get; init; } = "image/png";
+        public string CaptureMode { get; init; } = "screenshot";
+        public string? CaptureQuality { get; init; }
         public string FileName { get; init; } = "ttsl.png";
         public string ImageBase64 { get; init; } = string.Empty;
     }
@@ -1233,6 +1491,21 @@ internal sealed class RemoteHudPublisherService : IDisposable
     {
         public bool AllowEchoCommands { get; init; }
         public bool AllowScreenshotRequests { get; init; }
+        public bool AllowCctvStreaming { get; init; }
+    }
+
+    private sealed class CctvCapturePreset
+    {
+        public CctvCapturePreset(string name, float scale, long jpegQuality)
+        {
+            Name = name;
+            Scale = scale;
+            JpegQuality = jpegQuality;
+        }
+
+        public string Name { get; }
+        public float Scale { get; }
+        public long JpegQuality { get; }
     }
 
     private sealed class Vector3Snapshot

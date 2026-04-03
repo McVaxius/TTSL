@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
@@ -10,8 +9,6 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
 {
     private static readonly string[] DtrModes = { "Text Only", "Icon+Text", "Icon Only" };
     private const string IconGuideUrl = "https://na.finalfantasyxiv.com/lodestone/character/22423564/blog/4393835";
-    private const string LocalServerDefaultHost = "127.0.0.1";
-    private const int LocalServerDefaultPort = 6942;
 
     private readonly Plugin plugin;
 
@@ -148,8 +145,11 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
             cfg.RemoteServerUrl = "http://127.0.0.1:6942";
             changed = true;
         }
+        ImGui.SameLine();
+        if (ImGui.SmallButton("Open Web HUD"))
+            plugin.OpenRemoteViewer();
 
-        var launchCommand = BuildSuggestedServerLaunchCommand();
+        var launchCommand = plugin.GetSuggestedServerLaunchCommand();
         ImGui.SetNextItemWidth(-115f);
         ImGui.InputText("Python launch command", ref launchCommand, 1024, ImGuiInputTextFlags.ReadOnly);
         ImGui.SameLine();
@@ -206,12 +206,21 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         ImGui.SameLine();
         HelpMarker("Captures the current FFXIV game-window client area and uploads it to the Python server.");
 
+        var allowWebCctvStreaming = cfg.AllowWebCctvStreaming;
+        if (ImGui.Checkbox("Allow web viewer CCTV mode", ref allowWebCctvStreaming))
+        {
+            cfg.AllowWebCctvStreaming = allowWebCctvStreaming;
+            changed = true;
+        }
+        ImGui.SameLine();
+        HelpMarker("Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets.");
+
         ImGui.TextDisabled("Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0.");
         ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
         ImGui.TextDisabled("The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar.");
         ImGui.TextDisabled("For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first.");
         ImGui.TextDisabled("The server will cache the first same-PC game path it sees for the rest of that monitoring session.");
-        ImGui.TextDisabled("Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, and screenshot buttons use the uploader/source client for aggregate-party stranger data.");
+        ImGui.TextDisabled("Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache.");
         ImGui.TextDisabled("TTSL settings are now stored per account ID once a live account is detected.");
         ImGui.TextDisabled(@"Debug x64 builds are mirrored to TTSL\\bin\\Debug\\ after build for legacy local dev paths.");
         ImGui.TextDisabled($"Current account ID: {plugin.GetCurrentAccountId()}");
@@ -304,51 +313,4 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
             ImGui.SetTooltip(text);
     }
 
-    private static string BuildSuggestedServerLaunchCommand()
-    {
-        var scriptPath = ResolveServerScriptPath();
-        return $"python \"{scriptPath}\" --host {LocalServerDefaultHost} --port {LocalServerDefaultPort}";
-    }
-
-    private static string ResolveServerScriptPath()
-    {
-        var pluginDirectory = Plugin.PluginInterface.AssemblyLocation.Directory?.FullName;
-        if (!string.IsNullOrWhiteSpace(pluginDirectory))
-        {
-            var resolved = ProbeServerScriptPath(pluginDirectory);
-            if (!string.IsNullOrWhiteSpace(resolved))
-                return resolved;
-        }
-
-        var codeDirectory = Path.GetDirectoryName(typeof(ConfigWindow).Assembly.Location);
-        if (!string.IsNullOrWhiteSpace(codeDirectory))
-        {
-            var resolved = ProbeServerScriptPath(codeDirectory);
-            if (!string.IsNullOrWhiteSpace(resolved))
-                return resolved;
-        }
-
-        return Path.GetFullPath(Path.Combine(pluginDirectory ?? Environment.CurrentDirectory, "server", "ttsl_server.py"));
-    }
-
-    private static string? ProbeServerScriptPath(string baseDirectory)
-    {
-        var relativeCandidates = new[]
-        {
-            Path.Combine("server", "ttsl_server.py"),
-            Path.Combine("..", "server", "ttsl_server.py"),
-            Path.Combine("..", "..", "server", "ttsl_server.py"),
-            Path.Combine("..", "..", "..", "server", "ttsl_server.py"),
-            Path.Combine("..", "..", "..", "..", "server", "ttsl_server.py"),
-        };
-
-        foreach (var relativePath in relativeCandidates)
-        {
-            var candidate = Path.GetFullPath(Path.Combine(baseDirectory, relativePath));
-            if (File.Exists(candidate))
-                return candidate;
-        }
-
-        return null;
-    }
 }
