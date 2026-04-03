@@ -847,7 +847,7 @@ function raceIconAsset(raceId){return raceId==null?null:(currentAssetCatalog.rac
 function tribeIconAsset(tribeId){return tribeId==null?null:(currentAssetCatalog.tribeIcons||{})[String(tribeId)]||null}
 function assetUrl(asset){return asset?.pngUrl||asset?.svgUrl||null}
 function localizedAssetName(asset,gender){if(!asset)return"";if(gender===1&&asset.feminineName)return String(asset.feminineName);if(asset.masculineName)return String(asset.masculineName);if(asset.feminineName)return String(asset.feminineName);return""}
-function mapAsset(map){if(!map)return null;const catalogMaps=currentAssetCatalog.maps||{};const candidates=[];if(map.texturePath)candidates.push(String(map.texturePath));for(const candidate of map.texturePathCandidates||[]){const text=String(candidate||"");if(text&&!candidates.includes(text))candidates.push(text)}for(const candidate of candidates){const key=`texture:${candidate.replace(/\\\\/g,"/").trim().toLowerCase()}`;if(catalogMaps[key])return catalogMaps[key]}if(map.mapId!=null){const fallback=Object.values(catalogMaps).find(entry=>Number(entry?.mapId)===Number(map.mapId));if(fallback)return fallback}return null}
+function mapAsset(map){if(!map)return null;const catalogMaps=currentAssetCatalog.maps||{};const candidates=[];if(map.texturePath)candidates.push(String(map.texturePath));for(const candidate of map.texturePathCandidates||[]){const text=String(candidate||"");if(text&&!candidates.includes(text))candidates.push(text)}for(const candidate of candidates){const key=`texture:${candidate.replace(/\\\\/g,"/").trim().toLowerCase()}`;if(catalogMaps[key])return catalogMaps[key]}if(map.mapId!=null){const mapKey=`map:${Number(map.mapId)}`;if(catalogMaps[mapKey])return catalogMaps[mapKey];const fallback=Object.values(catalogMaps).find(entry=>Number(entry?.mapId)===Number(map.mapId));if(fallback)return fallback}return null}
 function currentViewportSettings(inCombat){return{boxPx:clampNumber(mapBoxPxInput.value,96,320,DEFAULT_MAP_BOX_PX),widthYalms:clampNumber(inCombat?combatWidthInput.value:travelWidthInput.value,5,500,inCombat?DEFAULT_COMBAT_WIDTH_YALMS:DEFAULT_TRAVEL_WIDTH_YALMS),heightYalms:clampNumber(inCombat?combatHeightInput.value:travelHeightInput.value,5,500,inCombat?DEFAULT_COMBAT_HEIGHT_YALMS:DEFAULT_TRAVEL_HEIGHT_YALMS)}}
 function aggregatePartyInCombat(party){const source=Array.isArray(party?.members)?party.members.find(member=>member.isSource)||party.members.find(member=>!member.isStranger):null;return !!source?.conditions?.inCombat}
 function mapVisibleCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||sizeFactor===0)return null;const scale=Number(sizeFactor)/100;return(41/scale)*(((Number(value)+Number(offset))*scale+1024)/2048)+1}
@@ -1521,16 +1521,13 @@ class TTSLStateStore:
             if not isinstance(entry, dict):
                 continue
 
-            texture_candidates: list[str] = []
-            primary = str(entry.get("texturePath") or "").strip()
-            if primary:
-                texture_candidates.append(primary)
-            for candidate in entry.get("texturePathCandidates") or []:
-                candidate_text = str(candidate or "").strip()
-                if candidate_text and candidate_text not in texture_candidates:
-                    texture_candidates.append(candidate_text)
+            texture_candidates = TTSLStateStore._collect_map_texture_candidates(entry)
+            map_id_value = TTSLStateStore._coerce_positive_int(entry.get("mapId"))
 
-            if any(TTSLStateStore._build_map_catalog_key(candidate, entry.get("mapId")) in available_map_keys for candidate in texture_candidates):
+            if map_id_value is not None and f"map:{map_id_value}" in available_map_keys:
+                continue
+
+            if any(TTSLStateStore._build_map_catalog_key(candidate, None) in available_map_keys for candidate in texture_candidates):
                 continue
 
             missing.append(deepcopy(entry))
@@ -1554,8 +1551,9 @@ class TTSLStateStore:
                 missing.append(value)
         return sorted(set(missing))
 
-    @staticmethod
+    @classmethod
     def _build_auto_extract_signature(
+        cls,
         missing_map_textures: list[dict],
         missing_race_icons: list[int],
         missing_tribe_icons: list[int],
@@ -1565,14 +1563,7 @@ class TTSLStateStore:
             missing_map_textures,
             key=lambda item: (int(item.get("mapId") or 0), str(item.get("texturePath") or "")),
         ):
-            texture_candidates = []
-            primary = str(entry.get("texturePath") or "").strip()
-            if primary:
-                texture_candidates.append(primary)
-            for candidate in entry.get("texturePathCandidates") or []:
-                candidate_text = str(candidate or "").strip()
-                if candidate_text and candidate_text not in texture_candidates:
-                    texture_candidates.append(candidate_text)
+            texture_candidates = cls._collect_map_texture_candidates(entry)
 
             signature_parts.append(f"map:{int(entry.get('mapId') or 0)}:{'|'.join(texture_candidates)}")
 
@@ -1606,7 +1597,7 @@ class TTSLStateStore:
             for hostile in combat.get("hostiles") or []:
                 self._append_enemy_id(hostile, enemy_data_ids)
 
-        self._merge_cached_map_textures(map_ids, map_textures)
+        self._merge_extracted_summary_map_textures(map_ids, map_textures)
 
         job_icon_tex_paths = [
             f"ui/icon/{(icon_id // 1000) * 1000:06d}/{icon_id:06d}_hr1.tex"
@@ -1762,22 +1753,25 @@ class TTSLStateStore:
                             continue
 
                         map_id_value = int(map_id)
-                        texture_path = str(entry.get("relativePath") or entry.get("texturePath") or "").strip()
-                        if not texture_path:
+                        texture_candidates = self._collect_map_texture_candidates(entry)
+                        if not texture_candidates:
                             continue
 
+                        texture_path = texture_candidates[0]
                         base_name = os.path.splitext(os.path.basename(texture_path or f"map_{map_id_value}.tex"))[0]
                         cache_path = ensure_png_cache(raw_path, f"maps/{map_id_value:06d}_{base_name}.png")
                         map_entry = {
                             "mapId": map_id_value,
                             "pngUrl": build_cache_url(cache_path),
                             "texturePath": texture_path,
-                            "texturePathCandidates": entry.get("candidatePaths") or entry.get("texturePathCandidates") or [texture_path],
+                            "texturePathCandidates": texture_candidates,
                             "offsetX": entry.get("offsetX"),
                             "offsetY": entry.get("offsetY"),
                             "sizeFactor": entry.get("sizeFactor"),
                         }
-                        catalog["maps"][self._build_map_catalog_key(texture_path, map_id_value)] = map_entry
+                        catalog["maps"][f"map:{map_id_value}"] = map_entry
+                        for candidate in texture_candidates:
+                            catalog["maps"][self._build_map_catalog_key(candidate, None)] = map_entry
                         continue
 
                     if kind == "raceIcon":
@@ -1884,6 +1878,35 @@ class TTSLStateStore:
             return
 
     @staticmethod
+    def _coerce_positive_int(value: object) -> int | None:
+        if value in (None, ""):
+            return None
+        try:
+            result = int(value)
+        except (TypeError, ValueError):
+            return None
+        return result if result > 0 else None
+
+    @staticmethod
+    def _normalize_map_texture_candidate(value: object) -> str:
+        return str(value or "").strip().replace("\\", "/").casefold()
+
+    @classmethod
+    def _collect_map_texture_candidates(cls, entry: dict) -> list[str]:
+        candidates: list[str] = []
+
+        primary = str(entry.get("texturePath") or entry.get("relativePath") or "").strip()
+        if primary:
+            candidates.append(primary)
+
+        for candidate in entry.get("texturePathCandidates") or entry.get("candidatePaths") or []:
+            candidate_text = str(candidate or "").strip()
+            if candidate_text and candidate_text not in candidates:
+                candidates.append(candidate_text)
+
+        return candidates
+
+    @staticmethod
     def _build_map_catalog_key(texture_path: object, map_id: object | None) -> str:
         normalized_texture = str(texture_path or "").strip().replace("\\", "/").casefold()
         if normalized_texture:
@@ -1897,53 +1920,108 @@ class TTSLStateStore:
 
         return "map:unknown"
 
-    def _merge_cached_map_textures(self, map_ids: set[int], map_textures: dict[str, dict]) -> None:
-        if not map_ids or not os.path.isfile(self._asset_plan_output_path):
+    @classmethod
+    def _build_map_request_key(cls, texture_path: object, map_id: object | None) -> str:
+        map_id_value = cls._coerce_positive_int(map_id)
+        if map_id_value is not None:
+            return f"map:{map_id_value}"
+        return cls._build_map_catalog_key(texture_path, None)
+
+    @classmethod
+    def _merge_map_texture_entry(
+        cls,
+        map_textures: dict[str, dict],
+        entry: dict,
+        preferred_key: str | None = None,
+    ) -> str | None:
+        texture_candidates = cls._collect_map_texture_candidates(entry)
+        if not texture_candidates:
+            return None
+
+        map_id_value = cls._coerce_positive_int(entry.get("mapId"))
+        map_key = preferred_key or cls._build_map_request_key(texture_candidates[0], map_id_value)
+        existing = map_textures.get(map_key)
+
+        merged_candidates: list[str] = []
+        for candidate in (existing or {}).get("texturePathCandidates") or []:
+            candidate_text = str(candidate or "").strip()
+            if candidate_text and candidate_text not in merged_candidates:
+                merged_candidates.append(candidate_text)
+        for candidate in texture_candidates:
+            if candidate not in merged_candidates:
+                merged_candidates.append(candidate)
+
+        primary_texture = str((existing or {}).get("texturePath") or "").strip()
+        if not primary_texture or primary_texture not in merged_candidates:
+            primary_texture = texture_candidates[0]
+
+        def pick(field_name: str) -> object:
+            existing_value = (existing or {}).get(field_name)
+            if existing_value not in (None, ""):
+                return existing_value
+            return entry.get(field_name)
+
+        merged_map_id = pick("mapId")
+        map_textures[map_key] = {
+            "mapId": merged_map_id if merged_map_id not in (None, "") else map_id_value,
+            "texturePath": primary_texture,
+            "texturePathCandidates": merged_candidates,
+            "offsetX": pick("offsetX"),
+            "offsetY": pick("offsetY"),
+            "sizeFactor": pick("sizeFactor"),
+        }
+        return map_key
+
+    def _merge_extracted_summary_map_textures(self, map_ids: set[int], map_textures: dict[str, dict]) -> None:
+        if not map_ids or not os.path.isfile(EXTRACT_SUMMARY_PATH):
             return
 
         try:
-            with open(self._asset_plan_output_path, "r", encoding="utf-8") as handle:
-                cached_plan = json.load(handle)
+            with open(EXTRACT_SUMMARY_PATH, "r", encoding="utf-8") as handle:
+                extracted_summary = json.load(handle)
         except Exception:
             return
 
-        for entry in cached_plan.get("mapTextures", []):
+        extracted_files = extracted_summary.get("extractedFiles") or []
+        if not isinstance(extracted_files, list):
+            return
+
+        for entry in extracted_files:
             if not isinstance(entry, dict):
                 continue
 
-            try:
-                map_id_value = int(entry.get("mapId"))
-            except (TypeError, ValueError):
+            if self._infer_extracted_file_kind(entry) != "mapTexture":
                 continue
 
-            if map_id_value <= 0 or map_id_value not in map_ids:
-                continue
-
-            texture_candidates: list[str] = []
-            primary = str(entry.get("texturePath") or "").strip()
-            if primary:
-                texture_candidates.append(primary)
-
-            for candidate in entry.get("texturePathCandidates") or []:
-                candidate_text = str(candidate or "").strip()
-                if candidate_text and candidate_text not in texture_candidates:
-                    texture_candidates.append(candidate_text)
-
+            texture_candidates = self._collect_map_texture_candidates(entry)
             if not texture_candidates:
                 continue
 
-            replacement = {
-                "mapId": map_id_value,
-                "texturePath": texture_candidates[0],
-                "texturePathCandidates": texture_candidates,
-                "offsetX": entry.get("offsetX"),
-                "offsetY": entry.get("offsetY"),
-                "sizeFactor": entry.get("sizeFactor"),
+            normalized_candidates = {
+                self._normalize_map_texture_candidate(candidate)
+                for candidate in texture_candidates
+                if self._normalize_map_texture_candidate(candidate)
             }
-            map_key = self._build_map_catalog_key(texture_candidates[0], map_id_value)
-            existing = map_textures.get(map_key)
-            if existing is None or len(texture_candidates) > len(existing.get("texturePathCandidates") or []):
-                map_textures[map_key] = replacement
+            if not normalized_candidates:
+                continue
+
+            preferred_key: str | None = None
+            for existing_key, existing_entry in map_textures.items():
+                existing_candidates = {
+                    self._normalize_map_texture_candidate(candidate)
+                    for candidate in self._collect_map_texture_candidates(existing_entry)
+                    if self._normalize_map_texture_candidate(candidate)
+                }
+                if normalized_candidates & existing_candidates:
+                    preferred_key = existing_key
+                    break
+
+            if preferred_key is None:
+                map_id_value = self._coerce_positive_int(entry.get("mapId"))
+                if map_id_value is None or map_id_value not in map_ids:
+                    continue
+
+            self._merge_map_texture_entry(map_textures, entry, preferred_key)
 
     def _append_asset_ids_from_entity(
         self,
@@ -1980,18 +2058,17 @@ class TTSLStateStore:
                     map_id_value = 0
 
             if texture_candidates:
-                map_key = self._build_map_catalog_key(texture_candidates[0], map_id_value if map_id_value > 0 else None)
-                existing = map_textures.get(map_key)
-                replacement = {
-                    "mapId": map_id_value if map_id_value > 0 else map_info.get("mapId"),
-                    "texturePath": texture_candidates[0],
-                    "texturePathCandidates": texture_candidates,
-                    "offsetX": map_info.get("offsetX"),
-                    "offsetY": map_info.get("offsetY"),
-                    "sizeFactor": map_info.get("sizeFactor"),
-                }
-                if existing is None or len(texture_candidates) > len(existing.get("texturePathCandidates") or []):
-                    map_textures[map_key] = replacement
+                self._merge_map_texture_entry(
+                    map_textures,
+                    {
+                        "mapId": map_id_value if map_id_value > 0 else map_info.get("mapId"),
+                        "texturePath": texture_candidates[0],
+                        "texturePathCandidates": texture_candidates,
+                        "offsetX": map_info.get("offsetX"),
+                        "offsetY": map_info.get("offsetY"),
+                        "sizeFactor": map_info.get("sizeFactor"),
+                    },
+                )
         self._append_numeric(entity.get("raceId"), race_ids)
         self._append_numeric(entity.get("tribeId"), tribe_ids)
         self._append_numeric(entity.get("jobId"), job_ids)

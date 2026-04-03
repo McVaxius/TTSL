@@ -17,6 +17,8 @@ DEFAULT_PLAN_PATH = os.path.join(SCRIPT_ROOT, "ttsl_asset_plan.json")
 DEFAULT_OUTPUT_ROOT = os.path.join(SCRIPT_ROOT, "extracted")
 DEFAULT_SUMMARY_PATH = os.path.join(DEFAULT_OUTPUT_ROOT, "ttsl_asset_extract_summary.json")
 LOCAL_PYTHON_DEPS_ROOT = os.path.join(SCRIPT_ROOT, "_pydeps")
+VENDORED_LUMINAPIE_ROOT = os.path.join(SCRIPT_ROOT, "vendor")
+LUMINAPIE_ROOTS_ENV_VAR = "TTSL_LUMINAPIE_ROOTS"
 EXCEL_HEADER_MAGIC = b"EXHF"
 EXCEL_DATA_MAGIC = b"EXDF"
 EXCEL_COLUMN_TYPE_STRING = 0x0
@@ -33,13 +35,6 @@ SQPACK_FILE_TYPE_TEXTURE = 4
 SQPACK_BLOCK_PADDING = 128
 SQPACK_UNCOMPRESSED_BLOCK_MARKER = 32000
 TEX_HEADER_SIZE = 80
-STATIC_LUMINAPIE_CANDIDATES = [
-    r"Z:\temp\awgil_clientstructs\ida",
-    r"D:\temp\awgil_clientstructs\ida",
-    r"Y:\temp\awgil_clientstructs\ida",
-    r"Z:\_research\FFXIVClientStructs\ida",
-    r"Y:\_research\FFXIVClientStructs\ida",
-]
 ICON_PALETTES = (
     ("#1a3653", "#78c5ff", "#eaf4ff"),
     ("#263d1f", "#93f2a5", "#f4fff8"),
@@ -154,18 +149,12 @@ def get_luminapie_candidates() -> list[str]:
         if normalized not in candidates:
             candidates.append(normalized)
 
-    for candidate in STATIC_LUMINAPIE_CANDIDATES:
-        add_candidate(candidate)
+    add_candidate(VENDORED_LUMINAPIE_ROOT)
 
-    script_drive, _ = os.path.splitdrive(SCRIPT_ROOT)
-    if script_drive:
-        drive_root = f"{script_drive}\\"
-        add_candidate(os.path.join(drive_root, "temp", "awgil_clientstructs", "ida"))
-        add_candidate(os.path.join(drive_root, "_research", "FFXIVClientStructs", "ida"))
-
-    add_candidate(os.path.join(SCRIPT_ROOT, "..", "..", "awgil_clientstructs", "ida"))
-    add_candidate(os.path.join(SCRIPT_ROOT, "..", "..", "FFXIVClientStructs", "ida"))
-    add_candidate(os.path.join(SCRIPT_ROOT, "..", "..", "_research", "FFXIVClientStructs", "ida"))
+    env_roots = str(os.environ.get(LUMINAPIE_ROOTS_ENV_VAR) or "").strip()
+    if env_roots:
+        for candidate in env_roots.split(os.pathsep):
+            add_candidate(candidate)
 
     return candidates
 

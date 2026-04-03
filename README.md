@@ -30,3 +30,24 @@ Current surface:
 - optional krangled display names
 
 This repo is still under active development.
+
+## Python Server
+
+The web HUD server lives under [server](Z:\TTSL\server).
+
+Supported clean-machine setup:
+
+```powershell
+python -m pip install -r server\requirements.txt
+python server\ttsl_server.py --host 127.0.0.1 --port 6942
+```
+
+Notes:
+
+- The asset extractor now uses a bundled local copy of `luminapie` under `server\vendor\luminapie`.
+- Researcher-only external folders are not required for normal runtime anymore.
+- Generated runtime state stays local under:
+  - `server\cache`
+  - `server\extracted`
+  - `server\_pydeps`
+- `server\_pydeps` is still used as a fallback local cache if Python packages are missing, but the supported path is installing from `server\requirements.txt`.
