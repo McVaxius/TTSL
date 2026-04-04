@@ -327,12 +327,19 @@ internal sealed class RemoteHudPublisherService : IDisposable
             var character = FindPartyCharacter(member.Address, originalName);
             var job = member.ClassJob.IsValid ? member.ClassJob.Value.Abbreviation.ToString() : "UNK";
             var jobId = member.ClassJob.RowId;
+            var worldName = member.World.IsValid ? member.World.Value.Name.ToString() : string.Empty;
+            var contentId = member.ContentId > 0 ? ((ulong)member.ContentId).ToString("X16") : string.Empty;
+            // Fallback Lodestone search shape if any future direct-ID shortcut ever becomes unreliable:
+            // var searchUrl =
+            //     $"https://na.finalfantasyxiv.com/lodestone/character/?q={Uri.EscapeDataString(originalName)}&worldname={Uri.EscapeDataString(worldName)}";
 
             members.Add(new RemotePartyMemberSnapshot
             {
                 Slot = i + 1,
+                ContentId = contentId,
                 Name = originalName,
-                KrangledName = KrangleService.KrangleName(originalName),
+                WorldName = worldName,
+                KrangledName = KrangleService.KrangleName(string.IsNullOrWhiteSpace(worldName) ? originalName : $"{originalName}@{worldName}"),
                 Job = job,
                 JobId = jobId == 0 ? null : jobId,
                 JobIconId = GetJobIconId(jobId),
@@ -1572,7 +1579,9 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private sealed class RemotePartyMemberSnapshot
     {
         public int Slot { get; init; }
+        public string ContentId { get; init; } = string.Empty;
         public string Name { get; init; } = string.Empty;
+        public string WorldName { get; init; } = string.Empty;
         public string KrangledName { get; init; } = string.Empty;
         public string Job { get; init; } = string.Empty;
         public uint? JobId { get; init; }

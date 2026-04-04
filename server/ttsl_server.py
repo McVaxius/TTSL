@@ -2178,32 +2178,32 @@ class TTSLStateStore:
         )
         source_key = self._client_key_from_item(source_client)
         used_keys: set[tuple[str, str, str]] = set()
-        represented_names: set[tuple[str, str]] = set()
+        represented_identities: set[tuple[str, str, str]] = set()
         members: list[dict] = []
 
         source_party = self._dedupe_party_members(source_client.get("party") or [])
         for party_member in source_party:
-            normalized_member_name = self._normalize_party_identity(party_member.get("name"))
-            if not normalized_member_name[0]:
+            member_identity = self._party_member_identity(party_member)
+            if not member_identity[1]:
                 continue
 
             matched_client = self._match_monitored_client(all_clients, party_member, used_keys | reserved_keys)
             if matched_client is not None:
                 used_keys.add(self._client_key_from_item(matched_client))
-                represented_names.add(normalized_member_name)
+                represented_identities.add(member_identity)
                 members.append(self._build_monitored_member(matched_client, source_key, party_member))
             else:
-                represented_names.add(normalized_member_name)
+                represented_identities.add(member_identity)
                 members.append(self._build_stranger_member(party_member))
 
         for extra_client in sorted(component_clients, key=self._client_sort_key):
             extra_key = self._client_key_from_item(extra_client)
-            normalized_extra_name = self._client_identity(extra_client)
-            if extra_key in used_keys or extra_key in reserved_keys or (normalized_extra_name[0] and normalized_extra_name in represented_names):
+            extra_identity = self._client_identity_full(extra_client)
+            if extra_key in used_keys or extra_key in reserved_keys or (extra_identity[1] and extra_identity in represented_identities):
                 continue
 
-            if normalized_extra_name[0]:
-                represented_names.add(normalized_extra_name)
+            if extra_identity[1]:
+                represented_identities.add(extra_identity)
             used_keys.add(extra_key)
             members.append(self._build_monitored_member(extra_client, source_key, None))
 
@@ -2276,6 +2276,7 @@ class TTSLStateStore:
 
         return {
             "accountId": client.get("accountId", ""),
+            "contentId": client.get("accountId", ""),
             "slotText": self._slot_text((fallback_party_member or {}).get("slot")),
             "name": client.get("characterName", ""),
             "worldName": client.get("worldName", ""),
@@ -2312,9 +2313,10 @@ class TTSLStateStore:
     def _build_stranger_member(self, party_member: dict) -> dict:
         return {
             "accountId": "",
+            "contentId": party_member.get("contentId", ""),
             "slotText": self._slot_text(party_member.get("slot")),
             "name": party_member.get("name", ""),
-            "worldName": self._display_world_from_party_member(party_member.get("name")),
+            "worldName": str(party_member.get("worldName") or "").strip() or self._display_world_from_party_member(party_member.get("name")),
             "krangledName": party_member.get("krangledName", ""),
             "job": party_member.get("job", "UNK"),
             "jobId": party_member.get("jobId"),
@@ -2364,6 +2366,10 @@ class TTSLStateStore:
     def _normalize_name(value: object) -> str:
         return str(value or "").strip().casefold()
 
+    @staticmethod
+    def _normalize_content_id(value: object) -> str:
+        return str(value or "").strip().upper()
+
     @classmethod
     def _normalize_party_identity(cls, value: object) -> tuple[str, str]:
         raw = " ".join(str(value or "").strip().split())
@@ -2381,12 +2387,33 @@ class TTSLStateStore:
         return cls._normalize_name(client.get("characterName")), cls._normalize_name(client.get("worldName"))
 
     @classmethod
-    def _client_matches_party_member(cls, client: dict, party_member: dict) -> bool:
+    def _client_identity_full(cls, client: dict) -> tuple[str, str, str]:
+        return (
+            cls._normalize_content_id(client.get("accountId")),
+            cls._normalize_name(client.get("characterName")),
+            cls._normalize_name(client.get("worldName")),
+        )
+
+    @classmethod
+    def _party_member_identity(cls, party_member: dict) -> tuple[str, str, str]:
         member_name, member_world = cls._normalize_party_identity(party_member.get("name"))
+        explicit_world = cls._normalize_name(party_member.get("worldName"))
+        return (
+            cls._normalize_content_id(party_member.get("contentId")),
+            member_name,
+            explicit_world or member_world,
+        )
+
+    @classmethod
+    def _client_matches_party_member(cls, client: dict, party_member: dict) -> bool:
+        member_content_id, member_name, member_world = cls._party_member_identity(party_member)
         if not member_name:
             return False
 
-        client_name, client_world = cls._client_identity(client)
+        client_content_id, client_name, client_world = cls._client_identity_full(client)
+        if member_content_id and client_content_id:
+            return member_content_id == client_content_id
+
         if client_name != member_name:
             return False
         if member_world and client_world != member_world:
@@ -2403,13 +2430,13 @@ class TTSLStateStore:
     @classmethod
     def _dedupe_party_members(cls, party_members: list[dict]) -> list[dict]:
         deduped: list[dict] = []
-        seen_names: set[tuple[str, str]] = set()
+        seen_members: set[tuple[str, str, str]] = set()
         for party_member in sorted(party_members, key=lambda member: (int(member.get("slot", 999)), str(member.get("name", "")))):
-            normalized_name = cls._normalize_party_identity(party_member.get("name"))
-            if not normalized_name[0] or normalized_name in seen_names:
+            identity = cls._party_member_identity(party_member)
+            if not identity[1] or identity in seen_members:
                 continue
 
-            seen_names.add(normalized_name)
+            seen_members.add(identity)
             deduped.append(party_member)
 
         return deduped
@@ -2432,13 +2459,12 @@ class TTSLStateStore:
 
     @classmethod
     def _party_contains(cls, source: dict, target: dict) -> bool:
-        target_name, target_world = cls._client_identity(target)
-        if not target_name or not cls._territory_matches(source, target):
+        target_identity = cls._client_identity_full(target)
+        if not target_identity[1] or not cls._territory_matches(source, target):
             return False
 
         for member in source.get("party") or []:
-            member_name, member_world = cls._normalize_party_identity(member.get("name"))
-            if member_name == target_name and (not member_world or member_world == target_world):
+            if cls._client_matches_party_member(target, member):
                 return True
 
         return False
@@ -2459,9 +2485,12 @@ class TTSLStateStore:
 
     @classmethod
     def _find_self_party_member(cls, client: dict) -> dict | None:
-        own_name = cls._client_identity(client)
+        own_identity = cls._client_identity_full(client)
         for party_member in client.get("party") or []:
-            if cls._normalize_party_identity(party_member.get("name")) == own_name:
+            member_identity = cls._party_member_identity(party_member)
+            if own_identity[0] and member_identity[0] and own_identity[0] == member_identity[0]:
+                return party_member
+            if member_identity[1:] == own_identity[1:]:
                 return party_member
 
         return None
