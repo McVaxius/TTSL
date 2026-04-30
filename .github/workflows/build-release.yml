@@ -11,7 +11,7 @@ env:
   PLUGIN_NAME: TTSL
   SOLUTION_FILE: TTSL.slnx
   INTERNAL_NAME: TTSL
-  RELEASE_DIR: TTSL\bin\Release\TTSL
+  RELEASE_DIR: TTSL\bin\x64\Release\TTSL
 
 jobs:
   build:
@@ -29,13 +29,13 @@ jobs:
 
       - name: Download Dalamud
         run: |
-          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/api15/latest.zip -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev\"
 
       - name: Build
         run: |
           dotnet restore -r win "${{ env.SOLUTION_FILE }}"
-          dotnet build "${{ env.SOLUTION_FILE }}" --configuration Release --no-restore
+          dotnet build "${{ env.SOLUTION_FILE }}" --configuration Release --no-restore -p:Platform=x64
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: true
 
