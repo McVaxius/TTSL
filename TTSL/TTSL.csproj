@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>0.0.1.8</Version>
-    <FileVersion>0.0.1.8</FileVersion>
-    <AssemblyVersion>0.0.1.8</AssemblyVersion>
+    <Version>0.0.1.9</Version>
+    <FileVersion>0.0.1.9</FileVersion>
+    <AssemblyVersion>0.0.1.9</AssemblyVersion>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <RootNamespace>TTSL</RootNamespace>

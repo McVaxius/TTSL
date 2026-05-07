@@ -2018,7 +2018,8 @@ public:
             const auto expires_at = MetadataEpoch(metadata, "expiresAtUnix");
             const bool expired = expires_at <= now;
             const bool needs_assets = status == "ready" && !MetadataHasAssets(metadata);
-            const bool should_lookup = metadata.empty() || expired || needs_assets || status == "pending" || status == "error";
+            const bool stale_negative = status == "not_found" && !HasCurrentParserVersion(metadata);
+            const bool should_lookup = metadata.empty() || expired || needs_assets || stale_negative || status == "pending" || status == "error";
             if (should_lookup && inflight_.insert(identity_key).second) {
                 start_lookup = true;
             }
@@ -2049,6 +2050,8 @@ public:
     }
 
 private:
+    static constexpr int LODESTONE_PARSER_VERSION = 2;
+
     struct SearchEntry {
         std::string character_id;
         std::string character_url;
@@ -2253,6 +2256,22 @@ private:
         }
     }
 
+    static int MetadataInt(const std::map<std::string, std::string>& metadata, const std::string& key) {
+        const auto found = metadata.find(key);
+        if (found == metadata.end()) {
+            return 0;
+        }
+        try {
+            return static_cast<int>(std::stoll(Trim(found->second)));
+        } catch (...) {
+            return 0;
+        }
+    }
+
+    static bool HasCurrentParserVersion(const std::map<std::string, std::string>& metadata) {
+        return MetadataInt(metadata, "parserVersion") >= LODESTONE_PARSER_VERSION;
+    }
+
     static bool MetadataHasAssets(const std::map<std::string, std::string>& metadata) {
         const auto face = JsonStringFieldOrEmpty(metadata, "faceCachePath");
         const auto portrait = JsonStringFieldOrEmpty(metadata, "portraitCachePath");
@@ -2303,6 +2322,7 @@ private:
                << ",\"portraitUrl\":" << (portrait_url.has_value() ? JsonQuote(*portrait_url) : "null")
                << ",\"resolvedAtUtc\":" << JsonValueOrNull(metadata, "resolvedAtUtc")
                << ",\"expiresAtUtc\":" << JsonValueOrNull(metadata, "expiresAtUtc")
+               << ",\"parserVersion\":" << (MetadataInt(metadata, "parserVersion") > 0 ? std::to_string(MetadataInt(metadata, "parserVersion")) : "null")
                << ",\"error\":" << JsonValueOrNull(metadata, "lastError")
                << "}";
         return stream.str();
@@ -2737,6 +2757,10 @@ private:
         metadata[key] = std::to_string(value);
     }
 
+    static void PutParserVersion(std::map<std::string, std::string>& metadata) {
+        PutInt(metadata, "parserVersion", LODESTONE_PARSER_VERSION);
+    }
+
     void RefreshIdentity(const std::string& character_name, const std::string& world_name, const std::string& identity_key) const {
         std::map<std::string, std::string> existing;
         {
@@ -2762,6 +2786,7 @@ private:
                 PutString(metadata, "resolvedAtUtc", NowIsoUtc());
                 PutInt(metadata, "expiresAtUnix", MetadataHasAssets(existing) ? ready_expires : not_found_expires);
                 PutString(metadata, "expiresAtUtc", IsoFromUnix(MetadataHasAssets(existing) ? ready_expires : not_found_expires));
+                PutParserVersion(metadata);
                 PutString(metadata, "lastError", "No exact Lodestone search match was found for this character and world.");
                 std::lock_guard lock(mutex_);
                 StoreMetadataLocked(identity_key, character_name, world_name, metadata);
@@ -2816,6 +2841,7 @@ private:
             PutString(metadata, "resolvedAtUtc", NowIsoUtc());
             PutInt(metadata, "expiresAtUnix", ready_expires);
             PutString(metadata, "expiresAtUtc", IsoFromUnix(ready_expires));
+            PutParserVersion(metadata);
             PutString(metadata, "lastError", "");
             std::lock_guard lock(mutex_);
             StoreMetadataLocked(identity_key, character_name, world_name, metadata);
@@ -2828,6 +2854,7 @@ private:
             PutString(metadata, "resolvedAtUtc", NowIsoUtc());
             PutInt(metadata, "expiresAtUnix", MetadataHasAssets(existing) ? ready_expires : error_expires);
             PutString(metadata, "expiresAtUtc", IsoFromUnix(MetadataHasAssets(existing) ? ready_expires : error_expires));
+            PutParserVersion(metadata);
             PutString(metadata, "lastError", ex.what());
             std::lock_guard lock(mutex_);
             StoreMetadataLocked(identity_key, character_name, world_name, metadata);
