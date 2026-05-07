@@ -1035,6 +1035,298 @@ internal sealed class RemoteHudPublisherService : IDisposable
         }
     }
 
+    private void QueueCharacterVisualCapture(string baseUrl, RemoteAction action)
+    {
+        if (!plugin.Configuration.EnablePluginFullBodyFallback)
+        {
+            Plugin.Log.Information("[TTSL] Ignored plugin full-body fallback request because the local policy is off.");
+            return;
+        }
+
+        var targetName = string.IsNullOrWhiteSpace(action.TargetCharacterName)
+            ? lastIdentity?.CharacterName ?? string.Empty
+            : action.TargetCharacterName.Trim();
+        var targetWorld = string.IsNullOrWhiteSpace(action.TargetWorldName)
+            ? lastIdentity?.WorldName ?? string.Empty
+            : action.TargetWorldName.Trim();
+        if (string.IsNullOrWhiteSpace(targetName) || string.IsNullOrWhiteSpace(targetWorld))
+        {
+            Plugin.Log.Information("[TTSL] Ignored plugin full-body fallback request without a target character/world.");
+            return;
+        }
+
+        pendingCharacterVisualCaptures.Enqueue(new PendingCharacterVisualCapture
+        {
+            BaseUrl = baseUrl,
+            ActionId = string.IsNullOrWhiteSpace(action.ActionId) ? Guid.NewGuid().ToString("N") : action.ActionId,
+            TargetCharacterName = targetName,
+            TargetWorldName = targetWorld,
+            TargetContentId = action.TargetContentId ?? string.Empty,
+            TargetEntityId = action.TargetEntityId,
+            RequestedAtUtc = DateTime.UtcNow,
+        });
+        Plugin.Log.Information("[TTSL] Queued plugin full-body fallback capture for {CharacterKey}.", $"{targetName}@{targetWorld}");
+    }
+
+    private void ProcessCharacterVisualCaptures()
+    {
+        if (!plugin.Configuration.EnablePluginFullBodyFallback)
+        {
+            activeCharacterVisualCapture = null;
+            while (pendingCharacterVisualCaptures.TryDequeue(out _))
+            {
+            }
+            return;
+        }
+
+        activeCharacterVisualCapture ??= pendingCharacterVisualCaptures.TryDequeue(out var next)
+            ? next
+            : null;
+        var request = activeCharacterVisualCapture;
+        if (request == null)
+            return;
+
+        if ((DateTime.UtcNow - request.RequestedAtUtc).TotalMilliseconds > CharacterVisualCaptureTimeoutMs)
+        {
+            Plugin.Log.Warning("[TTSL] Plugin full-body fallback timed out for {CharacterKey}.", request.CharacterKey);
+            activeCharacterVisualCapture = null;
+            return;
+        }
+
+        if (!TryResolveCharacterVisualTarget(request, out var entityId, out var targetReason))
+        {
+            Plugin.Log.Information("[TTSL] Plugin full-body fallback cannot resolve {CharacterKey}: {Reason}", request.CharacterKey, targetReason);
+            activeCharacterVisualCapture = null;
+            return;
+        }
+
+        if (!RequestOrConfirmInspectTarget(request, entityId, out var inspectReason))
+        {
+            request.LastStatus = inspectReason;
+            return;
+        }
+
+        if (!TryCaptureInspectPreviewPng(entityId, out var imageBytes, out var captureReason))
+        {
+            request.LastStatus = captureReason;
+            return;
+        }
+
+        activeCharacterVisualCapture = null;
+        _ = UploadCharacterVisualAsync(request, imageBytes);
+    }
+
+    private static bool TryResolveCharacterVisualTarget(PendingCharacterVisualCapture request, out uint entityId, out string reason)
+    {
+        if (request.TargetEntityId is > 0)
+        {
+            entityId = request.TargetEntityId.Value;
+            reason = string.Empty;
+            return true;
+        }
+
+        var localPlayer = Plugin.ObjectTable.LocalPlayer;
+        if (localPlayer != null &&
+            string.Equals(localPlayer.Name.TextValue, request.TargetCharacterName, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(localPlayer.HomeWorld.Value.Name.ToString(), request.TargetWorldName, StringComparison.OrdinalIgnoreCase))
+        {
+            entityId = localPlayer.EntityId;
+            reason = string.Empty;
+            return entityId != 0;
+        }
+
+        var partyMember = Plugin.PartyList
+            .Where(member => member != null)
+            .FirstOrDefault(member =>
+                string.Equals(member!.Name.TextValue, request.TargetCharacterName, StringComparison.OrdinalIgnoreCase) &&
+                (string.IsNullOrWhiteSpace(request.TargetWorldName) ||
+                 !member.World.IsValid ||
+                 string.Equals(member.World.Value.Name.ToString(), request.TargetWorldName, StringComparison.OrdinalIgnoreCase)));
+        if (partyMember != null)
+        {
+            var character = FindPartyCharacter(partyMember.Address, request.TargetCharacterName);
+            if (character != null && character.EntityId != 0)
+            {
+                entityId = character.EntityId;
+                reason = string.Empty;
+                return true;
+            }
+        }
+
+        entityId = 0;
+        reason = "target is not a visible local or party character.";
+        return false;
+    }
+
+    private static unsafe bool RequestOrConfirmInspectTarget(PendingCharacterVisualCapture request, uint entityId, out string reason)
+    {
+        var agent = AgentInspect.Instance();
+        if (agent == null)
+        {
+            reason = "AgentInspect is unavailable.";
+            return false;
+        }
+
+        if (!request.InspectRequested)
+        {
+            agent->ExamineCharacter(entityId);
+            request.InspectRequested = true;
+            request.InspectRequestedAtUtc = DateTime.UtcNow;
+            reason = "CharacterInspect request sent.";
+            return false;
+        }
+
+        if (agent->CurrentEntityId != entityId)
+        {
+            reason = $"Waiting for CharacterInspect target 0x{entityId:X8}.";
+            return false;
+        }
+
+        reason = string.Empty;
+        return true;
+    }
+
+    private static unsafe bool TryCaptureInspectPreviewPng(uint entityId, out byte[] imageBytes, out string reason)
+    {
+        imageBytes = Array.Empty<byte>();
+        var agent = AgentInspect.Instance();
+        if (agent == null || agent->CurrentEntityId != entityId)
+        {
+            reason = "CharacterInspect has not settled on the requested target.";
+            return false;
+        }
+
+        var charaView = &agent->CharaView;
+        if (!charaView->CharacterLoaded && !charaView->CharacterDataCopied && charaView->State == 0)
+        {
+            reason = "CharacterInspect model data is not ready yet.";
+            return false;
+        }
+
+        var addonPointer = Plugin.GameGui.GetAddonByName("CharacterInspect");
+        if (addonPointer.IsNull)
+            addonPointer = Plugin.GameGui.GetAddonByName("CharacterInspect", 1);
+        var addonAddress = addonPointer.Address;
+        if (addonAddress == nint.Zero)
+        {
+            reason = "CharacterInspect addon is not visible yet.";
+            return false;
+        }
+
+        var addon = (AddonCharacterInspect*)addonAddress;
+        var previewComponent = addon->PreviewController.Component;
+        if (previewComponent == null || previewComponent->OwnerNode == null)
+        {
+            reason = "CharacterInspect preview component is not ready.";
+            return false;
+        }
+
+        var ownerNode = &previewComponent->OwnerNode->AtkResNode;
+        if (!ownerNode->IsVisible() || ownerNode->Width == 0 || ownerNode->Height == 0)
+        {
+            reason = "CharacterInspect preview node is not visible yet.";
+            return false;
+        }
+
+        var windowHandle = ResolveGameWindowHandleForCapture();
+        if (windowHandle == nint.Zero)
+        {
+            reason = "Could not resolve the game window handle.";
+            return false;
+        }
+
+        if (!GetClientRect(windowHandle, out var clientRect))
+        {
+            reason = "Could not read the game client bounds.";
+            return false;
+        }
+
+        var clientWidth = Math.Max(0, clientRect.Right - clientRect.Left);
+        var clientHeight = Math.Max(0, clientRect.Bottom - clientRect.Top);
+        var scaleX = NormalizeInspectPreviewScale(ownerNode->ScaleX);
+        var scaleY = NormalizeInspectPreviewScale(ownerNode->ScaleY);
+        var requestedX = RoundToInt(addon->X) + RoundToInt(ownerNode->X * scaleX);
+        var requestedY = RoundToInt(addon->Y) + RoundToInt(ownerNode->Y * scaleY);
+        var captureWidth = Math.Max(1, RoundToInt(ownerNode->Width * scaleX));
+        var scaledPreviewHeight = Math.Max(1, RoundToInt(ownerNode->Height * scaleY));
+        var sourceHeight = Math.Max(scaledPreviewHeight, scaledPreviewHeight * InspectPreviewExpandedHeightMultiplier);
+        var topTrim = RoundToInt(sourceHeight * InspectPreviewTopTrimFraction);
+        var bottomTrim = RoundToInt(sourceHeight * InspectPreviewBottomTrimFraction);
+        var preferredY = requestedY + topTrim;
+        var preferredHeight = Math.Max(1, sourceHeight - topTrim - bottomTrim);
+        if (!TryClampClientRect(requestedX, preferredY, captureWidth, preferredHeight, clientWidth, clientHeight, out var captureRect))
+        {
+            reason = "CharacterInspect preview crop landed outside the game client area.";
+            return false;
+        }
+
+        var screenPoint = new Win32Point(captureRect.X, captureRect.Y);
+        if (!ClientToScreen(windowHandle, ref screenPoint))
+        {
+            reason = "Could not translate CharacterInspect preview bounds to screen coordinates.";
+            return false;
+        }
+
+        using var bitmap = new Bitmap(captureRect.Width, captureRect.Height, PixelFormat.Format32bppArgb);
+        using (var graphics = Graphics.FromImage(bitmap))
+        {
+            graphics.CopyFromScreen(
+                screenPoint.X,
+                screenPoint.Y,
+                0,
+                0,
+                captureRect.Size,
+                CopyPixelOperation.SourceCopy);
+        }
+
+        imageBytes = EncodeBitmapAsPng(bitmap);
+        reason = string.Empty;
+        return imageBytes.Length > 0;
+    }
+
+    private async Task UploadCharacterVisualAsync(PendingCharacterVisualCapture request, byte[] imageBytes)
+    {
+        try
+        {
+            var identity = lastIdentity ?? GetCurrentIdentity();
+            if (identity == null)
+                throw new InvalidOperationException("Cannot upload a character visual without a resolved local identity.");
+
+            var payload = new CharacterVisualUploadRequest
+            {
+                AccountId = identity.AccountId,
+                CharacterName = identity.CharacterName,
+                WorldName = identity.WorldName,
+                TargetCharacterName = request.TargetCharacterName,
+                TargetWorldName = request.TargetWorldName,
+                ActionId = request.ActionId,
+                CapturedAtUtc = DateTime.UtcNow,
+                ContentType = "image/png",
+                CaptureKind = "portrait",
+                ImageBase64 = Convert.ToBase64String(imageBytes),
+            };
+
+            var json = JsonSerializer.Serialize(payload, JsonOptions);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var response = await httpClient.PostAsync($"{request.BaseUrl}/api/upload-character-visual", content, shutdownCts.Token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(shutdownCts.Token).ConfigureAwait(false);
+                throw new InvalidOperationException($"HTTP {(int)response.StatusCode} from {request.BaseUrl}/api/upload-character-visual: {TrimForLog(errorBody)}");
+            }
+
+            Plugin.Log.Information("[TTSL] Uploaded plugin full-body fallback for {CharacterKey}.", request.CharacterKey);
+        }
+        catch (OperationCanceledException) when (shutdownCts.IsCancellationRequested || isDisposing)
+        {
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.Warning(ex, "[TTSL] Failed to upload plugin full-body fallback for {CharacterKey}.", request.CharacterKey);
+        }
+    }
+
+
     private void QueueWebChatInput(string? text)
     {
         if (!plugin.Configuration.AllowWebEchoCommands)
@@ -1388,6 +1680,58 @@ internal sealed class RemoteHudPublisherService : IDisposable
         return false;
     }
 
+    private static nint ResolveGameWindowHandleForCapture()
+    {
+        var handle = Process.GetCurrentProcess().MainWindowHandle;
+        if (handle != nint.Zero)
+            return handle;
+
+        var currentProcessId = (uint)Process.GetCurrentProcess().Id;
+        nint discoveredHandle = nint.Zero;
+        EnumWindows((windowHandle, _) =>
+        {
+            if (!IsWindowVisible(windowHandle))
+                return true;
+
+            GetWindowThreadProcessId(windowHandle, out var processId);
+            if (processId != currentProcessId)
+                return true;
+
+            discoveredHandle = windowHandle;
+            return false;
+        }, nint.Zero);
+        return discoveredHandle;
+    }
+
+    private static int RoundToInt(float value)
+        => (int)MathF.Round(value, MidpointRounding.AwayFromZero);
+
+    private static float NormalizeInspectPreviewScale(float scale)
+        => float.IsFinite(scale) && scale > 0.05f && scale <= 4f ? scale : 1f;
+
+    private static bool TryClampClientRect(
+        int requestedX,
+        int requestedY,
+        int requestedWidth,
+        int requestedHeight,
+        int clientWidth,
+        int clientHeight,
+        out Rectangle rect)
+    {
+        var x = Math.Clamp(requestedX, 0, Math.Max(0, clientWidth - 1));
+        var y = Math.Clamp(requestedY, 0, Math.Max(0, clientHeight - 1));
+        var width = Math.Min(requestedWidth, clientWidth - x);
+        var height = Math.Min(requestedHeight, clientHeight - y);
+        if (width <= 0 || height <= 0)
+        {
+            rect = Rectangle.Empty;
+            return false;
+        }
+
+        rect = new Rectangle(x, y, width, height);
+        return true;
+    }
+
     [DllImport("user32.dll")]
     private static extern bool GetClientRect(nint windowHandle, out Win32Rect rect);
 
@@ -1463,6 +1807,11 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string? Text { get; init; }
         public string? CaptureMode { get; init; }
         public string? CaptureQuality { get; init; }
+        public string? CaptureKind { get; init; }
+        public string? TargetCharacterName { get; init; }
+        public string? TargetWorldName { get; init; }
+        public string? TargetContentId { get; init; }
+        public uint? TargetEntityId { get; init; }
     }
 
     private sealed class ScreenshotUploadRequest
@@ -1479,6 +1828,35 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string ImageBase64 { get; init; } = string.Empty;
     }
 
+    private sealed class CharacterVisualUploadRequest
+    {
+        public string AccountId { get; init; } = string.Empty;
+        public string CharacterName { get; init; } = string.Empty;
+        public string WorldName { get; init; } = string.Empty;
+        public string TargetCharacterName { get; init; } = string.Empty;
+        public string TargetWorldName { get; init; } = string.Empty;
+        public string ActionId { get; init; } = string.Empty;
+        public DateTime CapturedAtUtc { get; init; }
+        public string ContentType { get; init; } = "image/png";
+        public string CaptureKind { get; init; } = "portrait";
+        public string ImageBase64 { get; init; } = string.Empty;
+    }
+
+    private sealed class PendingCharacterVisualCapture
+    {
+        public string BaseUrl { get; init; } = string.Empty;
+        public string ActionId { get; init; } = string.Empty;
+        public string TargetCharacterName { get; init; } = string.Empty;
+        public string TargetWorldName { get; init; } = string.Empty;
+        public string TargetContentId { get; init; } = string.Empty;
+        public uint? TargetEntityId { get; init; }
+        public DateTime RequestedAtUtc { get; init; }
+        public bool InspectRequested { get; set; }
+        public DateTime? InspectRequestedAtUtc { get; set; }
+        public string LastStatus { get; set; } = string.Empty;
+        public string CharacterKey => $"{TargetCharacterName}@{TargetWorldName}";
+    }
+
     private sealed class RemoteHudSnapshot
     {
         public string UpdateKind { get; init; } = "full";
@@ -1486,6 +1864,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string AccountId { get; init; } = string.Empty;
         public string CharacterName { get; init; } = string.Empty;
         public string WorldName { get; init; } = string.Empty;
+        public uint EntityId { get; init; }
         public string KrangledName { get; init; } = string.Empty;
         public string HostName { get; init; } = string.Empty;
         public string? GameInstallPath { get; init; }
@@ -1514,6 +1893,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public bool AllowEchoCommands { get; init; }
         public bool AllowScreenshotRequests { get; init; }
         public bool AllowCctvStreaming { get; init; }
+        public bool AllowPluginFullBodyFallback { get; init; }
     }
 
     private sealed class CctvCapturePreset
@@ -1597,6 +1977,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string ContentId { get; init; } = string.Empty;
         public string Name { get; init; } = string.Empty;
         public string WorldName { get; init; } = string.Empty;
+        public uint? EntityId { get; init; }
         public string KrangledName { get; init; } = string.Empty;
         public string Job { get; init; } = string.Empty;
         public uint? JobId { get; init; }
