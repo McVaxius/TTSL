@@ -15,6 +15,7 @@
 #include <ws2tcpip.h>
 #include <windows.h>
 #include <shellapi.h>
+#include <shlobj.h>
 #include <commctrl.h>
 #include <wincodec.h>
 #include <winhttp.h>
@@ -54,6 +55,8 @@ namespace {
 
 constexpr UINT WM_TTSL_LOG = WM_APP + 1;
 constexpr UINT_PTR STATUS_TIMER_ID = 1001;
+constexpr int64_t ASSET_CACHE_STALE_SECONDS = 24 * 60 * 60;
+constexpr int64_t AUTO_EXTRACT_RETRY_COOLDOWN_SECONDS = 30;
 
 constexpr int IDC_HOST = 2001;
 constexpr int IDC_PORT = 2002;
@@ -72,6 +75,11 @@ constexpr int IDC_CLEAR_STALE = 2014;
 constexpr int IDC_CLEAR_CACHE = 2015;
 constexpr int IDC_EXTRACT_ASSETS = 2016;
 constexpr int IDC_CLIENT_LIST = 2017;
+constexpr int IDC_DATA_ROOT = 2018;
+constexpr int IDC_BROWSE_DATA_ROOT = 2019;
+constexpr int IDC_OPEN_DATA_ROOT = 2020;
+constexpr int IDC_RESET_DATA_ROOT = 2021;
+constexpr int IDC_NATIVE_KRANGLE = 2022;
 
 std::wstring Utf8ToWide(const std::string& value) {
     if (value.empty()) {
@@ -125,6 +133,16 @@ std::string Trim(std::string value) {
     value.erase(std::find_if(value.rbegin(), value.rend(), [&](char ch) {
         return !is_space(static_cast<unsigned char>(ch));
     }).base(), value.end());
+    return value;
+}
+
+std::string StripUtf8Bom(std::string value) {
+    if (value.size() >= 3 &&
+        static_cast<unsigned char>(value[0]) == 0xEF &&
+        static_cast<unsigned char>(value[1]) == 0xBB &&
+        static_cast<unsigned char>(value[2]) == 0xBF) {
+        value.erase(0, 3);
+    }
     return value;
 }
 
@@ -706,17 +724,137 @@ struct NativeAppConfig {
     std::string host = "127.0.0.1";
     int port = 6942;
     int stale_seconds = 300;
+    std::string data_root;
+    bool native_krangle_display = false;
 };
 
-fs::path NativeConfigPath(const fs::path& app_root) {
+std::string PathToUtf8(const fs::path& path) {
+    return WideToUtf8(path.wstring());
+}
+
+std::wstring ExpandEnvironmentVariables(std::wstring value) {
+    if (value.empty()) {
+        return value;
+    }
+
+    const DWORD required = ExpandEnvironmentStringsW(value.c_str(), nullptr, 0);
+    if (required == 0) {
+        return value;
+    }
+    std::wstring expanded(static_cast<size_t>(required), L'\0');
+    const DWORD length = ExpandEnvironmentStringsW(value.c_str(), expanded.data(), required);
+    if (length == 0 || length >= required) {
+        return value;
+    }
+    expanded.resize(length);
+    return expanded;
+}
+
+fs::path LocalAppDataRoot() {
+    const DWORD required = GetEnvironmentVariableW(L"LOCALAPPDATA", nullptr, 0);
+    if (required > 0) {
+        std::wstring value(static_cast<size_t>(required), L'\0');
+        const DWORD length = GetEnvironmentVariableW(L"LOCALAPPDATA", value.data(), required);
+        if (length > 0 && length < required) {
+            value.resize(length);
+            return fs::path(value);
+        }
+    }
+
+    std::error_code ignored;
+    return fs::temp_directory_path(ignored);
+}
+
+fs::path DefaultDataRoot() {
+    return LocalAppDataRoot() / "TTSL Native Server";
+}
+
+fs::path NativeConfigPath() {
+    return DefaultDataRoot() / "ttsl-native-config.json";
+}
+
+fs::path LegacyNativeConfigPath(const fs::path& app_root) {
     return app_root / "ttsl-native-config.json";
 }
 
-NativeAppConfig LoadNativeConfig(const fs::path& app_root) {
-    NativeAppConfig config;
-    const auto path = NativeConfigPath(app_root);
+fs::path NormalizeDataRootPath(fs::path root) {
+    if (root.empty()) {
+        root = DefaultDataRoot();
+    }
+
+    std::error_code ignored;
+    if (root.is_relative()) {
+        const auto absolute = fs::absolute(root, ignored);
+        if (!ignored) {
+            root = absolute;
+        }
+    }
+    return root.lexically_normal();
+}
+
+fs::path DataRootFromConfigValue(const std::string& value) {
+    const auto trimmed = Trim(value);
+    if (trimmed.empty()) {
+        return DefaultDataRoot();
+    }
+    return NormalizeDataRootPath(fs::path(ExpandEnvironmentVariables(Utf8ToWide(trimmed))));
+}
+
+bool EnsureDataRootFolders(const fs::path& data_root, std::string& error) {
+    try {
+        if (data_root.empty()) {
+            error = "Data folder path is empty.";
+            return false;
+        }
+        const std::vector<fs::path> directories = {
+            data_root,
+            data_root / "cache",
+            data_root / "cache" / "screenshots",
+            data_root / "cache" / "cctv",
+            data_root / "extracted",
+        };
+        for (const auto& directory : directories) {
+            std::error_code ec;
+            fs::create_directories(directory, ec);
+            if (ec) {
+                error = "Failed to create " + PathToUtf8(directory) + ": " + ec.message();
+                return false;
+            }
+            if (!fs::is_directory(directory, ec)) {
+                error = PathToUtf8(directory) + " is not a folder.";
+                return false;
+            }
+        }
+        error.clear();
+        return true;
+    } catch (const std::exception& ex) {
+        error = ex.what();
+        return false;
+    }
+}
+
+fs::path ResolveRuntimeDataRoot(const NativeAppConfig& config, std::string& error) {
+    const auto configured_root = DataRootFromConfigValue(config.data_root);
+    std::string validation_error;
+    if (EnsureDataRootFolders(configured_root, validation_error)) {
+        error.clear();
+        return configured_root;
+    }
+
+    const auto fallback_root = NormalizeDataRootPath(DefaultDataRoot());
+    error = "Configured data folder is unavailable: " + validation_error +
+            " Using default data folder: " + PathToUtf8(fallback_root);
+    validation_error.clear();
+    EnsureDataRootFolders(fallback_root, validation_error);
+    if (!validation_error.empty()) {
+        error += " Default data folder also failed validation: " + validation_error;
+    }
+    return fallback_root;
+}
+
+bool ReadNativeConfigFile(const fs::path& path, NativeAppConfig& config) {
     if (!fs::is_regular_file(path)) {
-        return config;
+        return false;
     }
 
     try {
@@ -724,8 +862,8 @@ NativeAppConfig LoadNativeConfig(const fs::path& app_root) {
         std::ostringstream buffer;
         buffer << input.rdbuf();
         std::map<std::string, std::string> fields;
-        if (!ParseTopLevelObject(buffer.str(), fields)) {
-            return config;
+        if (!ParseTopLevelObject(StripUtf8Bom(buffer.str()), fields)) {
+            return false;
         }
         const auto host = JsonStringFieldOrEmpty(fields, "host");
         if (!Trim(host).empty()) {
@@ -739,22 +877,52 @@ NativeAppConfig LoadNativeConfig(const fs::path& app_root) {
         if (stale.has_value() && *stale >= 30) {
             config.stale_seconds = static_cast<int>(*stale);
         }
+        const auto data_root = JsonStringFieldOrEmpty(fields, "dataRoot");
+        if (!Trim(data_root).empty()) {
+            config.data_root = PathToUtf8(DataRootFromConfigValue(data_root));
+        }
+        const auto native_krangle = fields.find("nativeKrangleDisplay");
+        if (native_krangle != fields.end()) {
+            config.native_krangle_display = JsonBoolValue(native_krangle->second);
+        }
     } catch (...) {
+        return false;
     }
-    return config;
+    return true;
 }
 
-void SaveNativeConfig(const fs::path& app_root, const NativeAppConfig& config) {
+void SaveNativeConfig(const NativeAppConfig& config) {
     try {
-        std::ofstream output(NativeConfigPath(app_root), std::ios::binary);
+        fs::create_directories(NativeConfigPath().parent_path());
+        std::ofstream output(NativeConfigPath(), std::ios::binary);
         output << "{"
                << "\"host\":" << JsonQuote(config.host)
                << ",\"port\":" << config.port
                << ",\"staleSeconds\":" << config.stale_seconds
+               << ",\"dataRoot\":" << JsonQuote(PathToUtf8(DataRootFromConfigValue(config.data_root)))
+               << ",\"nativeKrangleDisplay\":" << (config.native_krangle_display ? "true" : "false")
                << ",\"savedAtUtc\":" << JsonQuote(NowIsoUtc())
                << "}\n";
     } catch (...) {
     }
+}
+
+NativeAppConfig LoadNativeConfig(const fs::path& app_root) {
+    NativeAppConfig config;
+    config.data_root = PathToUtf8(DefaultDataRoot());
+
+    const auto primary_path = NativeConfigPath();
+    if (fs::is_regular_file(primary_path)) {
+        ReadNativeConfigFile(primary_path, config);
+        return config;
+    }
+
+    if (ReadNativeConfigFile(LegacyNativeConfigPath(app_root), config)) {
+        SaveNativeConfig(config);
+        return config;
+    }
+
+    return config;
 }
 
 std::string MimeTypeForPath(const fs::path& path) {
@@ -2637,12 +2805,13 @@ private:
 
 class StateStore {
 public:
-    explicit StateStore(fs::path app_root)
+    explicit StateStore(fs::path app_root, fs::path data_root)
         : app_root_(std::move(app_root)),
-          extracted_root_(app_root_ / "extracted"),
+          data_root_(NormalizeDataRootPath(std::move(data_root))),
+          extracted_root_(data_root_ / "extracted"),
           extract_summary_path_(extracted_root_ / "ttsl_asset_extract_summary.json"),
-          asset_plan_path_(app_root_ / "ttsl_asset_plan.json"),
-          cache_root_(app_root_ / "cache"),
+          asset_plan_path_(data_root_ / "ttsl_asset_plan.json"),
+          cache_root_(data_root_ / "cache"),
           screenshot_root_(cache_root_ / "screenshots"),
           cctv_root_(cache_root_ / "cctv"),
           lodestone_cache_(cache_root_) {
@@ -2679,6 +2848,10 @@ public:
 
     fs::path CacheRoot() const {
         return cache_root_;
+    }
+
+    fs::path DataRoot() const {
+        return data_root_;
     }
 
     fs::path ExtractedRoot() const {
@@ -2721,7 +2894,7 @@ public:
         }));
     }
 
-    std::vector<std::string> ClientListRows() const {
+    std::vector<std::string> ClientListRows(bool krangle_display) const {
         std::lock_guard lock(mutex_);
         const auto now = std::chrono::steady_clock::now();
         std::vector<std::string> rows;
@@ -2732,8 +2905,10 @@ public:
             const auto status = client.disconnected ? "OFF" : stale ? "STALE" : "LIVE";
             const auto job = JsonStringFieldOrEmpty(client.fields, "job");
             const auto territory = JsonStringFieldOrEmpty(client.fields, "territoryName");
+            const auto krangled = JsonStringFieldOrEmpty(client.fields, "krangledName");
+            const auto display_name = krangle_display && !krangled.empty() ? krangled : (client.character_name + " @ " + client.world_name);
             std::ostringstream row;
-            row << status << " | " << client.character_name << " @ " << client.world_name
+            row << status << " | " << display_name
                 << " | " << age << "s";
             if (!job.empty()) {
                 row << " | " << job;
@@ -3057,9 +3232,17 @@ public:
         std::string game_source_world;
         std::string game_source_krangled;
         std::string game_source_host;
+        std::thread previous_worker;
+        bool auto_extract_requested = false;
+        std::string auto_extract_plan_json;
+        std::string auto_extract_game_path;
+        std::string auto_extract_message;
 
         {
             std::lock_guard lock(mutex_);
+            if (!asset_extract_running_ && asset_worker_.joinable()) {
+                previous_worker = std::move(asset_worker_);
+            }
             PruneLocked(now);
             total_clients = clients_.size();
 
@@ -3093,8 +3276,22 @@ public:
             aggregate_parties_json = std::move(party_outputs.first);
             loose_clients_json = std::move(party_outputs.second);
             asset_plan_json = BuildAssetPlanJsonLocked(snapshots, generated_at, game_path, game_source_name, game_source_world, game_source_krangled);
+            if (PrepareAutoExtractLocked(asset_plan_json, game_path, generated_at)) {
+                auto_extract_requested = true;
+                auto_extract_plan_json = asset_plan_json;
+                auto_extract_game_path = game_path;
+                auto_extract_message = asset_extract_message_;
+            }
             asset_catalog_json = BuildAssetCatalogJsonLocked();
             asset_extraction_json = AssetExtractionJsonLocked();
+        }
+
+        if (previous_worker.joinable()) {
+            previous_worker.join();
+        }
+        if (auto_extract_requested) {
+            std::string error;
+            StartAssetWorkerThread(std::move(auto_extract_plan_json), std::move(auto_extract_game_path), auto_extract_message, error);
         }
 
         std::ostringstream stream;
@@ -3203,29 +3400,12 @@ public:
             asset_extract_has_exit_code_ = false;
         }
 
-        try {
-            std::thread worker([this, asset_plan_json = std::move(asset_plan_json), game_path = std::move(game_path)]() mutable {
-                RunNativeAssetExtract(std::move(asset_plan_json), std::move(game_path));
-            });
-            {
-                std::lock_guard lock(mutex_);
-                asset_worker_ = std::move(worker);
-            }
-        } catch (const std::exception& ex) {
-            const auto message = std::string("Failed to start native asset extraction: ") + ex.what();
-            {
-                std::lock_guard lock(mutex_);
-                asset_extract_running_ = false;
-                asset_extract_message_ = message;
-                asset_extract_last_completed_utc_ = NowIsoUtc();
-                asset_extract_last_exit_code_ = -1;
-                asset_extract_has_exit_code_ = true;
-            }
+        std::string error;
+        if (!StartAssetWorkerThread(std::move(asset_plan_json), std::move(game_path), "Native asset extraction started.", error)) {
             status = 409;
-            return ConflictJson(message);
+            return ConflictJson(error);
         }
 
-        Log("Native asset extraction started.");
         status = 200;
         return "{\"ok\":true,\"message\":\"Native asset extraction started.\",\"error\":null}";
     }
@@ -3233,6 +3413,11 @@ public:
     std::string OpenScreenshotFolder(int& status) {
         fs::create_directories(screenshot_root_);
         return OpenFolder(screenshot_root_, "screenshot", status);
+    }
+
+    std::string OpenDataFolder(int& status) {
+        fs::create_directories(data_root_);
+        return OpenFolder(data_root_, "data", status);
     }
 
     std::string OpenCacheFolder(int& status) {
@@ -3310,6 +3495,7 @@ public:
                << "Generated: " << NowIsoUtc() << "\n"
                << "URL: " << server_url << "\n"
                << "App root: " << app_root_.string() << "\n"
+               << "Data root: " << data_root_.string() << "\n"
                << "Cache: " << cache_root_.string() << "\n"
                << "Extracted: " << extracted_root_.string() << "\n"
                << "Stale seconds: " << stale_seconds_ << "\n"
@@ -3322,6 +3508,33 @@ public:
     }
 
 private:
+    bool StartAssetWorkerThread(std::string asset_plan_json, std::string game_path, const std::string& log_message, std::string& error) {
+        try {
+            std::thread worker([this, asset_plan_json = std::move(asset_plan_json), game_path = std::move(game_path)]() mutable {
+                RunNativeAssetExtract(std::move(asset_plan_json), std::move(game_path));
+            });
+            {
+                std::lock_guard lock(mutex_);
+                asset_worker_ = std::move(worker);
+            }
+            Log(log_message);
+            error.clear();
+            return true;
+        } catch (const std::exception& ex) {
+            error = std::string("Failed to start native asset extraction: ") + ex.what();
+            {
+                std::lock_guard lock(mutex_);
+                asset_extract_running_ = false;
+                asset_extract_message_ = error;
+                asset_extract_last_completed_utc_ = NowIsoUtc();
+                asset_extract_last_exit_code_ = -1;
+                asset_extract_has_exit_code_ = true;
+            }
+            Log(error);
+            return false;
+        }
+    }
+
     std::string OpenFolder(const fs::path& folder, const std::string& label, int& status) {
         const auto result = ShellExecuteW(nullptr, L"open", folder.wstring().c_str(), nullptr, nullptr, SW_SHOWNORMAL);
         if (reinterpret_cast<intptr_t>(result) <= 32) {
@@ -3359,6 +3572,24 @@ private:
         } catch (...) {
             return 0;
         }
+    }
+
+    static bool FileOlderThan(const fs::path& path, std::chrono::seconds max_age) {
+        try {
+            if (!fs::is_regular_file(path)) {
+                return true;
+            }
+            const auto modified = fs::last_write_time(path);
+            const auto now = fs::file_time_type::clock::now();
+            return now - modified > max_age;
+        } catch (...) {
+            return true;
+        }
+    }
+
+    static std::string NormalizeTextureKey(std::string value) {
+        std::replace(value.begin(), value.end(), '\\', '/');
+        return ToLower(Trim(std::move(value)));
     }
 
     static std::optional<int64_t> IconIdFromTexturePath(const std::string& texture_path) {
@@ -4315,7 +4546,18 @@ private:
         const auto destination = cache_root_ / relative_target;
         try {
             fs::create_directories(destination.parent_path());
-            fs::copy_file(source, destination, fs::copy_options::overwrite_existing);
+            bool copy_needed = true;
+            if (fs::is_regular_file(destination) && IsBrowserAssetFileValid(destination)) {
+                std::error_code source_ec;
+                std::error_code destination_ec;
+                const auto source_time = fs::last_write_time(source, source_ec);
+                const auto destination_time = fs::last_write_time(destination, destination_ec);
+                copy_needed = source_ec || destination_ec || source_time > destination_time ||
+                              FileOlderThan(destination, std::chrono::seconds(ASSET_CACHE_STALE_SECONDS));
+            }
+            if (copy_needed) {
+                fs::copy_file(source, destination, fs::copy_options::overwrite_existing);
+            }
             if (!IsBrowserAssetFileValid(destination)) {
                 std::error_code ignored;
                 fs::remove(destination, ignored);
@@ -4325,6 +4567,236 @@ private:
         } catch (...) {
             return std::nullopt;
         }
+    }
+
+    std::vector<std::map<std::string, std::string>> LoadExtractedSummaryEntriesLocked() const {
+        std::vector<std::map<std::string, std::string>> entries;
+        if (!fs::is_regular_file(extract_summary_path_)) {
+            return entries;
+        }
+
+        try {
+            std::ifstream input(extract_summary_path_, std::ios::binary);
+            std::ostringstream buffer;
+            buffer << input.rdbuf();
+            std::map<std::string, std::string> summary;
+            if (!ParseTopLevelObject(buffer.str(), summary)) {
+                return entries;
+            }
+            const auto extracted = summary.find("extractedFiles");
+            if (extracted == summary.end()) {
+                return entries;
+            }
+            for (const auto& item : JsonArrayObjectItems(extracted->second)) {
+                std::map<std::string, std::string> entry;
+                if (ParseTopLevelObject(item, entry)) {
+                    entries.push_back(std::move(entry));
+                }
+            }
+        } catch (...) {
+        }
+        return entries;
+    }
+
+    static std::string ExtractedEntryKind(const std::map<std::string, std::string>& entry) {
+        auto kind = JsonStringFieldOrEmpty(entry, "kind");
+        if (!kind.empty()) {
+            return kind;
+        }
+        const auto relative_path = JsonStringFieldOrEmpty(entry, "relativePath");
+        if (relative_path.rfind("ui/icon/", 0) == 0) {
+            return "jobIcon";
+        }
+        if (relative_path.rfind("ui/map/", 0) == 0) {
+            return "mapTexture";
+        }
+        return "asset";
+    }
+
+    bool IsFreshExtractedEntry(const std::map<std::string, std::string>& entry) const {
+        const auto raw_path = ResolveExtractedPath(entry);
+        return raw_path.has_value() &&
+               IsBrowserAssetFileValid(*raw_path) &&
+               !FileOlderThan(*raw_path, std::chrono::seconds(ASSET_CACHE_STALE_SECONDS));
+    }
+
+    bool HasFreshExtractedId(
+        const std::vector<std::map<std::string, std::string>>& entries,
+        const std::string& kind,
+        const std::string& id_field,
+        int64_t id) const {
+        for (const auto& entry : entries) {
+            if (ExtractedEntryKind(entry) != kind) {
+                continue;
+            }
+            const auto entry_id = JsonIntField(entry, id_field);
+            if (entry_id.has_value() && *entry_id == id && IsFreshExtractedEntry(entry)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool HasFreshExtractedMap(
+        const std::vector<std::map<std::string, std::string>>& entries,
+        const std::map<std::string, std::string>& map_fields) const {
+        const auto requested_map_id = JsonIntField(map_fields, "mapId");
+        std::set<std::string> requested_candidates;
+        for (const auto& candidate : CollectMapTextureCandidates(map_fields)) {
+            requested_candidates.insert(NormalizeTextureKey(candidate));
+        }
+
+        for (const auto& entry : entries) {
+            if (ExtractedEntryKind(entry) != "mapTexture") {
+                continue;
+            }
+            bool matches = false;
+            const auto entry_map_id = JsonIntField(entry, "mapId");
+            if (requested_map_id.has_value() && entry_map_id.has_value() && *requested_map_id == *entry_map_id) {
+                matches = true;
+            }
+            if (!matches && !requested_candidates.empty()) {
+                std::map<std::string, std::string> entry_fields = entry;
+                for (const auto& candidate : CollectMapTextureCandidates(entry_fields)) {
+                    if (requested_candidates.contains(NormalizeTextureKey(candidate))) {
+                        matches = true;
+                        break;
+                    }
+                }
+            }
+            if (matches && IsFreshExtractedEntry(entry)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::string BuildAutoExtractSignature(
+        const std::vector<int64_t>& job_ids,
+        const std::vector<std::map<std::string, std::string>>& map_requests,
+        const std::vector<int64_t>& race_ids,
+        const std::vector<int64_t>& tribe_ids) const {
+        std::vector<std::string> parts;
+        for (const auto id : job_ids) {
+            parts.push_back("job:" + std::to_string(id));
+        }
+        for (const auto& map_fields : map_requests) {
+            std::ostringstream part;
+            part << "map:" << JsonValueOrNull(map_fields, "mapId") << ':';
+            const auto candidates = CollectMapTextureCandidates(map_fields);
+            for (size_t i = 0; i < candidates.size(); ++i) {
+                if (i > 0) {
+                    part << '|';
+                }
+                part << NormalizeTextureKey(candidates[i]);
+            }
+            parts.push_back(part.str());
+        }
+        for (const auto id : race_ids) {
+            parts.push_back("race:" + std::to_string(id));
+        }
+        for (const auto id : tribe_ids) {
+            parts.push_back("tribe:" + std::to_string(id));
+        }
+        std::sort(parts.begin(), parts.end());
+
+        std::ostringstream stream;
+        for (size_t i = 0; i < parts.size(); ++i) {
+            if (i > 0) {
+                stream << ';';
+            }
+            stream << parts[i];
+        }
+        return stream.str();
+    }
+
+    bool PrepareAutoExtractLocked(const std::string& asset_plan_json, const std::string& game_path, const std::string& started_at) {
+        if (game_path.empty() || asset_extract_running_) {
+            return false;
+        }
+
+        std::map<std::string, std::string> plan;
+        if (!ParseTopLevelObject(asset_plan_json, plan)) {
+            return false;
+        }
+
+        const auto entries = LoadExtractedSummaryEntriesLocked();
+        std::vector<int64_t> missing_job_ids;
+        std::vector<std::map<std::string, std::string>> missing_maps;
+        std::vector<int64_t> missing_race_ids;
+        std::vector<int64_t> missing_tribe_ids;
+
+        for (const auto id : JsonArrayIntItems(RawPlanField(plan, "jobIconIds", "[]"))) {
+            if (id > 0 && !HasFreshExtractedId(entries, "jobIcon", "jobIconId", id)) {
+                missing_job_ids.push_back(id);
+            }
+        }
+
+        for (const auto& item : JsonArrayObjectItems(RawPlanField(plan, "mapTextures", "[]"))) {
+            std::map<std::string, std::string> map_fields;
+            if (ParseTopLevelObject(item, map_fields) && !HasFreshExtractedMap(entries, map_fields)) {
+                missing_maps.push_back(std::move(map_fields));
+            }
+        }
+
+        for (const auto id : JsonArrayIntItems(RawPlanField(plan, "raceIds", "[]"))) {
+            if (id > 0 && !HasFreshExtractedId(entries, "raceIcon", "raceId", id)) {
+                missing_race_ids.push_back(id);
+            }
+        }
+
+        for (const auto id : JsonArrayIntItems(RawPlanField(plan, "tribeIds", "[]"))) {
+            if (id > 0 && !HasFreshExtractedId(entries, "tribeIcon", "tribeId", id)) {
+                missing_tribe_ids.push_back(id);
+            }
+        }
+
+        if (missing_job_ids.empty() && missing_maps.empty() && missing_race_ids.empty() && missing_tribe_ids.empty()) {
+            last_auto_extract_signature_.clear();
+            last_auto_extract_started_steady_ = {};
+            return false;
+        }
+
+        const auto signature = BuildAutoExtractSignature(missing_job_ids, missing_maps, missing_race_ids, missing_tribe_ids);
+        const auto now = std::chrono::steady_clock::now();
+        if (signature == last_auto_extract_signature_ &&
+            last_auto_extract_started_steady_.time_since_epoch().count() != 0 &&
+            std::chrono::duration_cast<std::chrono::seconds>(now - last_auto_extract_started_steady_).count() < AUTO_EXTRACT_RETRY_COOLDOWN_SECONDS) {
+            return false;
+        }
+
+        std::vector<std::string> work_items;
+        if (!missing_job_ids.empty()) {
+            work_items.push_back(std::to_string(missing_job_ids.size()) + " missing/stale job icon" + (missing_job_ids.size() == 1 ? "" : "s"));
+        }
+        if (!missing_maps.empty()) {
+            work_items.push_back(std::to_string(missing_maps.size()) + " missing/stale map texture" + (missing_maps.size() == 1 ? "" : "s"));
+        }
+        if (!missing_race_ids.empty()) {
+            work_items.push_back(std::to_string(missing_race_ids.size()) + " missing/stale race icon" + (missing_race_ids.size() == 1 ? "" : "s"));
+        }
+        if (!missing_tribe_ids.empty()) {
+            work_items.push_back(std::to_string(missing_tribe_ids.size()) + " missing/stale clan icon" + (missing_tribe_ids.size() == 1 ? "" : "s"));
+        }
+
+        std::ostringstream message;
+        message << "Auto-extracting ";
+        for (size_t i = 0; i < work_items.size(); ++i) {
+            if (i > 0) {
+                message << ", ";
+            }
+            message << work_items[i];
+        }
+        message << " for the current session.";
+
+        asset_extract_running_ = true;
+        asset_extract_message_ = message.str();
+        asset_extract_last_started_utc_ = started_at;
+        asset_extract_last_completed_utc_.clear();
+        asset_extract_has_exit_code_ = false;
+        last_auto_extract_signature_ = signature;
+        last_auto_extract_started_steady_ = now;
+        return true;
     }
 
     std::string BuildAssetCatalogJsonLocked() const {
@@ -4549,6 +5021,7 @@ private:
     }
 
     fs::path app_root_;
+    fs::path data_root_;
     fs::path extracted_root_;
     fs::path extract_summary_path_;
     fs::path asset_plan_path_;
@@ -4570,266 +5043,408 @@ private:
     std::string asset_extract_last_completed_utc_;
     int asset_extract_last_exit_code_ = 0;
     bool asset_extract_has_exit_code_ = false;
+    std::string last_auto_extract_signature_;
+    std::chrono::steady_clock::time_point last_auto_extract_started_steady_{};
     HWND notify_hwnd_ = nullptr;
 };
 
 std::string WebPageHtml() {
-    return std::string(R"TTTHTML(<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TTSL Native HUD</title>
+    return std::string(R"TTSLHUD(<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TTSL Remote HUD</title>
 <style>
-:root{color-scheme:dark;--bg:#101215;--surface:#171c23;--surface2:#202733;--ink:#edf2f7;--muted:#a5b1be;--line:#344152;--blue:#73b7ff;--green:#58d189;--amber:#e8b85d;--red:#f07173;--violet:#b990ff}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 "Segoe UI",system-ui,sans-serif;letter-spacing:0}
-header{position:sticky;top:0;z-index:5;background:#11161c;border-bottom:1px solid var(--line);padding:10px 14px;display:grid;gap:9px}
-.mast{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.brand{font-size:18px;font-weight:700}.muted,.hint{color:var(--muted)}
-.bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.group{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}.group button{border:0;border-right:1px solid var(--line);border-radius:0}.group button:last-child{border-right:0}
-button,input{font:inherit}button{border:1px solid var(--line);background:#263142;color:var(--ink);padding:7px 10px;border-radius:7px;cursor:pointer;min-height:32px}button:hover{border-color:var(--blue)}button.active{background:#2c3f56;border-color:#527aa7}button:disabled{opacity:.45;cursor:not-allowed}
-input{background:#0e1218;border:1px solid var(--line);color:var(--ink);padding:7px 9px;border-radius:7px}.wrap{padding:14px;display:grid;gap:12px}
-.overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.tile{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:10px;min-width:0}.label{font-size:10px;text-transform:uppercase;color:var(--muted)}.value{font-size:15px;font-weight:700;margin-top:3px;overflow-wrap:anywhere}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}.card,.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:10px;min-width:0}.card.stale{border-color:var(--amber)}.card.off{border-color:var(--red);opacity:.78}.card.active{border-color:var(--blue)}
-.head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}.titleline{display:flex;gap:9px;align-items:flex-start;min-width:0}.faceframe{width:42px;height:42px;flex:0 0 42px;border:1px solid var(--line);border-radius:7px;background:#0d1218;display:grid;place-items:center;overflow:hidden;color:var(--muted);font-weight:700}.faceframe img{width:100%;height:100%;object-fit:cover}.name{font-size:16px;font-weight:700;overflow-wrap:anywhere}.sub{color:var(--muted);font-size:12px}.ident{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:4px}.iconimg{width:22px;height:22px;object-fit:contain;border:1px solid var(--line);border-radius:5px;background:#0d1218}.chip{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--muted);font-size:11px;min-height:22px}.chip.good{color:var(--green);border-color:#3f8d62}.chip.warn{color:var(--amber);border-color:#93723d}.chip.bad{color:var(--red);border-color:#985057}.chip.info{color:var(--blue);border-color:#49739f}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.stat{background:#141922;border:1px solid #293545;border-radius:7px;padding:8px;min-width:0}.stat .value{font-size:13px}
-.section{display:grid;gap:6px}.sectionhead{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)}.rows{display:grid;gap:5px}.row{display:grid;grid-template-columns:34px minmax(0,1fr) 52px 80px;gap:8px;align-items:center;padding:6px;border-radius:7px;background:#141922}.row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row.threat{grid-template-columns:34px minmax(0,1fr) 70px 74px}
-.actions{display:flex;gap:6px;flex-wrap:wrap}.cmd{display:flex;gap:6px}.cmd input{min-width:0;flex:1}.mini{font-size:11px;color:var(--muted)}
-.radar{width:100%;max-width:260px;aspect-ratio:1/1;background:#0d1218;border:1px solid var(--line);border-radius:8px;justify-self:center}.mapframe{position:relative;overflow:hidden;width:100%;max-width:260px;aspect-ratio:1/1;background:#0d1218;border:1px solid var(--line);border-radius:8px;justify-self:center}.mapimg{position:absolute;max-width:none;object-fit:fill}.mapoverlay{position:absolute;inset:0;width:100%;height:100%}.empty{border:1px dashed var(--line);border-radius:8px;padding:24px;text-align:center;color:var(--muted)}
-.operator{display:grid;grid-template-columns:300px minmax(0,1fr);gap:12px}.rail{display:grid;gap:8px;align-content:start}.rail button{text-align:left;display:grid;gap:2px;height:auto}.detail{min-width:0}.matrix{display:grid;gap:6px}.mrow{display:grid;grid-template-columns:90px minmax(160px,1.3fr) minmax(120px,1fr) 90px 120px 80px;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px;text-align:left}.mrow.headrow{background:#10161d;color:var(--muted);font-size:11px;text-transform:uppercase}.mrow button{padding:0}
-a{color:var(--blue)}.hidden{display:none!important}
-@media(max-width:980px){.overview{grid-template-columns:repeat(2,minmax(0,1fr))}.operator{grid-template-columns:1fr}.mrow{grid-template-columns:1fr 1fr}.mrow.headrow{display:none}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.overview,.grid,.stats{grid-template-columns:1fr}.cmd{display:grid}.row{grid-template-columns:30px minmax(0,1fr)}.row span:nth-child(n+3){display:none}}
-</style>)TTTHTML") + R"TTTHTML(
-</head>
-<body>
-<header>
-<div class="mast"><div><div class="brand">TTSL Native HUD</div><div id="summary" class="muted">Loading...</div></div><div class="bar"><div class="group"><button data-mode="classic">Classic</button><button data-mode="operator">Operator</button><button data-mode="command">Command</button><button data-mode="matrix">Matrix</button></div><button id="refresh">Refresh</button><button id="extractAssets" disabled>Extract Assets</button><button id="openShots">Screenshots</button></div></div>
-<div class="bar"><label class="muted"><input id="showStale" type="checkbox"> Show stale</label><label class="muted"><input id="aggregateParties" type="checkbox" checked> Aggregate parties</label><label class="muted"><input id="showDetails" type="checkbox" checked> Details</label><label class="muted"><input id="showIcons" type="checkbox" checked> Icons</label><span id="stamp" class="muted"></span></div>
-</header>
-<main class="wrap"><div id="status" class="muted"></div><div id="overview" class="overview"></div><div id="app"></div></main>
+:root{--panel:rgba(16,25,37,.95);--panel2:rgba(21,34,49,.98);--line:rgba(255,255,255,.08);--text:#eaf4ff;--muted:#93a7bc;--ok:#79e58d;--warn:#ffbf74;--bad:#ff7f7f;--accent:#87d7ff;--accent2:#79e58d;--tank:#78c5ff;--heal:#93f2a5;--dps:#ff9b7a;--util:#d5b7ff;--page:radial-gradient(circle at top left,rgba(135,215,255,.12),transparent 26%),linear-gradient(180deg,#071018,#0b1621 48%,#101925);--font-sans:"Segoe UI Variable Text","Segoe UI",Tahoma,sans-serif;--font-display:"Aptos Display","Trebuchet MS","Segoe UI",sans-serif;--shadow:0 22px 42px rgba(0,0,0,.26)}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans);color:var(--text);background:var(--page)}
+body[data-view-mode="operator"]{--page:radial-gradient(circle at 15% 0%,rgba(121,229,141,.14),transparent 24%),radial-gradient(circle at 85% 0%,rgba(135,215,255,.14),transparent 24%),linear-gradient(180deg,#061116,#0b1c23 48%,#10252e);--panel:rgba(10,23,29,.95);--panel2:rgba(14,31,40,.98);--line:rgba(121,229,141,.12);--accent:#85f2d5;--accent2:#9fd9ff}
+body[data-view-mode="command"]{--page:radial-gradient(circle at 18% 0%,rgba(255,191,116,.16),transparent 24%),radial-gradient(circle at 85% 10%,rgba(255,155,122,.14),transparent 22%),linear-gradient(180deg,#16110b,#22180f 48%,#2c1d10);--panel:rgba(34,24,15,.95);--panel2:rgba(44,30,18,.98);--line:rgba(255,191,116,.16);--text:#fff4e8;--muted:#d4b59a;--accent:#ffc47a;--accent2:#ff9b7a;--font-display:"Georgia","Palatino Linotype",serif}
+body[data-view-mode="matrix"]{--page:linear-gradient(180deg,rgba(146,255,172,.06),rgba(146,255,172,0) 18%),linear-gradient(180deg,#07110a,#0c1810 48%,#102116);--panel:rgba(11,21,14,.96);--panel2:rgba(14,28,19,.98);--line:rgba(146,255,172,.14);--text:#e9ffe9;--muted:#9ac7a2;--accent:#92ffac;--accent2:#7effdf;--font-display:"Bahnschrift","Segoe UI",sans-serif}
+header{position:sticky;top:0;padding:12px 14px 10px;border-bottom:1px solid var(--line);background:rgba(7,16,24,.9);backdrop-filter:blur(14px);z-index:3}
+.header-details{display:grid;gap:10px}.header-details.hidden{display:none}
+.masthead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}.eyebrow{margin:0 0 4px;color:var(--accent);font-size:11px;letter-spacing:.14em;text-transform:uppercase}.headline-note{color:var(--muted);font-size:12px}.modebar{display:flex;gap:8px;flex-wrap:wrap}.modechip,.toolbar button,.controlrow button,.controlrow a,.opitem,.matrix-row{border:1px solid rgba(255,255,255,.14);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--text);font:inherit;cursor:pointer;text-decoration:none;transition:transform .14s ease,background .14s ease,border-color .14s ease}.modechip{padding:6px 11px;border-radius:999px;font-weight:700}.modechip.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,transparent),color-mix(in srgb,var(--accent2) 18%,transparent));border-color:color-mix(in srgb,var(--accent) 52%,rgba(255,255,255,.14))}
+h1{margin:0;font-size:27px;line-height:1;font-family:var(--font-display)}.statusbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}.statuspill{min-height:44px;display:flex;align-items:center;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);font-size:12px;line-height:1.25}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 12px;color:var(--muted);font-size:11px;align-items:center}.toolbar label{display:inline-flex;align-items:center;gap:5px}.toolbar button{padding:5px 10px;border-radius:999px}.toolbar button:disabled{opacity:.45;cursor:not-allowed}.toolbar input[type="number"]{width:64px;padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--text);font:inherit}
+main{padding:12px;display:grid;gap:12px;align-items:start}.layout-classic{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}.card,.overviewpanel,.operator-rail,.operator-detail,.matrixpane{display:grid;gap:8px;padding:10px;border-radius:14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);box-shadow:var(--shadow)}
+.head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}.name{font-weight:700;font-size:15px;line-height:1.15}.zone,.sub,.foot,.hint{font-size:10px;color:var(--muted);line-height:1.35}.badges,.states,.ident{display:flex;flex-wrap:wrap;gap:5px}.ident{align-items:center}.badge,.state{padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid transparent}
+.badge.ok,.state.on{color:var(--ok);background:rgba(121,229,141,.14);border-color:rgba(121,229,141,.22)}.badge.warn,.state.warn{color:var(--warn);background:rgba(255,191,116,.12);border-color:rgba(255,191,116,.22)}.badge.bad,.state.bad{color:var(--bad);background:rgba(255,127,127,.12);border-color:rgba(255,127,127,.22)}.badge.tank{color:var(--tank);background:rgba(120,197,255,.12);border-color:rgba(120,197,255,.22)}.badge.heal{color:var(--heal);background:rgba(147,242,165,.12);border-color:rgba(147,242,165,.22)}.badge.dps{color:var(--dps);background:rgba(255,155,122,.12);border-color:rgba(255,155,122,.22)}.badge.util{color:var(--util);background:rgba(213,183,255,.12);border-color:rgba(213,183,255,.22)}.state.off{color:#627385;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.06)}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.meta.wide{grid-template-columns:repeat(3,minmax(0,1fr))}.tile{padding:6px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04)}.label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}.value{font-size:11px;font-weight:600;line-height:1.25;word-break:break-word}.value.bad{color:var(--bad)}
+.section{display:grid;gap:5px;padding:8px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.04);min-width:0}.section.tight{padding:7px}.sectionhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.facts{display:grid;gap:5px}.factrow{display:grid;grid-template-columns:78px minmax(0,1fr);gap:7px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.05)}.factrow:last-child{padding-bottom:0;border-bottom:none}.factlabel{color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.factvalue.bad{color:var(--bad)}
+.party{display:grid;gap:3px}.member{display:grid;grid-template-columns:20px minmax(0,1fr) 42px 46px;gap:4px;align-items:center;padding:4px 6px;border-radius:8px;background:rgba(255,255,255,.035);font-size:11px}.slot,.job,.hp,.dist{text-align:right;color:var(--muted)}.membername{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.controls{display:grid;gap:6px}.)TTSLHUD")
+           + R"TTSLHUD(controlrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.controlrow input{flex:1 1 180px;padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--text);font:inherit}.controlrow button,.controlrow a{padding:5px 9px;border-radius:999px}.controlrow button:disabled{opacity:.45;cursor:not-allowed}.controlnote{font-size:10px;color:var(--muted)}
+.radarbox{display:grid;justify-items:center;gap:3px}canvas{display:block;max-width:100%;aspect-ratio:1/1;background:rgba(6,10,16,.92);border:1px solid var(--line);border-radius:12px}.iconimg{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:rgba(255,255,255,.04);object-fit:cover}.mapframe{position:relative;max-width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,16,.92)}.mapimg{position:absolute;display:block;max-width:none;max-height:none}.mapoverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;background:transparent;border:none}
+.aggmembers{display:grid;gap:4px}.aggmember{display:grid;gap:4px;padding:6px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.04)}.aggmember.stranger{border-color:rgba(255,127,127,.18)}.aggmain{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;flex-wrap:wrap}.aggname{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap}.aggname .slot,.aggname .job,.aggname .lvl{color:var(--muted);font-size:10px;font-weight:700}.aggname .membername{font-size:12px;font-weight:700;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}.aggmeta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.aggnote{font-size:10px;color:var(--muted)}.aggnote.bad{color:var(--bad)}.inspector-stack{display:grid;gap:8px}.inspector-tabs{display:flex;flex-wrap:wrap;gap:6px}.inspector-tab{padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:var(--muted);font:inherit;cursor:pointer;transition:background .14s ease,border-color .14s ease,color .14s ease}.inspector-tab.active{color:var(--text);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent),rgba(255,255,255,.05));border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.12))}.dense-table{display:grid;gap:4px}.dense-head,.dense-row{display:grid;grid-template-columns:48px minmax(140px,1.4fr) 92px 112px 72px 64px;gap:6px;align-items:center}.dense-head{padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.03);color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.dense-row{padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)}.dense-row.source{border-color:color-mix(in srgb,var(--accent) 32%,rgba(255,255,255,.04))}.dense-row.stranger{border-color:rgba(255,127,127,.18)}.densecell{min-width:0;font-size:11px;line-height:1.25;word-break:break-word}.densecell.mono{font-family:Consolas,"Courier New",monospace}
+.empty{padding:20px;text-align:center;color:var(--muted);background:rgba(16,25,37,.84);border:1px dashed rgba(255,255,255,.14);border-radius:12px}.overviewgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.overviewcard{padding:9px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04)}.overviewvalue{font-size:20px;font-family:var(--font-display);line-height:1}.overviewnote{color:var(--muted);font-size:10px;line-height:1.3;margin-top:4px}
+.operator-shell{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:12px}.operator-rail,.operator-detail{align-content:start}.oplist{display:grid;gap:8px}.opitem{width:100%;text-align:left;padding:9px 10px;border-radius:11px}.opitem.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent),rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14))}.oprow{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.opname{font-weight:700;font-size:13px}.opsub,.opmeta{color:var(--muted);font-size:10px;line-height:1.35}
+.command-shell{display:grid;gap:12px}.command-columns{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,.9fr);gap:12px}.command-stage,.command-side{display:grid;gap:12px}.command-board-grid{display:grid;gap:12px}.command-board,.selectable-card{border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:var(--shadow);outline:none}.command-board{display:grid;gap:10px;padding:10px;cursor:pointer}.command-board.active,.selectable-card.active{border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14));background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,transparent),var(--panel2))}.command-board:focus-visible,.selectable-card:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 52%,transparent),var(--shadow)}.command-board-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}.command-board-title{display:grid;gap:3px}.compactgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.matrix-shell{display:grid;gap:12px}.matrix-layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:12px}.matrixtable{display:grid;gap:6px}.matrixhead,.matrix-row{display:grid;grid-template-columns:72px minmax(170px,1.4fr) minmax(120px,1fr) 96px 120px 96px 78px;gap:8px;align-items:center}.matrixhead{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}.matrix-row{width:100%;text-align:left;padding:9px 10px;border-radius:10px}.matrix-row.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 15%,transparent),rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14))}.matrixcell{min-width:0;font-size:11px;line-height:1.25;word-break:break-word}.matrixcell.mono{font-family:Consolas,"Courier New",monospace}.kindtag{display:inline-flex;align-items:center;justify-content:center;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);font-size:10px;font-weight:700;text-transform:uppercase}
+.board-summary{display:grid;gap:12px}.solo-board{display:grid;grid-template-columns:minmax(280px,1.08fr) minmax(220px,.92fr);gap:12px;align-items:stretch}.solo-column,.solo-visual{display:grid;gap:10px}.hero-face{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}.hero-title{display:grid;gap:4px}.hero-note{font-size:11px;color:var(--muted);line-height:1.4}.faceframe,.portrait-frame{position:relative;overflo)TTSLHUD"
+           + R"TTSLHUD(w:hidden;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));display:grid;place-items:center;color:var(--muted);font-family:var(--font-display);font-weight:700;letter-spacing:.08em}.faceframe{width:72px;height:72px;font-size:22px}.faceframe.small{width:56px;height:56px;font-size:18px;border-radius:12px}.portrait-frame{min-height:320px;padding:12px;font-size:28px}.faceframe img,.portrait-frame img{width:100%;height:100%;display:block;object-fit:cover}.portrait-frame img{object-fit:contain;background:radial-gradient(circle at top,rgba(255,255,255,.12),rgba(255,255,255,0) 60%)}.faceframe.placeholder,.portrait-frame.placeholder{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}.quickstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mini-actions{display:flex;flex-wrap:wrap;gap:6px}.mini-actions button{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--text);font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease}.mini-actions button:disabled{opacity:.38;cursor:not-allowed;transform:none}.mini-actions button:not(:disabled):hover{background:color-mix(in srgb,var(--accent) 16%,rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.14))}.mini-actions .placeholder{border-style:dashed}.party-board{display:grid;gap:12px}.solo-party-board{width:100%;max-width:none}.party-board-main{display:grid;grid-template-columns:minmax(0,.9fr) minmax(280px,1.1fr) minmax(0,.9fr);gap:12px;align-items:start}.solo-party-main{grid-template-columns:minmax(0,1.22fr) minmax(0,.88fr)}.solo-portrait-frame{width:100%;max-width:300px;min-height:300px;justify-self:center}.party-column{display:grid;gap:10px;min-width:0}.party-slot-card{display:grid;gap:8px;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04)}.party-slot-card.solo{gap:10px;padding:14px}.party-slot-card.source{border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.06))}.party-slot-card.stranger{border-color:rgba(255,127,127,.18)}.party-slot-card.stale{border-color:rgba(255,191,116,.24)}.party-slot-card.disconnected{border-color:rgba(255,127,127,.24)}.party-slot-top{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start}.party-slot-card.solo .party-slot-top{grid-template-columns:72px minmax(0,1fr);gap:12px}.party-slot-card.solo .member-card-name{font-size:16px}.party-slot-card.solo .member-line{font-size:12px;line-height:1.45}.party-slot-card.solo .microstat-label{font-size:10px}.party-slot-card.solo .microstat-value{font-size:12px}.party-slot-card.solo .faceframe.small{width:72px;height:72px;font-size:22px;border-radius:14px}.member-body{display:grid;gap:4px;min-width:0}.member-card-name{font-size:13px;font-weight:700;line-height:1.2}.member-line{font-size:10px;color:var(--muted);line-height:1.35}.member-badges{display:flex;flex-wrap:wrap;gap:5px}.member-microstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.microstat{padding:6px 7px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)}.microstat.bad .microstat-value{color:var(--bad)}.microstat-label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.microstat-value{margin-top:2px;font-size:11px;font-weight:700;line-height:1.25;word-break:break-word}.board-hub{display:grid;gap:10px;padding:12px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}.board-hub-top{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center}.board-hub-copy{display:grid;gap:4px}.board-hub-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.board-map-section{background:rgba(6,10,16,.42);min-width:0;overflow:hidden}.board-map-section .mapframe,.board-map-section canvas{margin:0 auto;max-width:100%}.board-enmity .sectionhead{margin-bottom:2px}.enmity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.enmity-row{display:grid;gap:4px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}.enmity-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.enmity-name{font-size:12px;font-weight:700;line-height:1.25}.enmity-note{font-size:10px;color:var(--muted);line-height:1.35}.compact-client-head{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start}.compact-client-copy{display:grid;gap:3px}
+@media (max-width:1180px){.statusbar,.overviewgrid,.operator-shell,.command-columns,.matrix-layout,.solo-board,.party-board-main{grid-template-columns:1fr}}
+.solo-party-main{grid-template-columns:minmax(220px,.56fr) minmax(420px,1.94fr)}.board-map-section>.mapframe,.board-map-section>canvas{width:100%;justify-self:center}.party-slot-card:not(.solo) .member-microstats{grid-template-columns:repeat(3,minmax(82px,108px));justify-content:start}.party-slot-card:not(.solo) .microstat{min-width:0}.member-badges .mini-actions{margin-left:auto}.member-badges .mini-actions button{padding:4px 9px}.mini-actions button.active{background:color-mix(in srgb,var(--accent) 22%,rgba(255,255,255,.05));border-color:color-mix(in srgb,var(--accent) 58%,rgba(255,255,255,.14))}.cctv-section{gap:10px}.cctv-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}.cctv-frame{width:100%;aspect-ratio:1/1;display:grid;place-items:center;justify-self:center;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,16,.92)}.cctv-frame img{width:100%;height:100%;display:block;object-fit:contain;background:#04090f}
+@media (max-width:900px){.aggmeta,.meta.wide,.board-hub-stats,.member-microstats,.quickstats,.enmity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.aggname .membername{max-width:none}.board-hub-top,.hero-face,.compact-client-head,.party-slot-top{grid-template-columns:1fr}.matrixhead,.dense-head{display:none}.matrix-row,.dense-row{grid-template-columns:repeat(2,minmax(0,1fr))}.matrixcell::before,.densecell::before{content:attr(data-label);display:block;color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}}
+@media (max-width:720px){header{padding:10px 12px 8px}main,.layout-classic{grid-template-columns:1fr}.statusbar,.overviewgrid,.meta,.meta.wide,.aggmeta,.compactgrid,.board-hub-stats,.member-microstats,.quickstats,.enmity-grid{grid-template-columns:1fr}.factrow{grid-template-columns:1fr;gap:3px}}
+</style></head><body>
+<header><div class="masthead"><div><div class="eyebrow">Remote Monitor + Command Relay</div><h1>TTSL Remote HUD</h1></div><div class="modebar"><button class="modechip" type="button" data-mode="classic">Cla)TTSLHUD"
+           + R"TTSLHUD(ssic</button><button class="modechip" type="button" data-mode="operator">Operator</button><button class="modechip" type="button" data-mode="command">Command</button><button class="modechip" type="button" data-mode="matrix">Matrix</button><button id="detailsToggle" class="modechip" type="button" aria-pressed="false">Show Details</button></div></div><div id="headerDetails" class="header-details hidden"><div class="headline-note">Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix.</div><div class="statusbar"><div id="summary" class="statuspill">Waiting for clients...</div><div id="stamp" class="statuspill">No updates yet.</div><div id="assetPlan" class="statuspill">Asset plan pending.</div><div id="extractStatus" class="statuspill">Extraction idle.</div></div><div class="toolbar"><button id="extractAssets" type="button">Extract Assets</button><label><input id="krangle" type="checkbox"> Krangle names/account IDs</label><label><input id="krangleEnemies" type="checkbox"> Krangle enemy names</label><label><input id="showStale" type="checkbox" checked> Show stale/disconnected</label><label><input id="aggregateParties" type="checkbox"> Aggregate parties</label><label><input id="icons" type="checkbox" checked> Icons</label><label><input id="enumerate" type="checkbox"> Enumerate</label><label>Box px <input id="mapBoxPx" type="number" min="96" max="320" step="4" value="160"></label><label>Combat W <input id="combatWidth" type="number" min="5" max="300" step="1" value="20"></label><label>Combat H <input id="combatHeight" type="number" min="5" max="300" step="1" value="20"></label><label>Travel W <input id="travelWidth" type="number" min="5" max="500" step="1" value="50"></label><label>Travel H <input id="travelHeight" type="number" min="5" max="500" step="1" value="50"></label></div></div></header>
+<main id="app" class="layout-operator"><div class="empty">No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor.</div></main>
 <script>
-const $=id=>document.getElementById(id);
-let lastState=null,currentAssetCatalog={},currentMode=localStorage.getItem("ttsl.native.mode")||"operator",selectedKey=localStorage.getItem("ttsl.native.selected")||"";
-const commandDrafts=new Map();
-window.commandDrafts=commandDrafts;
-function esc(v){return String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]))}
-function hp(c){const p=c.player||{};return p.maxHp?`${p.currentHp??0}/${p.maxHp}`:"--"}
-function mp(c){const p=c.player||{};return p.maxMp?`${p.currentMp??0}/${p.maxMp}`:"--"}
-function pos(c){const p=c.position||{};return Number.isFinite(p.x)?`${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`:"--"}
-function key(c){return `${c.accountId}|${c.characterName}|${c.worldName}`}
-function allClients(state){return (state.accountGroups||[]).flatMap(g=>(g.clients||[]).map(c=>({...c,accountId:g.accountId||c.accountId})))}
-function partyKey(p){return `party|${p.sourceAccountId}|${p.sourceCharacterName}|${p.sourceWorldName}`}
-function statusKind(c){return c.isDisconnected?"bad":c.stale?"warn":"good"}
-function statusText(c){return c.isDisconnected?"OFF":c.stale?"STALE":"LIVE"}
-function chip(text,kind=""){return `<span class="chip ${kind}">${esc(text)}</span>`}
-function tile(label,value){return `<div class="tile"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div></div>`}
-function stat(label,value){return `<div class="stat"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div></div>`}
-function repair(c){return c.repair?`${c.repair.minCondition}% min / ${c.repair.averageCondition}% avg`:"--"}
-function flow(c){const s=[];if(c.conditions?.inCombat)s.push("Combat");if(c.conditions?.boundByDuty)s.push("Duty");if(c.conditions?.waitingForDuty)s.push("Queue");if(c.conditions?.mounted)s.push("Mount");if(c.conditions?.casting)s.push("Cast");if(c.conditions?.dead)s.push("Dead");return s.join(" | ")||"Travel"}
-function jobIconAsset(id){return id==null?null:(currentAssetCatalog.jobIcons||{})[String(id)]||null}
-function raceIconAsset(id){return id==null?null:(currentAssetCatalog.raceIcons||{})[String(id)]||null}
-function tribeIconAsset(id){return id==null?null:(currentAssetCatalog.tribeIcons||{})[String(id)]||null}
+const app=document.getElementById("app"),summary=document.getElementById("summary"),stamp=document.getElementById("stamp"),assetPlan=document.getElementById("assetPlan"),extractStatus=document.getElementById("extractStatus"),extractAssets=document.getElementById("extractAssets"),detailsToggle=document.getElementById("detailsToggle"),headerDetails=document.getElementById("headerDetails"),krangle=document.getElementById("krangle"),krangleEnemies=document.getElementById("krangleEnemies"),showStale=document.getElementById("showStale"),aggregateParties=document.getElementById("aggregateParties"),icons=document.getElementById("icons"),enumerate=document.getElementById("enumerate"),mapBoxPxInput=document.getElementById("mapBoxPx"),combatWidthInput=document.getElementById("combatWidth"),combatHeightInput=document.getElementById("combatHeight"),travelWidthInput=document.getElementById("travelWidth"),travelHeightInput=document.getElementById("travelHeight"),layoutButtons=[...document.querySelectorAll(".modechip[data-mode]")];
+const UI_STORAGE_PREFIX="ttslhud.",DEFAULT_LAYOUT_MODE="operator",DEFAULT_SHOW_DETAILS=false,DEFAULT_MAP_BOX_PX=160,DEFAULT_COMBAT_WIDTH_YALMS=20,DEFAULT_COMBAT_HEIGHT_YALMS=20,DEFAULT_TRAVEL_WIDTH_YALMS=50,DEFAULT_TRAVEL_HEIGHT_YALMS=50,LAYOUT_MODES=new Set(["classic","operator","command","matrix"]),INSPECTOR_MODULES={client:["summary","map","party","threat","actions"],party:["summary","map","party","threat","actions"]},INSPECTOR_LABELS={summary:"Summary",map:"Map",party:"Party",threat:"Threat",actions:"Actions"},INSPECTOR_DEFAULTS={client:"summary",party:"summary"};
+const tankJobs=new Set(["GLA","MRD","PLD","WAR","DRK","GNB"]),healJobs=new Set(["CNJ","WHM","SCH","AST","SGE"]),dpsJobs=new Set(["PGL","LNC","ROG","ARC","THM","ACN","MNK","DRG","NIN","SAM","RPR","VPR","BRD","MCH","DNC","BLM","SMN","RDM","PCT","BLU"]);
+let currentAssetCatalog={jobIcons:{},maps:{},raceIcons:{},tribeIcons:{},warnings:[]},currentLayoutMode=DEFAULT_LAYOUT_MODE,selectedEntityKey="",showDetails=DEFAULT_SHOW_DETAILS,clientInspectorModule=INSPECTOR_DEFAULTS.client,partyInspectorModule=INSPECTOR_DEFAULTS.party;
+const remoteControlDrafts=new Map();
+const clampNumber=(value,min,max,fallback)=>{const parsed=Number(value);return Number.isFinite(parsed)?Math.max(min,Math.min(max,parsed)):fallback};
+function loadBooleanPreference(key,fallback){try{const stored=window.localStorage.getItem(`${UI_STORAGE_PREFIX}${key}`);if(stored==null)return fallback;return stored==="1"||stored==="true"}catch{return fallback}}
+function loadNumericPreference(key,fallback,min,max){try{const stored=window.localStorage.getItem(`${UI_STORAGE_PREFIX}${key}`);return clampNumber(stored,min,max,fallback)}catch{return fallback}}
+function loadStringPreference(key,fallback,allowed=null){try{const stored=String(window.localStorage.getItem(`${UI_STORAGE_PREFIX}${key}`)||"").trim();if(!stored)return fallback;return allowed&&!allowed.has(stored)?fallback:stored}catch{return fallback}}
+function persistBooleanPreference(key,value){try{window.localStorage.setItem(`${UI_STORAGE_PREFIX}${key}`,value?"1":"0")}catch{}}
+function persistNumericPreference(key,value){try{window.localStorage.setItem(`${UI_STORAGE_PREFIX}${key}`,String(value))}catch{}}
+function persistStringPreference(key,value){try{window.localStorage.setItem(`${UI_STORAGE_PREFIX}${key}`,String(value))}catch{}}
+function wireNumericPreference(input,key,fallback,min,max){const apply=()=>{const value=clampNumber(input.value,min,max,fallback);input.value=String(value);persistNumericPreference(key,value);refresh()};input.value=String(loadNumericPreference(key,fallback,min,max));input.addEventListener("change",apply);input.addEventListener("input",apply)}
+function applyLayoutMode(mode){currentLayoutMode=LAYOUT_MODES.has(mode)?mode:DEFAULT_LAYOUT_MODE;document.body.dataset.viewMode=currentLayoutMode;app.className=`layout-${currentLayoutMode}`;for(const button of layoutButtons)button.classList.toggle("active",button.dataset.mode===currentLayoutMode);persistStringPreference("layoutMode",currentLayoutMode)}
+function applyDetailsVisibility(visible){showDetails=!!visible;document.body.dataset.showDetails=showDetails?"true":"false";headerDetails.classList.toggle("hidden",!showDetails);detailsToggle.textContent=showDetails?"Hide Details":"Show Details";detailsToggle.setAttribute("aria-pressed",showDetails?"true":"false");detailsToggle.classList.toggle("active",showDetails);persistBooleanPreference("showDetails",showDetails)}
+function getInspectorModule(kind,allowActions){const stored=kind==="party"?partyInspectorModule:clientInspectorModule;const allowed=allowActions?INSPECTOR_MODULES[kind]:INSPECTOR_MODULES[kind].filter(module=>module!=="actions");return allowed.includes(stored)?stored:allowed[0]}
+function setInspectorModule(kind,module){if(!INSPECTOR_MODULES[kind]?.includes(module))return)TTSLHUD"
+           + R"TTSLHUD(;if(kind==="party"){partyInspectorModule=module;persistStringPreference("partyInspectorModule",module)}else{clientInspectorModule=module;persistStringPreference("clientInspectorModule",module)}refresh()}
+function renderInspectorTabs(kind,allowActions){const tabs=document.createElement("div");tabs.className="inspector-tabs";for(const module of INSPECTOR_MODULES[kind]){if(module==="actions"&&!allowActions)continue;const button=document.createElement("button");button.type="button";button.className=`inspector-tab ${module===getInspectorModule(kind,allowActions)?"active":""}`.trim();button.textContent=INSPECTOR_LABELS[module]||module;button.addEventListener("click",()=>setInspectorModule(kind,module));tabs.appendChild(button)}return tabs}
+const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
+const shortCode=s=>hash(String(s)).toString(36).toUpperCase().padStart(4,"0").slice(0,4);
+const kAcct=s=>krangle.checked?`ACC-${hash(String(s)).toString(16).toUpperCase().padStart(8,"0").slice(0,8)}`:String(s||"");
+const pct=(cur,max)=>!max||max<=0?"--":`${Math.round((cur/max)*100)}%`;
+const hpText=(cur,max)=>cur==null||max==null?"Unavailable":`${Number(cur).toLocaleString()} / ${Number(max).toLocaleString()} (${pct(cur,max)})`;
+const mpText=(cur,max)=>cur==null||max==null?"Unavailable":`${Number(cur).toLocaleString()} / ${Number(max).toLocaleString()} (${pct(cur,max)})`;
+const levelText=level=>level==null?"Lv --":`Lv ${level}`;
+const posText=p=>!p?"Unavailable":`X ${p.x.toFixed(1)} | Y ${p.y.toFixed(1)} | Z ${p.z.toFixed(1)}`;
+const rawCharacter=(name,world)=>{const rawName=String(name||"");return rawName.includes("@")||!world?rawName:`${rawName}@${String(world||"")}`;};
+const displayCharacter=(name,world,krangledName)=>krangle.checked&&krangledName?String(krangledName):rawCharacter(name,world);
+const displayName=(name,krangledName)=>krangle.checked&&krangledName?String(krangledName):String(name||"");
+const displayEnemyName=(name,krangledName)=>krangleEnemies.checked&&krangledName?String(krangledName):String(name||"");
+const shortLabel=(name,slot,world)=>enumerate.checked?String(slot??"?"):krangle.checked?shortCode(`${name||""}@${world||""}`):(String(name||"?").split(" ")[0]||"?").slice(0,4);
+const genderSymbol=value=>value===0?"M":value===1?"F":"?";
+const jobKind=job=>tankJobs.has(job)?"tank":healJobs.has(job)?"heal":dpsJobs.has(job)?"dps":"util";
+function chip(text,kind=""){const el=document.createElement("span");el.className=`badge ${kind}`.trim();el.textContent=text;return el}
+function stateChip(text,active,kind=""){const el=document.createElement("span");el.className=`state ${kind || (active?"on":"off")}`.trim();el.textContent=text;return el}
+function tile(label,value,kind="",title=""){const el=document.createElement("div");el.className="tile";if(title)el.title=title;el.innerHTML=`<div class="label">${label}</div><div class="value ${kind}">${value}</div>`;return el}
+const formatAge=value=>typeof value==="number"&&Number.isFinite(value)?`${value.toFixed(1)}s`:"--";
+const pathLeaf=value=>{const normalized=String(value||"").trim().replace(/\\\\/g,"/");if(!normalized)return"Unavailable";const parts=normalized.split("/").filter(Boolean);return parts.length>=2?parts.slice(-2).join("/"):parts[0]};
+const krangleToken=(prefix,value)=>{const raw=String(value||"").trim();return raw?`${prefix}-${hash(raw).toString(16).toUpperCase().padStart(8,"0").slice(0,8)}`:""};
+const displayHost=value=>{const raw=String(value||"").trim();if(!raw)return"Unknown host";return krangle.checked?krangleToken("HOST",raw):raw};
+const displayPathLeaf=value=>{const raw=String(value||"").trim();if(!raw)return"Unavailable";return krangle.checked?krangleToken("PATH",raw):pathLeaf(raw)};
+const displayPathTitle=value=>{const raw=String(value||"").trim();if(!raw)return"";return krangle.checked?displayPathLeaf(raw):raw};
+const compactResourceText=(cur,max)=>cur==null||max==null?"Unavailable":`${Number(cur).toLocaleString()}/${Number(max).toLocaleString()}`;
+const compactVitalsText=(currentHp,maxHp,currentMp,maxMp)=>`HP ${compactResourceText(currentHp,maxHp)} | MP ${compactResourceText(currentMp,maxMp)}`;
+const repairText=repair=>!repair?"Unavailable":`${repair.minCondition}% min | ${repair.averageCondition}% avg | ${repair.equippedCount??0} slots`;
+const policyText=policy=>{const bits=[];if(policy?.allowEchoCommands)bits.push("Text");if(policy?.allowScreenshotRequests)bits.push("Screens");if(policy?.allowCctvStreaming)bits.push("CCTV");return bits.length>0?bits.join(" + "):"Locked"};
+const queueStateText=entity=>entity?.conditions?.boundByDuty?"In duty":entity?.conditions?.waitingForDuty?"Queued":entity?.conditions?.inCombat?"Combat":"Travel";
+const clientStatusText=client=>client.isDisconnected?"Disconnected":client.stale?"Stale":"Live";
+const clientStatusKind=client=>client.isDisconnected?"bad":client.stale?"warn":"ok";
+const clientKey=client=>`client|${String(client?.accountId||"").trim()}|${String(client?.characterName||"").trim()}|${String(client?.worldName||"").trim()}`;
+const partyKey=party=>`party|${String(party?.sourceAccountId||"").trim()}|${String(party?.sourceCharacterName||"").trim()}|${String(party?.sourceWorldName||"").trim()}`;
+function selectEntity(key){selectedEntityKey=String(key||"");persistStringPreference("selectedEntity",selectedEntityKey);refresh()}
+function overviewCard(label,value,note){const card=document.createElement("div");card.className="overviewcard";card.innerHTML=`<div class="label">${label}</div><div class="overviewvalue">${value}</div><div class="overviewnote">${note}</div>`;return card}
+function factSection(title,rows){const section=document.createElement("div");section.className="section tight";section.innerHTML=`<div class="sectionhead">${title}</div>`;const facts=document.createElement("div");facts.className="facts";for(const row of rows){const wrap=document.createElement("div");wrap.className="factrow";const label=document.createElement("div");label.className="factlabel";label.textContent=row.label;const value=document.createElement("div");value.className=`factvalue ${row.kind||""}`.trim();value.textContent=row.value;if(row.title)value.title=row.title;wrap.append(label,value);facts.appendChild(wrap)}section.appendChild(facts);return section}
+function jobIconAsset(jobIconId){return jobIconId==null?null:(currentAssetCatalog.jobIcons||{})[String(jobIconId)]||null}
+function raceIconAsset(raceId){return raceId==null?null:(currentAssetCatalog.raceIcons||{})[String(raceId)]||null}
+function tribeIconAsset(tribeId){return tribeId==null?null:(currentAssetCatalog.tribeIcons||{})[String(tribeId)]||null}
 function assetUrl(asset){return asset?.pngUrl||asset?.svgUrl||null}
-function localizedAssetName(asset,gender){if(!asset)return"";if(gender===1&&asset.feminineName)return String(asset.feminineName);return String(asset.masculineName||asset.feminineName||"")}
-function mapAsset(map){if(!map)return null;const catalogMaps=currentAssetCatalog.maps||{};const candidates=[];if(map.texturePath)candidates.push(String(map.texturePath));for(const candidate of map.texturePathCandidates||[]){const text=String(candidate||"");if(text&&!candidates.includes(text))candidates.push(text)}for(const candidate of candidates){const k=`texture:${candidate.replace(/\\\\/g,"/").trim().toLowerCase()}`;if(catalogMaps[k])return catalogMaps[k]}if(map.mapId!=null){const mapKey=`map:${Number(map.mapId)}`;if(catalogMaps[mapKey])return catalogMaps[mapKey];const fallback=Object.values(catalogMaps).find(entry=>Number(entry?.mapId)===Number(map.mapId));if(fallback)return fallback}return null}
-function entityName(e){return e?.characterName||e?.name||e?.sourceCharacterName||"Unknown"}
-function entityWorld(e){return e?.worldName||e?.sourceWorldName||""}
-function entityInitials(e){const parts=String(entityName(e)).trim().split(/\s+/).filter(Boolean);return `${parts[0]?.[0]||"?"}${parts[1]?.[0]||""}`.toUpperCase()}
-function iconHtml(asset,label){const url=assetUrl(asset);return url?`<img class="iconimg" src="${esc(url)}" alt="${esc(label)}" title="${esc(label)}">`:""}
-function identity(e){if(!$("showIcons").checked)return"";const icons=[];const jobAsset=jobIconAsset(e?.jobIconId);if(jobAsset)icons.push(iconHtml(jobAsset,e?.job||`Job ${e.jobIconId}`));const ancestry=tribeIconAsset(e?.tribeId)||raceIconAsset(e?.raceId);if(ancestry)icons.push(iconHtml(ancestry,localizedAssetName(ancestry,e?.gender)||"Ancestry"));if(e?.job)icons.push(chip(e.job,"info"));if(e?.level!=null)icons.push(chip(`Lv ${e.level}`));return icons.length?`<div class="ident">${icons.join("")}</div>`:""}
-function lodestoneVisual(e){return e?.lodestone||e?.sourceLodestone||null}
-function portraitUrl(e){const l=lodestoneVisual(e);return l?.faceUrl||l?.portraitUrl||null}
-function faceFrame(e){const url=portraitUrl(e);const state=lodestoneVisual(e)?.status||"pending";return `<div class="faceframe" title="${esc(entityName(e))} | Lodestone ${esc(state)}">${url?`<img src="${esc(url)}" alt="${esc(entityName(e))}" loading="lazy">`:esc(entityInitials(e))}</div>`}
-function mapVisibleCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||Number(sizeFactor)===0)return null;const scale=Number(sizeFactor)/100;return(41/scale)*(((Number(value)+Number(offset))*scale+1024)/2048)+1}
-function mapTextureCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||Number(sizeFactor)===0)return null;const scale=Number(sizeFactor)/100;return Math.max(0,Math.min(1,(((Number(value)+Number(offset))*scale+1024)/2048)))}
+function localizedAssetName(asset,gender){if(!asset)return"";if(gender===1&&asset.feminineName)return String(asset.feminineName);if(asset.masculineName)return String(asset.masculineName);if(asset.feminineName)return String(asset.feminineName);return""}
+function map)TTSLHUD"
+           + R"TTSLHUD(Asset(map){if(!map)return null;const catalogMaps=currentAssetCatalog.maps||{};const candidates=[];if(map.texturePath)candidates.push(String(map.texturePath));for(const candidate of map.texturePathCandidates||[]){const text=String(candidate||"");if(text&&!candidates.includes(text))candidates.push(text)}for(const candidate of candidates){const key=`texture:${candidate.replace(/\\\\/g,"/").trim().toLowerCase()}`;if(catalogMaps[key])return catalogMaps[key]}if(map.mapId!=null){const mapKey=`map:${Number(map.mapId)}`;if(catalogMaps[mapKey])return catalogMaps[mapKey];const fallback=Object.values(catalogMaps).find(entry=>Number(entry?.mapId)===Number(map.mapId));if(fallback)return fallback}return null}
+function currentViewportSettings(inCombat){return{boxPx:clampNumber(mapBoxPxInput.value,96,320,DEFAULT_MAP_BOX_PX),widthYalms:clampNumber(inCombat?combatWidthInput.value:travelWidthInput.value,5,500,inCombat?DEFAULT_COMBAT_WIDTH_YALMS:DEFAULT_TRAVEL_WIDTH_YALMS),heightYalms:clampNumber(inCombat?combatHeightInput.value:travelHeightInput.value,5,500,inCombat?DEFAULT_COMBAT_HEIGHT_YALMS:DEFAULT_TRAVEL_HEIGHT_YALMS)}}
+function aggregatePartyInCombat(party){const source=Array.isArray(party?.members)?party.members.find(member=>member.isSource)||party.members.find(member=>!member.isStranger):null;return !!source?.conditions?.inCombat}
+function mapVisibleCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||sizeFactor===0)return null;const scale=Number(sizeFactor)/100;return(41/scale)*(((Number(value)+Number(offset))*scale+1024)/2048)+1}
+function mapTextureCoordinate(value,offset,sizeFactor){if(value==null||offset==null||sizeFactor==null||sizeFactor===0)return null;const scale=Number(sizeFactor)/100;return Math.max(0,Math.min(1,(((Number(value)+Number(offset))*scale+1024)/2048)))}
 function buildMapMarker(position,map){if(!position||!map)return null;const leftUnit=mapTextureCoordinate(position.x,map.offsetX,map.sizeFactor),topUnit=mapTextureCoordinate(position.z,map.offsetY,map.sizeFactor),mapX=mapVisibleCoordinate(position.x,map.offsetX,map.sizeFactor),mapY=mapVisibleCoordinate(position.z,map.offsetY,map.sizeFactor);if(leftUnit==null||topUnit==null)return null;return{left:leftUnit*100,top:topUnit*100,x:mapX,y:mapY}}
-function buildMapViewport(position,map,widthYalms,heightYalms){const marker=buildMapMarker(position,map);if(!marker)return{marker:null};const halfWidth=Math.max(.5,Number(widthYalms||0)/2),halfHeight=Math.max(.5,Number(heightYalms||0)/2),leftUnit=mapTextureCoordinate(Number(position.x)-halfWidth,map.offsetX,map.sizeFactor),rightUnit=mapTextureCoordinate(Number(position.x)+halfWidth,map.offsetX,map.sizeFactor),topUnit=mapTextureCoordinate(Number(position.z)-halfHeight,map.offsetY,map.sizeFactor),bottomUnit=mapTextureCoordinate(Number(position.z)+halfHeight,map.offsetY,map.sizeFactor);if(leftUnit==null||rightUnit==null||topUnit==null||bottomUnit==null)return{marker};const leftPct=Math.max(0,Math.min(100,Math.min(leftUnit,rightUnit)*100)),rightPct=Math.max(0,Math.min(100,Math.max(leftUnit,rightUnit)*100)),topPct=Math.max(0,Math.min(100,Math.min(topUnit,bottomUnit)*100)),bottomPct=Math.max(0,Math.min(100,Math.max(topUnit,bottomUnit)*100)),viewWidthPct=Math.max(.5,rightPct-leftPct),viewHeightPct=Math.max(.5,bottomPct-topPct),scaleX=Math.max(1,100/viewWidthPct),scaleY=Math.max(1,100/viewHeightPct),markerU=marker.left/100,markerV=marker.top/100,offsetX=Math.max(0,Math.min(1-(1/scaleX),markerU-(.5/scaleX))),offsetY=Math.max(0,Math.min(1-(1/scaleY),markerV-(.5/scaleY)));return{marker,imageWidthPercent:scaleX*100,imageHeightPercent:scaleY*100,imageLeftPercent:-offsetX*scaleX*100,imageTopPercent:-offsetY*scaleY*100,scaleX,scaleY,offsetXUnit:offsetX,offsetYUnit:offsetY}}
-function projectMarkerToViewport(marker,mapViewport){if(!marker||!mapViewport?.marker||mapViewport.scaleX==null||mapViewport.scaleY==null)return null;const markerU=marker.left/100,markerV=marker.top/100;return{left:Math.max(0,Math.min(100,(markerU-mapViewport.offsetXUnit)*mapViewport.scaleX*100)),top:Math.max(0,Math.min(100,(markerV-mapViewport.offsetYUnit)*mapViewport.scaleY*100)),x:marker.x,y:marker.y}}
-function viewportFor(entity){const inCombat=!!entity?.conditions?.inCombat||!!entity?.members?.some?.(m=>m?.conditions?.inCombat);return{boxPx:260,widthYalms:inCombat?20:50,heightYalms:inCombat?20:50}}
-function shortLabel(name,slot,world){const text=String(name||slot||"?").trim();const bits=text.split(/\s+/).filter(Boolean);return bits.length>1?`${bits[0][0]}${bits[1][0]}`.toUpperCase():text.slice(0,3).toUpperCase()}
-function samePosition(a,b){return !!a&&!!b&&Math.abs(Number(a.x)-Number(b.x))<.05&&Math.abs(Number(a.z)-Number(b.z))<.05}
-function buildEnemyPoints(combat){const points=[];const seen=new Set();const hostiles=[...(combat?.currentTarget?[combat.currentTarget]:[]),...(combat?.hostiles||[])];for(const enemy of hostiles){if(!enemy?.position)continue;const id=`${enemy.dataId||""}|${enemy.name||""}|${enemy.position.x}|${enemy.position.z}`;if(seen.has(id))continue;seen.add(id);points.push({position:enemy.position,color:enemy.isCurrentTarget?"#f07173":enemy.isTargetingTrackedParty?"#e8b85d":"#ff8a8a",label:enemy.isCurrentTarget?"TGT":"E",size:11})}return points}
-function surfacePosition(entity){return entity?.sourcePosition||entity?.position||entity?.members?.find?.(m=>m?.isSource&&m?.position)?.position||entity?.members?.find?.(m=>m?.position)?.position||null}
-function surfacePoints(entity,origin){const points=[];if(Array.isArray(entity?.members)){for(const m of entity.members){if(!m.position||samePosition(m.position,origin))continue;points.push({position:m.position,color:m.isStranger?"#ff8a8a":m.isSubmitting?"#e8b85d":"#73b7ff",label:shortLabel(m.name,m.slotText,m.worldName),size:m.isStranger?11:12})}}else{for(const m of entity?.party||[]){if(!m.position||samePosition(m.position,origin))continue;points.push({position:m.position,color:"#e8b85d",label:shortLabel(m.name,m.slot,entity.worldName),size:12})}}return points.concat(buildEnemyPoints(entity?.combat))}
-function drawFacingCone(ctx,x,y,rotation,color,size){if(typeof rotation!=="number"||!Number.isFinite(rotation))return;const dirX=Math.sin(rotation),dirY=Math.cos(rotation),shaft=size*.9,tip=size*1.35,wing=size*.5;ctx.save();ctx.strokeStyle="rgba(5,10,16,.95)";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dirX*shaft,y+dirY*shaft);ctx.stroke();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dirX*shaft,y+dirY*shaft);ctx.stroke();ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dirX*tip+dirY*wing,y+dirY*tip-dirX*wing);ctx.lineTo(x+dirX*tip-dirY*wing,y+dirY*tip+dirX*wing);ctx.closePath();ctx.fill();ctx.restore()}
-)TTTHTML" + R"TTTHTML(
-function allSurfaces(state,clients){const aggregate=$("aggregateParties").checked?(state.aggregateParties||[]):[];const loose=$("aggregateParties").checked?(state.looseClients||[]):clients;return [...aggregate.map(p=>({kind:"party",key:partyKey(p),item:p})),...loose.map(c=>({kind:"client",key:key(c),item:c}))]}
-async function post(url,payload){const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload||{})});const data=await res.json().catch(()=>({ok:false,error:`HTTP ${res.status}`}));if(!res.ok||data.ok===false)throw new Error(data.error||data.message||`HTTP ${res.status}`);return data}
-async function queue(c,actionType,extra){await post("/api/queue-action",{accountId:c.accountId,characterName:c.characterName,worldName:c.worldName,actionType,...(extra||{})});$("status").textContent=`Queued ${actionType} for ${c.characterName}.`}
-function rememberCommandDrafts(){document.querySelectorAll("input[data-cmd]").forEach(input=>{const k=input.dataset.cmd||"";if(!k)return;const value=input.value||"";if(value)commandDrafts.set(k,value);else commandDrafts.delete(k);})}
-function activeCommandDraftKey(){const active=document.activeElement;return active?.matches?.("input[data-cmd]")?active.dataset.cmd||"":""}
-async function sendText(c){rememberCommandDrafts();const k=key(c);const text=(commandDrafts.get(k)||"").trim();if(!text)return;await queue(c,"echoCommand",{text});commandDrafts.delete(k);const input=document.querySelector(`[data-cmd="${CSS.escape(k)}"]`);if(input)input.value=""}
-function remoteActions(c){const p=c.policy||c.sourcePolicy||{};const target={accountId:c.accountId||c.sourceAccountId,characterName:c.characterName||c.sourceCharacterName,worldName:c.worldName||c.sourceWorldName};const k=key(target);const draft=commandDrafts.get(k)||"";const shots=[];const lastShot=c.lastScreenshot||c.sourceLastScreenshot;if(lastShot?.url)shots.push(`<a href="${esc(lastShot.url)}" target="_blank">Last screenshot</a>`);const lastCctv=c.lastCctvFrame||c.sourceLastCctvFrame;if(lastCctv?.url)shots.push(`<a href="${esc(lastCctv.url)}?t=${Date.now()}" target="_blank">Last CCTV</a>`);return `<div class="actions"><button ${p.allowScreenshotRequests?"":"disabled"} onclick='queue(lastState.clientsByKey[${JSON.stringify(k)}],"requestScreenshot")'>Screenshot</button><button ${p.allowCctvStreaming?"":"disabled"} onclick='queue(lastState.clientsByKey[${JSON.stringify(k)}],"requestScreenshot",{captureMode:"cctv",captureQuality:"medium"})'>CCTV</button>${shots.join(" ")}</div><div class="cmd"><input data-cmd="${esc(k)}" value="${esc(draft)}" ${p.allowEchoCommands?"":"disabled"} oninput="commandDrafts.set(this.dataset.cmd,this.value)" placeholder="Plain text echoes; slash commands run verbatim"><button ${p.allowEchoCommands?"":"disabled"} onclick='sendText(lastState.clientsByKey[${JSON.stringify(k)}])'>Send</button></div>`}
-function renderPartyRows(members){const list=(members||[]).slice(0,8);if(!list.length)return '<div class="hint">No party snapshot.</div>';return `<div class="rows">${list.map(m=>{const job=jobIconAsset(m.jobIconId);const icon=$("showIcons").checked&&job?iconHtml(job,m.job||`Job ${m.jobIconId}`):esc(m.job||"--");return `<div class="row"><span>${esc(m.slot??m.slotText??"")}</span><span>${esc(m.name||m.characterName||"Unknown")}${m.isStranger?" *":""}</span><span>${icon}</span><span>${m.currentHp!=null&&m.maxHp?esc(`${m.currentHp}/${m.maxHp}`):"--"}</span></div>`}).join("")}</div>`}
-function renderThreatRows(combat){const list=[...(combat?.currentTarget?[combat.currentTarget]:[]),...(combat?.hostiles||[])].filter(Boolean).slice(0,8);if(!list.length)return '<div class="hint">No combat telemetry.</div>';return `<div class="rows">${list.map(e=>`<div class="row threat"><span>${e.isCurrentTarget?"T":e.isTargetingTrackedParty?"A":"E"}</span><span>${esc(e.name||"Enemy")}</span><span>${e.distance!=null?esc(`${Number(e.distance).toFixed(1)}y`):"--"}</span><span>${e.currentHp!=null&&e.maxHp?esc(`${e.currentHp}/${e.maxHp}`):"--"}</span></div>`).join("")}</div>`}
-function renderRadar(entity,id){const map=entity?.map,position=surfacePosition(entity),asset=mapAsset(map),vp=viewportFor(entity),mapVp=buildMapViewport(position,map,vp.widthYalms,vp.heightYalms);if(asset?.pngUrl&&mapVp.marker){return `<div class="mapframe"><img class="mapimg" src="${esc(asset.pngUrl)}" alt="${esc(asset.texturePath||map?.texturePath||`Map ${map?.mapId??"?"}`)}" style="width:${mapVp.imageWidthPercent}%;height:${mapVp.imageHeightPercent}%;left:${mapVp.imageLeftPercent}%;top:${mapVp.imageTopPercent}%"><canvas class="mapoverlay" data-radar="${esc(id)}" width="${vp.boxPx}" height="${vp.boxPx}"></canvas></div>`}return `<canvas class="radar" data-radar="${esc(id)}" width="${vp.boxPx}" height="${vp.boxPx}"></canvas>`}
-function renderClient(c,active=false){const cls=c.isDisconnected?"off":c.stale?"stale":"live";const details=$("showDetails").checked;return `<section class="card ${cls==="live"?"":cls} ${active?"active":""}"><div class="head"><div class="titleline">${faceFrame(c)}<div><div class="name">${esc(c.characterName)} @ ${esc(c.worldName)}</div><div class="sub">${esc(c.territoryName||"Unknown territory")} | ${Math.round(c.ageSeconds||0)}s | ${flow(c)}</div>${identity(c)}</div></div>${chip(statusText(c),statusKind(c))}</div><div class="stats">${stat("HP",hp(c))}${stat("MP",mp(c))}${stat("Repair",repair(c))}${stat("Position",pos(c))}</div>${remoteActions(c)}<div class="section"><div class="sectionhead">Party</div>${renderPartyRows(c.party)}</div>${details?`<div class="section"><div class="sectionhead">Threat</div>${renderThreatRows(c.combat)}</div><div class="section"><div class="sectionhead">Map / Radar</div>${renderRadar(c,key(c))}</div><div class="mini">Host ${esc(c.hostName||"--")} | update ${esc(c.updateKind||"full")} | ${esc(c.gameInstallPath||"no game path")}</div>`:""}</section>`}
-function renderAggregateParty(p,active=false){const details=$("showDetails").checked;const source={characterName:p.sourceCharacterName,worldName:p.sourceWorldName,krangledName:p.sourceKrangledName,sourceLodestone:p.sourceLodestone,...((p.members||[]).find(m=>m.isSource)||{})};return `<section class="card ${active?"active":""}"><div class="head"><div class="titleline">${faceFrame(source)}<div><div class="name">Party | ${esc(p.territoryName||"Unknown zone")}</div><div class="sub">Source ${esc(p.sourceCharacterName)} @ ${esc(p.sourceWorldName)} | ${p.monitoredCount||0} monitored | ${p.strangerCount||0} unmonitored</div>${identity(source)}</div></div>${chip(`${p.liveCount||0} live`,(p.liveCount||0)>0?"good":"bad")}</div><div class="stats">${stat("Live",p.liveCount??0)}${stat("Stale",p.staleCount??0)}${stat("Offline",p.disconnectedCount??0)}${stat("Age",`${Math.round(p.sourceAgeSeconds||0)}s`)}</div>${remoteActions(p)}<div class="section"><div class="sectionhead">Members</div>${renderPartyRows(p.members)}</div>${details?`<div class="section"><div class="sectionhead">Threat</div>${renderThreatRows(p.combat)}</div><div class="section"><div class="sectionhead">Map / Radar</div>${renderRadar(p,partyKey(p))}</div>`:""}</section>`}
-function renderClassic(entries){return `<div class="grid">${entries.map(e=>e.kind==="party"?renderAggregateParty(e.item):renderClient(e.item)).join("")}</div>`}
-function renderOperator(entries,total){if(!entries.length)return `<div class="empty">No ${total?"visible ":""}clients.</div>`;if(!entries.some(e=>e.key===selectedKey))selectedKey=entries[0].key;const selected=entries.find(e=>e.key===selectedKey)||entries[0];const rail=entries.map(e=>`<button class="${e.key===selected.key?"active":""}" onclick="selectSurface('${esc(e.key)}')"><strong>${e.kind==="party"?"Party":esc(e.item.characterName)}</strong><span class="mini">${e.kind==="party"?esc(e.item.territoryName||"Unknown zone"):esc(e.item.territoryName||"Unknown zone")} | ${e.kind==="party"?`${e.item.liveCount||0} live`:statusText(e.item)}</span></button>`).join("");const detail=selected.kind==="party"?renderAggregateParty(selected.item,true):renderClient(selected.item,true);return `<div class="operator"><aside class="rail">${rail}</aside><section class="detail">${detail}</section></div>`}
-function renderCommand(entries,total){if(!entries.length)return `<div class="empty">No ${total?"visible ":""}clients.</div>`;return `<div class="grid">${entries.map(e=>e.kind==="party"?renderAggregateParty(e.item,e.key===selectedKey):renderClient(e.item,e.key===selectedKey)).join("")}</div>`}
-function renderMatrix(entries,total){if(!entries.length)return `<div class="empty">No ${total?"visible ":""}clients.</div>`;return `<div class="matrix"><div class="mrow headrow"><div>Type</div><div>Name</div><div>Zone</div><div>Status</div><div>Vitals</div><div>Age</div></div>${entries.map(e=>{const i=e.item;const type=e.kind==="party"?"Party":"Client";const name=e.kind==="party"?`Source ${i.sourceCharacterName}`:`${i.characterName} @ ${i.worldName}`;const status=e.kind==="party"?`${i.liveCount||0}/${i.staleCount||0}/${i.disconnectedCount||0}`:statusText(i);const vitals=e.kind==="party"?`Mon ${i.monitoredCount||0} / Other ${i.strangerCount||0}`:`HP ${hp(i)} MP ${mp(i)}`;const age=e.kind==="party"?`${Math.round(i.sourceAgeSeconds||0)}s`:`${Math.round(i.ageSeconds||0)}s`;return `<button class="mrow ${e.key===selectedKey?"active":""}" onclick="selectSurface('${esc(e.key)}')"><div>${esc(type)}</div><div>${esc(name)}</div><div>${esc(i.territoryName||"Unknown")}</div><div>${esc(status)}</div><div>${esc(vitals)}</div><div>${esc(age)}</div></button>`}).join("")}</div>`}
-function selectSurface(k){
-  selectedKey=k;
-  localStorage.setItem("ttsl.native.selected",k);
-  refresh();
+function buildMapViewport(position,map,widthYalms,heightYalms){const marker=buildMapMarker(position,map);if(!marker)return{marker:null};const halfWidth=Math.max(.5,Number(widthYalms||0)/2),halfHeight=Math.max(.5,Number(heightYalms||0)/2),leftUnit=mapTextureCoordinate(Number(position.x)-halfWidth,map.offsetX,map.sizeFactor),rightUnit=mapTextureCoordinate(Number(position.x)+halfWidth,map.offsetX,map.sizeFactor),topUnit=mapTextureCoordinate(Number(position.z)-halfHeight,map.offsetY,map.sizeFactor),bottomUnit=mapTextureCoordinate(Number(position.z)+halfHeight,map.offsetY,map.sizeFactor);if(leftUnit==null||rightUnit==null||topUnit==null||bottomUnit==null)return{marker};const leftPct=Math.max(0,Math.min(100,Math.min(leftUnit,rightUnit)*100)),rightPct=Math.max(0,Math.min(100,Math.max(leftUnit,rightUnit)*100)),topPct=Math.max(0,Math.min(100,Math.min(topUnit,bottomUnit)*100)),bottomPct=Math.max(0,Math.min(100,Math.max(topUnit,bottomUnit)*100)),viewWidthPct=Math.max(.5,rightPct-leftPct),viewHeightPct=Math.max(.5,bottomPct-topPct),scaleX=Math.max(1,100/viewWidthPct),scaleY=Math.max(1,100/viewHeightPct),markerU=marker.left/100,markerV=marker.top/100,offsetX=Math.max(0,Math.min(1-(1/scaleX),markerU-(.5/scaleX))),offsetY=Math.max(0,Math.min(1-(1/scaleY),markerV-(.5/scaleY))),dotLeft=Math.max(0,Math.min(100,(markerU-offsetX)*scaleX*100)),dotTop=Math.max(0,Math.min(100,(markerV-offsetY)*scaleY*100));return{marker,imageWidthPercent:scaleX*100,imageHeightPercent:scaleY*100,imageLeftPercent:-offsetX*scaleX*100,imageTopPercent:-offsetY*scaleY*100,dotLeftPercent:dotLeft,dotTopPercent:dotTop,scaleX,scaleY,offsetXUnit:offsetX,offsetYUnit:offsetY}}
+function renderIdentity(entity){const wrap=document.createElement("div");wrap.className="ident";if(!icons.checked)return wrap;const appendIcon=(asset,label)=>{const url=assetUrl(asset);if(!url)return;const img=document.createElement("img");img.className="iconimg";img.src=url;img.alt=label;img.title=label;wrap.appendChild(img)};const jobAsset=jobIconAsset(entity.jobIconId);if(jobAsset)appendIcon(jobAsset,entity.job||`Job ${entity.jobIconId}`);const ancestryAsset=tribeIconAsset(entity.tribeId)||raceIconAsset(entity.raceId);const ancestryName=localizedAssetName(ancestryAsset,entity.gender);if(ancestryAsset&&ancestryName)appendIcon(ancestryAsset,ancestryName);if(entity.job)wrap.appendChild(chip(entity.job,jobKind(entity.job)));if(entity.level!=null)wrap.appendChild(chip(`Lv ${entity.level}`,"util"));if(entity.gender!=null)wrap.appendChild(chip(genderSymbol(entity.gender),"util"));return wrap}
+const entityDisplayCharacter=entity=>displayCharacter(entity?.characterName??entity?.name??entity?.sourceCharacterName,entity?.worldName??entity?.sourceWorldName,entity?.krangledName??entity?.sourceKrangledName);
+const entityLevelValue=entity=>entity?.level??entity?.player?.level??null;
+const entityLodestone=entity=>entity?.lodestone||entity?.sourceLodestone||null;
+const entityAncestryText=entity=>localizedAssetName(tribeIconAsset(entity?.tribeId)||raceIconAsset(entity?.raceId),entity?.gender)||"Unknown race";
+const entityIdentityLine=entity=>`${entityAncestryText(entity)} | ${entity?.job||"--"} | ${levelText(entityLevelValue(entity))}`;
+const entityInitials=entity=>{const parts=String(entity?.characterName??entity?.name??entity?.sourceCharacterName??"?").trim().split(/\\s+/).filter(Boolean);const letters=`${parts[0]?.[0]||"?"}${parts[1]?.[0]||""}`;return letters.toUpperCase()||"?"};
+function portraitUrlFor(entity,kind="face"){const lodestone=entityLodestone(entity);if(!lodestone)return null;return kind==="portrait"?(lodestone.portraitUrl||lodestone.faceUrl||null):(lodestone.faceUrl||lodestone.portraitUrl||null)}
+function renderPortraitFrame(entity,{kind="face",className="faceframe",label="",title=""}={}){const frame=document.createElement("div");frame.className=className;const altLabel=label||entityDisplayCharacter(entity);const sourceUrl=portraitUrlFor(entity,kind);if(sourceUrl){const img=document.createElement("img");img.src=sourceUrl;img.alt=altLabel;img.loading="lazy";frame.appendChild(img)}else{frame.classList.add("placeholder");frame.textContent=entityInitials(entity)}const lodestone=entityLodestone(entity);const stateText=lodestone?.status&&lodestone.status!=="ready"?` | Lodestone ${lodestone.status}`:"";frame.title=title||`${altLabel}${stateText}`;return frame}
+const lodestoneStatus=entity=>String(entityLodestone(entity)?.status||"unavailable");
+const CCTV_QUALITY_PRESETS={low:{label:"Low",intervalMs:2600},medium:{label:"Medium",intervalMs:1400},high:{label:"High",intervalMs:800}};
+const cctvSessions=new Map();
+function buildRemoteTarget(target){if(!target)return null;const accountId=String(target.accountId||target.sourceAccountId)TTSLHUD"
+           + R"TTSLHUD(||"").trim(),characterName=String(target.characterName||target.name||target.sourceCharacterName||"").trim(),worldName=String(target.worldName||target.sourceWorldName||"").trim();if(!accountId||!characterName||!worldName)return null;return{accountId,characterName,worldName,policy:target.policy||target.sourcePolicy||{},lastScreenshot:target.lastScreenshot||target.sourceLastScreenshot||null,lastCctvFrame:target.lastCctvFrame||target.sourceLastCctvFrame||null}}
+function buildCctvSurfaceRegistry(clients,aggregate){const registry=new Map();for(const client of clients)registry.set(clientKey(client),[client]);for(const party of aggregate)registry.set(partyKey(party),(party.members||[]).filter(member=>!!buildRemoteTarget(member)));return registry}
+function cctvPreset(key){return CCTV_QUALITY_PRESETS[key]||CCTV_QUALITY_PRESETS.medium}
+function stopEvent(event){event.preventDefault();event.stopPropagation()}
+function stopCctvSession(surfaceKey,refreshAfter=false){const key=String(surfaceKey||"").trim();if(!key)return;const session=cctvSessions.get(key);if(!session)return;if(session.timerId)window.clearTimeout(session.timerId);cctvSessions.delete(key);if(refreshAfter)void refresh()}
+function syncCctvSessions(surfaceRegistry){for(const [surfaceKey,session] of [...cctvSessions.entries()]){const candidates=surfaceRegistry.get(surfaceKey);if(!candidates||candidates.length===0){stopCctvSession(surfaceKey,false);continue}const match=candidates.find(candidate=>{const remote=buildRemoteTarget(candidate);return remote&&remoteControlKey(remote)===session.targetKey});if(!match){stopCctvSession(surfaceKey,false);continue}const remote=buildRemoteTarget(match);if(!remote?.policy?.allowCctvStreaming){stopCctvSession(surfaceKey,false);continue}session.remote=remote;session.label=entityDisplayCharacter(match)}}
+function isCctvActiveForSurfaceTarget(surfaceKey,target){const session=cctvSessions.get(String(surfaceKey||"").trim());const remote=buildRemoteTarget(target);return !!session&&!!remote&&session.targetKey===remoteControlKey(remote)}
+function scheduleCctvTick(surfaceKey,delayMs){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;if(session.timerId)window.clearTimeout(session.timerId);session.timerId=window.setTimeout(()=>{void runCctvTick(surfaceKey)},Math.max(0,Number(delayMs)||0))}
+async function runCctvTick(surfaceKey){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;const remote=buildRemoteTarget(session.remote);if(!remote?.policy?.allowCctvStreaming){stopCctvSession(surfaceKey,true);return}session.requestInFlight=true;await queueRemoteAction(remote,"requestScreenshot","",{silent:true,refreshDelayMs:420,extra:{captureMode:"cctv",captureQuality:session.quality}});session.requestInFlight=false;if(!cctvSessions.has(String(surfaceKey||"").trim()))return;scheduleCctvTick(surfaceKey,cctvPreset(session.quality).intervalMs)}
+function openCctvSession(surfaceKey,target,label){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowCctvStreaming){extractStatus.textContent="CCTV is not allowed for this client.";return}const key=String(surfaceKey||"").trim();if(!key)return;const existing=cctvSessions.get(key),targetKey=remoteControlKey(remote),quality=existing?.targetKey===targetKey?existing.quality:(existing?.quality||"medium");if(existing&&existing.timerId)window.clearTimeout(existing.timerId);cctvSessions.set(key,{targetKey,remote,label:label||entityDisplayCharacter(target),quality,timerId:0,requestInFlight:false});scheduleCctvTick(key,0);void refresh()}
+function setCctvQuality(surfaceKey,quality){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;session.quality=CCTV_QUALITY_PRESETS[quality]?quality:"medium";scheduleCctvTick(surfaceKey,0);void refresh()}
+function renderCctvSection(surfaceKey,title="CCTV"){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return null;const section=document.createElement("div");section.className="section board-map-section cctv-section";section.innerHTML=`<div class="sectionhead">${title}</div>`;const top=document.createElement("div");top.className="cctv-top";const meta=document.createElement("div");meta.className="hint";const frame=session.remote?.lastCctvFrame||null;meta.textContent=`${session.label||"Tracked client"} | ${cctvPreset(session.quality).label}${frame?.capturedAtUtc?` | ${frame.capturedAtUtc}`:" | waiting for first frame"}`;const actions=document.createElement("div");actions.className="mini-actions";for(const [quality,preset] of Object.entries(CCTV_QUALITY_PRESETS)){const button=document.createElement("button");button.type="button";button.textContent=preset.label;button.classList.toggle("active",quality===session.quality);button.addEventListener("click",event=>{stopEvent(event);setCctvQuality(surfaceKey,quality)});actions.appendChild(button)}const close=document.createElement("button");close.type="button";close.textContent="Close";close.addEventListener("click",event=>{stopEvent(event);stopCctvSession(surfaceKey,true)});actions.appendChild(close);top.append(meta,actions);const frameWrap=document.createElement("div");frameWrap.className="cctv-frame";frameWrap.style.maxWidth=`${currentViewportSettings(false).boxPx}px`;if(frame?.url){const img=document.createElement("img");img.src=`${frame.url}${frame.url.includes("?")?"&":"?"}t=${encodeURIComponent(frame.capturedAtUtc||Date.now())}`;img.alt=`Live CCTV for ${session.label||"tracked client"}`;img.loading="eager";frameWrap.appendChild(img)}else{frameWrap.appendChild(Object.assign(document.createElement("div"),{className:"hint",textContent:"Awaiting the first CCTV frame from the client."}))}section.append(top,frameWrap,Object.assign(document.createElement("div"),{className:"controlnote",textContent:"CCTV uses rolling game-window captures and replaces the map pane until closed."}));return section}
+function mapOrCctvSection(surfaceKey,mapSection,title){const cctv=renderCctvSection(surfaceKey,title);return cctv||mapSection}
+async function requestShortcutScreenshot(target,options={}){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowScreenshotRequests)return false;return queueRemoteAction(remote,"requestScreenshot","",options)}
+async function promptShortcutCommand(target,label){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowEchoCommands)return;const draftKey=remoteControlKey(remote);const seeded=String(remoteControlDrafts.get(draftKey)||"");const input=window.prompt(`Send text or slash command to ${label}`,seeded);if(input==null)return;const text=String(input).trim();if(!text)return;remoteControlDrafts.set(draftKey,text);const ok=await queueRemoteAction(remote,"echoCommand",text);if(ok)remoteControlDrafts.delete(draftKey)}
+async function openShortcutScreenshotFolder(button){button.disabled=true;try{const res=await fetch("/api/open-screenshot-folder",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}),data=await res.json().catch(()=>({ok:fals)TTSLHUD"
+           + R"TTSLHUD(e,error:`HTTP ${res.status}`}));if(!res.ok||!data?.ok){extractStatus.textContent=data?.error||data?.message||`Failed to open screenshot folder (HTTP ${res.status})`;return false}extractStatus.textContent=data?.message||"Opened screenshot folder on the server host.";return true}catch(err){extractStatus.textContent=`Failed to open screenshot folder: ${err}`;return false}finally{button.disabled=false}}
+function renderShortcutStrip(target,label,options={}){const controls=document.createElement("div");controls.className="mini-actions";const remote=buildRemoteTarget(target),surfaceKey=String(options.surfaceKey||"").trim();const cctv=document.createElement("button");cctv.type="button";cctv.textContent="CCTV";const cctvActive=surfaceKey&&isCctvActiveForSurfaceTarget(surfaceKey,target);if(cctvActive)cctv.classList.add("active");cctv.disabled=!surfaceKey||!remote?.policy?.allowCctvStreaming;cctv.title=cctv.disabled?"CCTV is not allowed for this client.":cctvActive?`Close CCTV for ${label}`:`Replace the map pane with live CCTV for ${label}`;cctv.addEventListener("click",event=>{stopEvent(event);if(cctvActive)stopCctvSession(surfaceKey,true);else openCctvSession(surfaceKey,target,label)});const screenshot=document.createElement("button");screenshot.type="button";screenshot.textContent="SS";screenshot.disabled=!remote?.policy?.allowScreenshotRequests;screenshot.title=screenshot.disabled?"Screenshot requests are not allowed for this client.":`Request a screenshot from ${label}`;screenshot.addEventListener("click",event=>{stopEvent(event);screenshot.disabled=true;requestShortcutScreenshot(remote).finally(()=>{screenshot.disabled=!remote?.policy?.allowScreenshotRequests})});const screenshotFolder=document.createElement("button");screenshotFolder.type="button";screenshotFolder.textContent="SSF";screenshotFolder.title="Open the screenshot folder on the TTSL server host.";screenshotFolder.addEventListener("click",event=>{stopEvent(event);void openShortcutScreenshotFolder(screenshotFolder)});const command=document.createElement("button");command.type="button";command.textContent="CMD";command.disabled=!remote?.policy?.allowEchoCommands;command.title=command.disabled?"Web text or slash commands are not allowed for this client.":`Open a command prompt for ${label}`;command.addEventListener("click",event=>{stopEvent(event);void promptShortcutCommand(remote,label)});controls.append(cctv,screenshot,screenshotFolder,command);return controls}
+function microStat(label,value,bad=false){const stat=document.createElement("div");stat.className=`microstat ${bad?"bad":""}`.trim();stat.innerHTML=`<div class="microstat-label">${label}</div><div class="microstat-value">${value}</div>`;return stat}
+function collectHostiles(combat){const hostiles=[];if(combat?.currentTarget)hostiles.push(combat.currentTarget);for(const hostile of combat?.hostiles||[]){if(!hostiles.some(existing=>existing.dataId===hostile.dataId&&existing.distance===hostile.distance&&existing.name===hostile.name))hostiles.push(hostile)}return hostiles}
+function buildEnemyPoints(combat){return Array.isArray(combat?.hostiles)?combat.hostiles.filter(enemy=>enemy.position).map((enemy,index)=>({position:enemy.position,color:enemy.isCurrentTarget?"#ff5e7d":enemy.isTargetingTrackedParty?"#ff9b7a":"#ff7f7f",label:enemy.isCurrentTarget?"TGT":`E${index+1}`})):[]}
+function drawFacingCone(ctx,x,y,rotation,color,size){
+  if(typeof rotation!=="number"||!Number.isFinite(rotation))return;
+  const facing=rotation,dirX=Math.sin(facing),dirY=Math.cos(facing),shaft=size*.95,tip=size*1.45,wing=size*.55,base=size*.2;
+  ctx.save();
+  ctx.strokeStyle="rgba(7,16,24,.95)";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x+dirX*shaft,y+dirY*shaft);
+  ctx.stroke();
+  ctx.strokeStyle=color;
+  ctx.lineWidth=2.25;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x+dirX*shaft,y+dirY*shaft);
+  ctx.stroke();
+  ctx.fillStyle=color;
+  ctx.globalAlpha=.92;
+  ctx.beginPath();
+  ctx.moveTo(x+dirX*base,y+dirY*base);
+  ctx.lineTo(x+dirX*tip+dirY*wing,y+dirY*tip-dirX*wing);
+  ctx.lineTo(x+dirX*tip-dirY*wing,y+dirY*tip+dirX*wing);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle="rgba(7,16,24,.95)";
+  ctx.lineWidth=1.4;
+  ctx.stroke();
+  ctx.restore()
 }
-function drawRadars(state){
-  document.querySelectorAll("canvas[data-radar]").forEach(canvas=>{
-    const entity=state.surfaceByKey?.[canvas.dataset.radar];
-    const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height;
-    const origin=surfacePosition(entity),map=entity?.map,points=surfacePoints(entity,origin),vp=viewportFor(entity),mapVp=buildMapViewport(origin,map,vp.widthYalms,vp.heightYalms);
-    ctx.clearRect(0,0,w,h);
-    if(canvas.classList.contains("mapoverlay")&&mapVp.marker){
-      const drawPoint=(point,color,label,size)=>{
-        const projected=projectMarkerToViewport(buildMapMarker(point.position,map),mapVp);
-        if(!projected)return;
-        const px=w*(projected.left/100),py=h*(projected.top/100);
-        drawFacingCone(ctx,px,py,point.rotation??point.position?.rotation,color,size);
-        ctx.fillStyle=color;
-        ctx.beginPath();
-        ctx.arc(px,py,Math.max(3.5,size*.28),0,Math.PI*2);
-        ctx.fill();
-        ctx.strokeStyle="rgba(5,10,16,.95)";
-        ctx.lineWidth=1.4;
-        ctx.stroke();
-        if(label){
-          ctx.font="10px Segoe UI";
-          ctx.strokeStyle="rgba(5,10,16,.95)";
-          ctx.lineWidth=2.8;
-          ctx.fillStyle="#edf2f7";
-          ctx.strokeText(label,px+7,py+4);
-          ctx.fillText(label,px+7,py+4);
-        }
-      };
-      points.forEach(p=>p?.position&&drawPoint(p,p.color||"#e8b85d",p.label||"",p.size||11));
-      if(origin)drawPoint({position:origin,rotation:origin.rotation},"#58d189","YOU",14);
-      return;
+function drawRadarBase(canvas,points,origin,labeler,widthYalms,heightYalms){const ctx=canvas.getContext("2d"),w=canvas.width,h=canvas.height,cx=w/2,cy=h/2,r=w/2-16,halfWidth=Math.max(1,Number(widthYalms)/2),halfHeight=Math.max(1,Number(heightYalms)/2);ctx.clearRect(0,0,w,h);ctx.fillStyle="#071018";ctx.fillRect(0,0,w,h);ctx.strokeStyle="rgba(255,255,255,.12)";ctx.strokeRect(9,9,w-18,h-18);ctx.beginPath();ctx.moveTo(cx,14);ctx.lineTo(cx,h-14);ctx.moveTo(14,cy);ctx.lineTo(w-14,cy);ctx.stroke();drawFacingCone(ctx,cx,cy,origin?.rotation,"#79e58d",17);ctx.fillStyle="#79e58d";ctx.beginPath();ctx.arc(cx,cy,4.5,0,Math.PI*2);ctx.fill();if(!origin||points.length===0){ctx.fillStyle="#93a7bc";ctx.font="11px Segoe UI";ctx.fillText("No radar data",34,cy+4);return}for(const point of points){if(!point.position)continue;const dx=point.position.x-origin.x,dz=point.position.z-origin.z,px=cx+Math.max(-1,Math.min(1,dx/halfWidth))*r,py=cy+Math.max(-1,Math.min(1,dz/halfHeight))*r;drawFacingCone(ctx,px,py,point.position.rotation,point.color,14);ctx.fillStyle=point.color;ctx.beginPath();ctx.arc(px,py,4.2,0,Math.PI*2);ctx.fill();ctx.fillStyle="#eaf4ff";ctx.font="10px Segoe UI";ctx.fillText(labeler(point),px+6,py+3)}}
+function sameTrackedPosition(left,right){return !!left&&!!right&&Math.abs(Number(left.x)-Number(right.x))<.05&&Math.abs(Number(left.z)-Number(right.z))<.05}
+function buildClientMinimapPoints(client){const points=[];for(const member of client.party||[]){if(!member.position||sameTrackedPosition(member.position,client.position))continue;points.push({position:member.position,color:"#ffbf74",label:shortLabel(member.name,member.slot,client.worldName),rotation:member.position.rotation,size:12})}for(const enemy of buildEnemyPoints(client.combat))points.push({...enemy,rotation:enemy.position?.rotation,size:11});return points}
+function buildAggregateMinimapPoints(party,source){const points=[];for(const member of party.members||[]){if(member===source||!member.position||sameTrackedPosition(member.position,source?.position))continue;points.push({position:member.position,color:member.isStranger?"#ff7f7f":member.isSubmitting?"#ffbf74":"#93a7bc",label:shortLabel(member.name,member.slotText,member.worldName),rotation:member.position.rotation,size:member.isStranger?11:12})}for(const enemy of buildEnemyPoints(party.combat))points.push({...enemy,rotation:enemy.position?.rotation,size:11});return points}
+function projectMarkerToViewport(marker,mapViewport){if(!marker||!mapViewport?.marker||mapViewport.scaleX==null||mapViewport.scaleY==null)return null;const markerU=marker.left/100,markerV=marker.top/100;return{left:Math.max(0,Math.min(100,(markerU-mapViewport.offsetXUnit)*mapViewport.scaleX*100)),top:Math.max(0,Math.min(100,(markerV-mapViewpo)TTSLHUD"
+           + R"TTSLHUD(rt.offsetYUnit)*mapViewport.scaleY*100)),x:marker.x,y:marker.y}}
+function drawMinimapOverlay(canvas,map,mapViewport,sourcePosition,points,sourceLabel){const ctx=canvas.getContext("2d"),width=canvas.width,height=canvas.height;ctx.clearRect(0,0,width,height);const drawPoint=(point,color,label,size)=>{const projected=projectMarkerToViewport(buildMapMarker(point.position,map),mapViewport);if(!projected)return;const px=width*(projected.left/100),py=height*(projected.top/100);drawFacingCone(ctx,px,py,point.rotation??point.position?.rotation,color,size);ctx.fillStyle=color;ctx.beginPath();ctx.arc(px,py,Math.max(3.6,size*.28),0,Math.PI*2);ctx.fill();ctx.strokeStyle="rgba(7,16,24,.95)";ctx.lineWidth=1.4;ctx.stroke();if(label){ctx.fillStyle="#eaf4ff";ctx.strokeStyle="rgba(7,16,24,.95)";ctx.lineWidth=2.8;ctx.font="10px Segoe UI";ctx.strokeText(label,px+7,py+4);ctx.fillText(label,px+7,py+4)}};for(const point of points||[])if(point?.position)drawPoint(point,point.color||"#ffbf74",point.label||"",point.size||11);if(sourcePosition)drawPoint({position:sourcePosition,rotation:sourcePosition.rotation},"#79e58d",sourceLabel||"",14)}
+function drawRadar(canvas,client){const viewport=currentViewportSettings(!!client?.conditions?.inCombat);canvas.width=viewport.boxPx;canvas.height=viewport.boxPx;if(!client.position||!Array.isArray(client.party)||client.party.length===0){const hostiles=buildEnemyPoints(client.combat);if(hostiles.length===0){drawRadarBase(canvas,[],null,()=>"-",viewport.widthYalms,viewport.heightYalms);return}drawRadarBase(canvas,hostiles,client.position||null,point=>point.label,viewport.widthYalms,viewport.heightYalms);return}const points=client.party.filter(m=>m.position).map(m=>({position:m.position,color:"#ffbf74",slot:m.slot,name:m.name,world:client.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(client.combat)),client.position,point=>point.label||shortLabel(point.name,point.slot,point.world),viewport.widthYalms,viewport.heightYalms)}
+function drawAggregateRadar(canvas,party){const viewport=currentViewportSettings(aggregatePartyInCombat(party));canvas.width=viewport.boxPx;canvas.height=viewport.boxPx;const source=party.members.find(m=>m.isSource&&m.position)||party.members.find(m=>m.position&&!m.isStranger)||null;if(!source){drawRadarBase(canvas,buildEnemyPoints(party.combat),null,point=>point.label,viewport.widthYalms,viewport.heightYalms);return}const points=party.members.filter(m=>m.position&&m!==source).map(m=>({position:m.position,color:m.isStranger?"#ff7f7f":m.isSubmitting?"#ffbf74":"#93a7bc",slot:m.slotText,name:m.name,world:m.worldName}));drawRadarBase(canvas,points.concat(buildEnemyPoints(party.combat)),source.position,point=>point.label||shortLabel(point.name,point.slot,point.world),viewport.widthYalms,viewport.heightYalms)}
+function renderParty(client){const wrap=document.createElement("div");wrap.className="party";if(Array.isArray(client.party)&&client.party.length>0){for(const m of client.party){const row=document.createElement("div");row.className="member";const dist=typeof m.distance==="number"?`${m.distance.toFixed(1)}y`:"--";row.innerHTML=`<div class="slot">${m.slot}</div><div class="membername">${displayName(m.name,m.krangledName)}</div><div class="job">${m.job}</div><div class="dist">${dist}</div>`;row.title=`${levelText(m.level)} | HP ${hpText(m.currentHp,m.maxHp)} | MP ${mpText(m.currentMp,m.maxMp)}`;wrap.appendChild(row)}}else{const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No party data captured yet.</div><div class="job">--</div><div class="dist">--</div>`;wrap.appendChild(row)}return wrap}
+function renderStates(client){const wrap=document.createElement("div");wrap.className="states";wrap.append(stateChip("Combat",!!client.conditions?.inCombat),stateChip("Duty",!!client.conditions?.boundByDuty),stateChip("Queue",!!client.conditions?.waitingForDuty),stateChip("Mount",!!client.conditions?.mounted),stateChip("Cast",!!client.conditions?.casting),stateChip("Dead",!!client.conditions?.dead,client.conditions?.dead?"bad":"off"));return wrap}
+function combatHeadline(combat){const target=combat?.currentTarget;if(!target)return"No current target";const name=displayEnemyName(target.name,target.krangledName);const targetText=target.isTargetingLocalPlayer?"targeting you":target.isTargetingTrackedParty?`targeting ${displayName(target.targetName||"party",target.krangledTargetName||"")}`:target.targetName?`targeting ${displayName(target.targetName,target.krangledTargetName)}`:"no tracked target";const castText=target.isCasting?` | cast ${target.castActionId??"?"} ${target.castTimeRemaining?.toFixed(1)??"?"}s`:"";return`${name} | ${targetText}${castText}`}
+function renderClientTelemetry(client){if(!showDetails)return null;return factSection("Telemetry",[{label:"Connected",value:client.connectedAtUtc||"Unknown"},{label:"Last update",value:`${client.lastSeenUtc||"Unknown"} | ${client.updateKind||"full"}`},{label:"Host",value:displayHost(client.hostName),kind:client.hostName?"":"bad"},{label:"Game path",value:displayPathLeaf(client.gameInstallPath),title:displayPathTitle(client.gameInstallPath),kind:client.gameInstallPath?"":"bad"},{label:"Queue",value:queueStateText(client)},{label:"Focus",value:combatHeadline(client.combat),title:combatHeadline(client.combat)}])}
+function renderThreats(combat){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Threat</div>`;const list=document.createElement("div");list.className="party";const hostiles=collectHostiles(combat);if(hostiles.length===0){const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No combat telemetry captured.</div><div class="job">--</div><div class="dist">--</div>`;list.appendChild(row);section.appendChild(list);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="member";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const label=hostile.isCurrentTarget?"T":hostile.isTargetingTrackedParty?"A":"E";const hp=hpText(hostile.currentHp,hostile.maxHp);row.innerHTML=`<div class="slot">${label}</div><div class="membername">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div class="job">${dist}</div><div class="dist">${hp}</div>`;row.title=`${hostile.isCurrentTarget?"Current target":hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} | ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;list.appendChild(row)}section.appendChild(list);return section}
+function renderEnmityBoard(combat,title="Enmity"){con)TTSLHUD"
+           + R"TTSLHUD(st section=document.createElement("div");section.className="section board-enmity";section.innerHTML=`<div class="sectionhead">${title}</div>`;const grid=document.createElement("div");grid.className="enmity-grid";const hostiles=collectHostiles(combat);if(hostiles.length===0){const row=document.createElement("div");row.className="enmity-row";row.innerHTML=`<div class="enmity-name">No combat telemetry captured.</div><div class="enmity-note">The tracked client does not currently expose target or hostile data.</div>`;grid.appendChild(row);section.appendChild(grid);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="enmity-row";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const top=document.createElement("div");top.className="enmity-top";top.innerHTML=`<div class="enmity-name">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div>${""}</div>`;top.querySelector("div:last-child").replaceWith(chip(hostile.isCurrentTarget?"TARGET":hostile.isTargetingTrackedParty?"ALLY":"HOSTILE",hostile.isCurrentTarget?"bad":hostile.isTargetingTrackedParty?"warn":""));const note=document.createElement("div");note.className="enmity-note";note.textContent=`${hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} in ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;const stats=document.createElement("div");stats.className="member-microstats";stats.append(microStat("HP",hpText(hostile.currentHp,hostile.maxHp),hostile.currentHp==null),microStat("Dist",dist,dist==="--"),microStat("Label",hostile.isCurrentTarget?"TGT":hostile.isTargetingTrackedParty?"ALLY":"HOST"));row.append(top,note,stats);grid.appendChild(row)}section.appendChild(grid);return section}
+function renderClientSummary(client){const wrap=document.createElement("div");wrap.className="board-summary";const board=document.createElement("div");board.className="party-board solo-party-board";const main=document.createElement("div");main.className="party-board-main solo-party-main";const surfaceKey=clientKey(client);const left=document.createElement("div");left.className="party-column";left.appendChild(renderPartyMemberCard(buildSoloSurfaceMember(client),{surfaceKey}));const portraitSection=document.createElement("div");portraitSection.className="board-hub";portraitSection.innerHTML=`<div class="sectionhead">Character</div>`;const portrait=renderPortraitFrame(client,{kind:"portrait",className:"portrait-frame solo-portrait-frame",label:entityDisplayCharacter(client),title:`Lodestone body image for ${entityDisplayCharacter(client)}`});portraitSection.appendChild(portrait);left.appendChild(portraitSection);const right=document.createElement("div");right.className="party-column";const mapSection=renderMinimapSection(client.map,client.position,"Field Map",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU");mapSection.classList.add("board-map-section");right.appendChild(mapOrCctvSection(surfaceKey,mapSection,"CCTV"));main.append(left,right);board.appendChild(main);wrap.append(board,renderEnmityBoard(client.combat));return wrap}
+function renderClientPartyModule(client){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Party</div>`;section.appendChild(renderParty(client));return section}
+function renderClientModule(client,allowActions){switch(getInspectorModule("client",allowActions)){case"map":{const mapSection=renderMinimapSection(client.map,client.position,"Minimap",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU");return mapOrCctvSection(clientKey(client),mapSection,"CCTV")}case"party":return renderClientPartyModule(client);case"threat":return renderThreats(client.combat);case"actions":return renderRemoteControlSection(client,"Remote Control");default:return renderClientSummary(client)}}
+function renderMinimapSection(map,position,title="Minimap",inCombat=false,points=[],sourceLabel=""){
+  const section=document.createElement("div");
+  section.className="section";
+  section.innerHTML=`<div class="sectionhead">${title}</div>`;
+
+  const viewport=currentViewportSettings(inCombat);
+  const asset=mapAsset(map);
+  const mapViewport=buildMapViewport(position,map,viewport.widthYalms,viewport.heightYalms);
+
+  if(asset?.pngUrl&&mapViewport.marker){
+    const frame=document.createElement("div");
+    frame.className="mapframe";
+    frame.style.width="100%";
+    frame.style.maxWidth=`${viewport.boxPx}px`;
+    frame.style.justifySelf="center";
+
+    const img=document.createElement("img");
+    img.className="mapimg";
+    img.src=asset.pngUrl;
+    img.alt=asset.texturePath||map?.texturePath||`Map ${map?.mapId??"?"}`;
+
+    if(mapViewport.marker){
+      img.style.width=`${mapViewport.imageWidthPercent}%`;
+      img.style.height=`${mapViewport.imageHeightPercent}%`;
+      img.style.left=`${mapViewport.imageLeftPercent}%`;
+      img.style.top=`${mapViewport.imageTopPercent}%`;
+    }else{
+      img.style.width="100%";
+      img.style.height="100%";
+      img.style.left="0";
+      img.style.top="0";
     }
-    ctx.strokeStyle="#344152";
-    ctx.strokeRect(0.5,0.5,w-1,h-1);
-    ctx.strokeStyle="#263142";
-    for(let i=1;i<4;i++){
-      ctx.beginPath();
-      ctx.moveTo(i*w/4,0);
-      ctx.lineTo(i*w/4,h);
-      ctx.moveTo(0,i*h/4);
-      ctx.lineTo(w,i*h/4);
-      ctx.stroke();
-    }
-    const cx=w/2,cy=h/2,r=w/2-16,halfW=Math.max(1,vp.widthYalms/2),halfH=Math.max(1,vp.heightYalms/2);
-    if(origin)drawFacingCone(ctx,cx,cy,origin.rotation,"#58d189",14);
-    ctx.fillStyle="#58d189";
-    ctx.beginPath();
-    ctx.arc(cx,cy,5,0,Math.PI*2);
-    ctx.fill();
-    for(const point of points){
-      if(!point.position||!origin)continue;
-      const px=cx+Math.max(-1,Math.min(1,(Number(point.position.x)-Number(origin.x))/halfW))*r;
-      const py=cy+Math.max(-1,Math.min(1,(Number(point.position.z)-Number(origin.z))/halfH))*r;
-      drawFacingCone(ctx,px,py,point.position.rotation,point.color||"#e8b85d",point.size||11);
-      ctx.fillStyle=point.color||"#e8b85d";
-      ctx.beginPath();
-      ctx.arc(px,py,4,0,Math.PI*2);
-      ctx.fill();
-      ctx.fillStyle="#edf2f7";
-      ctx.font="10px Segoe UI";
-      ctx.fillText(point.label||"",px+6,py+3);
-    }
-    ctx.fillStyle="#73b7ff";
-    ctx.font="12px Segoe UI";
-    ctx.fillText(origin?"YOU":"No position",cx+8,cy-8);
-  });
-}
-)TTTHTML" + R"TTTHTML(
-async function refresh(){
-  try{
-    const editingCommandKey=activeCommandDraftKey();
-    rememberCommandDrafts();
-    const res=await fetch("/api/state",{cache:"no-store"});
-    if(!res.ok)throw new Error(`HTTP ${res.status}`);
-    const state=await res.json();
-    currentAssetCatalog=state.assetCatalog||{};
-    let clients=allClients(state).sort((a,b)=>
-      (a.stale||a.isDisconnected)-(b.stale||b.isDisconnected)||
-      String(a.characterName).localeCompare(String(b.characterName)));
-    const total=clients.length;
-    const visibleClients=$("showStale").checked?clients:clients.filter(c=>!c.stale&&!c.isDisconnected);
-    state.clientsByKey=Object.fromEntries(clients.map(c=>[key(c),c]));
-    for(const p of state.aggregateParties||[]){
-      state.clientsByKey[`${p.sourceAccountId}|${p.sourceCharacterName}|${p.sourceWorldName}`]={
-        accountId:p.sourceAccountId,
-        characterName:p.sourceCharacterName,
-        worldName:p.sourceWorldName,
-        policy:p.sourcePolicy,
-        lastScreenshot:p.sourceLastScreenshot,
-        lastCctvFrame:p.sourceLastCctvFrame
-      };
-    }
-    lastState=state;
-    const live=clients.filter(c=>!c.stale&&!c.isDisconnected).length;
-    const entries=allSurfaces(state,visibleClients);
-    state.surfaceByKey=Object.fromEntries([...clients.map(c=>[key(c),c]),...(state.aggregateParties||[]).map(p=>[partyKey(p),p])]);
-    $("summary").textContent=`${clients.length} client(s) tracked | ${live} live | ${clients.length-live} stale/disconnected | ${(state.aggregateParties||[]).length} party surface(s)`;
-    $("stamp").textContent=`Generated ${state.generatedAtUtc} | stale after ${state.staleSeconds}s`;
-    $("overview").innerHTML=
-      tile("Clients",`${clients.length} total / ${live} live`)+
-      tile("Parties",(state.aggregateParties||[]).length)+
-      tile("Asset Plan",`${state.assetPlan?.summary?.jobIcons||0} icons / ${state.assetPlan?.summary?.maps||0} maps`)+
-      tile("Game Path",state.gamePathInfo?.captured?"Captured":"Waiting");
-    const extraction=state.assetExtraction||{};
-    $("extractAssets").textContent=extraction.running?"Extracting...":"Extract Assets";
-    $("extractAssets").disabled=!!extraction.running||!state.gamePathInfo?.captured;
-    const assetWarning=(state.assetCatalog?.warnings||[])[0]||"";
-    $("status").textContent=(extraction.running||extraction.lastCompletedUtc)?(extraction.message||assetWarning):(assetWarning||extraction.message||"");
-    document.querySelectorAll("button[data-mode]").forEach(b=>b.classList.toggle("active",b.dataset.mode===currentMode));
-    if(editingCommandKey)return;
-    $("app").innerHTML=currentMode==="classic"
-      ?renderClassic(entries)
-      :currentMode==="command"
-        ?renderCommand(entries,total)
-        :currentMode==="matrix"
-          ?renderMatrix(entries,total)
-          :renderOperator(entries,total);
-    drawRadars(state);
-  }catch(err){
-    $("summary").textContent="Refresh failed";
-    $("status").textContent=String(err);
+
+    frame.appendChild(img);
+    const overlay=document.createElement("canvas");
+    overlay.className="mapoverlay";
+    overlay.width=viewport.boxPx;
+    overlay.height=viewport.boxPx;
+    frame.appendChild(overlay);
+
+    section.appendChild(frame);
+    requestAnimationFrame(()=>drawMinimapOverlay(overlay,map,mapViewport,position,points,sourceLabel));
+  }else if(position||points.length>0){
+    const fallback=document.createElement("canvas");
+    fallback.width=viewport.boxPx;
+    fallback.height=viewport.boxPx;
+    fallback.style.width="100%";
+    fallback.style.maxWidth=`${viewport.boxPx}px`;
+    fallback.style.height="auto";
+    fallback.style.justifySelf="center";
+    section.appendChild(fallback);
+    requestAnimationFrame(()=>drawRadarBase(fallback,points,position||null,point=>point.label||"",viewport.widthYalms,viewport.heightYalms));
+  }else{
+    const row=document.createElement("div");
+    row.className="member";
+    row.innerHTML=`<div class="slot">-</div><div class="membername">${map?.mapId!=null?"Map texture not extracted yet.":"No map data captured yet."}</div><div class="job">--</div><div class="dist">--</div>`;
+    section.appendChild(row);
   }
+
+  const textureLabel=asset?.texturePath||map?.texturePath;
+  const meta=document.createElement("div");
+  meta.className="meta";
+  meta.append(
+    tile(
+      "Map",
+      mapViewport.marker?`${mapViewport.marker.x.toFixed(1)}, ${mapViewport.marker.y.toFixed(1)}`:map?.mapId!=null?`Map ${map.mapId}`:"Unavailable",
+      mapViewport.marker||map?.mapId!=null?"":"bad"
+    ),
+    tile("View",`${viewport.widthYalms.toFixed(0)}y )TTSLHUD"
+           + R"TTSLHUD(x ${viewport.heightYalms.toFixed(0)}y`,""),
+    tile(
+      "Texture",
+      textureLabel?String(textureLabel).split("/").pop()||String(textureLabel):asset?.pngUrl?"Extracted":"Unavailable",
+      textureLabel||asset?.pngUrl?"":"bad"
+    )
+  );
+  section.appendChild(meta);
+  return section;
 }
-document.querySelectorAll("button[data-mode]").forEach(b=>b.onclick=()=>{
-  currentMode=b.dataset.mode;
-  localStorage.setItem("ttsl.native.mode",currentMode);
-  refresh();
-});
-$("refresh").onclick=refresh;
-$("showStale").onchange=refresh;
-$("aggregateParties").onchange=refresh;
-$("showDetails").onchange=refresh;
-$("showIcons").onchange=refresh;
-$("extractAssets").onclick=async()=>{
-  try{
-    const r=await post("/api/extract-assets",{});
-    $("status").textContent=r.message||"Native asset extraction started.";
-    await refresh();
-  }catch(e){
-    $("status").textContent=String(e);
-  }
-};
-$("openShots").onclick=async()=>{
-  try{
-    const r=await post("/api/open-screenshot-folder",{});
-    $("status").textContent=r.message||"Opened screenshot folder.";
-  }catch(e){
-    $("status").textContent=String(e);
-  }
-};
-refresh();
-setInterval(refresh,1000);
-</script>
-</body>
-</html>)TTTHTML";
+function renderClient(client,options={}){
+  const allowActions=!!options.allowActions;
+  const card=document.createElement("section");
+  card.className="card";
+
+  const head=document.createElement("div");
+  head.className="head";
+
+  const info=document.createElement("div");
+  info.innerHTML=`<div class="name">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div class="zone">${client.territoryName||"Unknown zone"} (${client.territoryId??0})</div><div class="sub">${kAcct(client.accountId)}</div>`;
+  info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender,raceId:client.raceId,tribeId:client.tribeId}));
+
+  const badges=document.createElement("div");
+  badges.className="badges";
+  badges.appendChild(chip(clientStatusText(client),clientStatusKind(client)));
+  badges.appendChild(chip(formatAge(client.ageSeconds),""));
+  const focusText=combatHeadline(client.combat);
+
+  const metrics=document.createElement("div");
+  metrics.className="meta wide";
+  metrics.append(
+    tile("HP",hpText(client.player?.currentHp,client.player?.maxHp),client.player?.currentHp==null?"bad":""),
+    tile("MP",mpText(client.player?.currentMp,client.player?.maxMp),client.player?.currentMp==null?"bad":""),
+    tile("Position",posText(client.position),client.position?"":"bad"),
+    tile("Repair",repairText(client.repair),client.repair?"":"bad")
+  );
+  if(showDetails)
+    metrics.append(tile("Policy",policyText(client.policy),client.policy?.allowEchoCommands||client.policy?.allowScreenshotRequests?"":"warn"),tile("Path",displayPathLeaf(client.gameInstallPath),client.gameInstallPath?"":"bad",displayPathTitle(client.gameInstallPath)),tile("Focus",focusText,"",focusText));
+
+  const foot=document.createElement("div");
+  foot.className="foot";
+  foot.textContent=`Last update ${client.lastSeenUtc} | ${client.updateKind}`;
+
+  head.append(info,badges);
+  card.append(head,metrics);
+  if(showDetails)
+    card.appendChild(renderClientTelemetry(client));
+  card.append(renderInspectorTabs("client",allowActions),renderClientModule(client,allowActions));
+  if(showDetails)
+    card.appendChild(foot);
+  return card;
 }
+function renderAggregateMember(member){const row=document.createElement("div");row.className=`aggmember ${member.isStranger?"stranger":""}`.trim();const main=document.createElement("div");main.className="aggmain";const info=document.createElement("div");info.className="aggname";info.innerHTML=`<span class="slot">${member.slotText}</span><span class="membername">${displayCharacter(member.name,member.worldName,member.krangledName)}</span><span class="job">${member.job||"--"}</span><span class="lvl">${levelText(member.level)}</span>`;info.appendChild(renderIdentity(member));const badges=document.createElement("div");badges.className="badges";if(member.isStranger){badges.append(chip("Stranger","bad"));const status=lodestoneStatus(member);badges.append(chip(status==="ready"?"Lodestone":"Lookup",status==="ready"?"ok":status==="pending"||status==="refreshing"?"warn":"bad"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"));badges.append(chip(member.isSubmitting?"Submitting":"Monitored",member.isSubmitting?"ok":"warn"));if(member.isSource)badges.append(chip("Source","ok"))}main.append(info,badges);const meta=document.createElement("div");meta.className="aggmeta";meta.append(tile("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null?"bad":""),tile("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null?"bad":""),tile("Position",posText(member.position),member.position?"" :"bad"),tile("Extra",member.isStranger?"Party telemetry + Lodestone lookup":member.repair?repairText(member.repair):"No repair data",member.isStranger||!member.repair?"bad":""));row.append(main,meta);if(!member.isStranger){const states=renderStates(member);row.append(states);const note=document.createElement("div");note.className="aggnote";note.textContent=`${member.territoryName||"Unknown zone"} (${member.territoryId??0}) | Last update ${member.lastSeenUtc} | ${member.updateKind}`;row.append(note)}else{const note=document.createElement("div");note.className="aggnote bad";note.textContent="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback.";row.append(note)}return row}
+function renderAggregateTelemetry(party){if(!showDetails)return null;return factSection("Source",[{label:"Connected",value:party.sourceConnectedAtUtc||"Unknown"},{label:"Age",value:formatAge(party.sourceAgeSeconds)},{label:"Host",value:displayHost(party.sourceHostName),kind:party.sourceHostName?"":"bad"},{label:"Game path",value:displayPathLeaf(party.sourceGameInstallPath),title:displayPathTitle(party.sourceGameInstallPath),kind:party.sourceGameInstallPath?"":"bad"},{label:"Focus",value:combatHeadline(party.combat),title:combatHeadline(party.combat)}])}
+function aggregateSourceMember(party){return party.members.find(member=>member.isSource&&member.position)||party.members.find(member=>member.isSource)||party.members.find(member=>member.position&&!member.isStranger)||party.members.find(member=>!member.isStranger)||null}
+function buildSoloSurfaceMember(client){return{...client,name:client.characterName,level:entityLevelValue(client),currentHp:client.player?.currentHp,maxHp:client.player?.maxHp,currentMp:client.player?.currentMp,maxMp:client.player?.maxMp,isSolo:true,isSource:false,isSubmitting:!client.stale&&!client.isDisconnected,isStranger:false}}
+function renderPartyMemberCard(member,options={}){const card=document.createElement("div");card.className=`party-slot-card ${member.isSolo?"solo":""} ${member.isSource||member.isSolo?"source":""} ${member.stale?"stale":""} ${member.isDisconnected?"disconnected":""} ${member.isStranger?"stranger":""}`.trim();const top=document.createElement("div");top.className="party-slot-top";const body=document.createElement("div");body.className="member-body";const strangerStatus=lodestoneStatus(member);body.innerHTML=`<div class="member-card-name">${entityDisplayCharacter(member)}</div><div class="member-line">${entityIdentityLine(member)}</div><div class="member-line">${member.isStranger?`Party HP/MP telemetry | Lodestone ${strangerStatus==="ready"?"ready":strangerStatus==="pending"||strangerStatus==="refreshing"?"queued":"unresolved"} | direct actions disabled`:`${member.territoryName||"Unknown zone"} | ${member.lastSeenUtc||"Unknown"}`}</div>`;const badges=document.createElement("div");badges.className="member-badges";i)TTSLHUD"
+           + R"TTSLHUD(f(member.isSolo)badges.appendChild(chip("Solo","ok"));else if(member.isSource)badges.appendChild(chip("Source","ok"));if(member.isStranger){badges.appendChild(chip("Stranger","bad"));badges.appendChild(chip(strangerStatus==="ready"?"Lodestone":"Lookup",strangerStatus==="ready"?"ok":strangerStatus==="pending"||strangerStatus==="refreshing"?"warn":"bad"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"),chip(member.isSubmitting?"Tracked":"Paused",member.isSubmitting?"ok":"warn"))}const shortcuts=renderShortcutStrip(member,entityDisplayCharacter(member),options);if(!member.isSolo)badges.appendChild(shortcuts);body.appendChild(badges);top.append(renderPortraitFrame(member,{kind:"face",className:member.isSolo?"faceframe":"faceframe small",label:entityDisplayCharacter(member)}),body);const stats=document.createElement("div");stats.className="member-microstats";stats.append(microStat("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null),microStat("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null),microStat("XYZ",posText(member.position),!member.position));card.append(top,stats);if(member.isSolo)card.appendChild(shortcuts);return card}
+function denseCell(label,value,extraClass=""){const cell=document.createElement("div");cell.className=`densecell ${extraClass}`.trim();cell.dataset.label=label;cell.textContent=value;return cell}
+function aggregateMemberDistance(sourceMember,member){if(member===sourceMember||member?.isSource)return"SRC";if(!sourceMember?.position||!member?.position)return"--";const dx=Number(member.position.x)-Number(sourceMember.position.x),dz=Number(member.position.z)-Number(sourceMember.position.z);return`${Math.hypot(dx,dz).toFixed(1)}y`}
+function aggregateMemberStatus(member){if(member.isStranger)return"Stranger";const liveState=member.isDisconnected?"Disc":member.stale?"Stale":"Live";if(member.isSource)return`Source | ${liveState}`;return member.isSubmitting?`Sub | ${liveState}`:liveState}
+function renderAggregatePartyTable(party,title="Party"){const section=document.createElement("div");section.className="section";if(title)section.innerHTML=`<div class="sectionhead">${title}</div>`;const table=document.createElement("div");table.className="dense-table";const head=document.createElement("div");head.className="dense-head";head.innerHTML=`<div>Slot</div><div>Name</div><div>Job</div><div>Status</div><div>HP</div><div>MP</div><div>Dist</div>`;table.appendChild(head);const sourceMember=party.members.find(member=>member.isSource&&member.position)||party.members.find(member=>member.position&&!member.isStranger)||null;for(const member of party.members){const row=document.createElement("div");row.className=`dense-row ${member.isSource?"source":member.isStranger?"stranger":""}`.trim();row.append(denseCell("Slot",member.slotText||"--","mono"),denseCell("Name",displayCharacter(member.name,member.worldName,member.krangledName)),denseCell("Job",`${member.job||"--"} ${levelText(member.level)}`.trim()),denseCell("Status",aggregateMemberStatus(member)),denseCell("HP",compactResourceText(member.currentHp,member.maxHp),"mono"),denseCell("MP",compactResourceText(member.currentMp,member.maxMp),"mono"),denseCell("Dist",aggregateMemberDistance(sourceMember,member),"mono"));row.title=member.isStranger?`Party HP/MP/position telemetry available | Lodestone ${lodestoneStatus(member)} | direct actions stay disabled.`:`${member.territoryName||"Unknown zone"} | Last update ${member.lastSeenUtc||"Unknown"} | ${member.updateKind||"full"}`;table.appendChild(row)}section.appendChild(table);return section}
+function renderAggregateSummary(party){const wrap=document.createElement("div");wrap.className="board-summary";const board=document.createElement("div");board.className="party-board";const main=document.createElement("div");main.className="party-board-main";const surfaceKey=partyKey(party);const left=document.createElement("div");left.className="party-column";const right=document.createElement("div");right.className="party-column";const source=aggregateSourceMember(party);const leftMembers=(party.members||[]).slice(0,4),rightMembers=(party.members||[]).slice(4);for(const member of leftMembers)left.appendChild(renderPartyMemberCard(member,{surfaceKey}));for(const member of rightMembers)right.appendChild(renderPartyMemberCard(member,{surfaceKey}));const center=document.createElement("div");center.className="board-hub";const hubTop=document.createElement("div");hubTop.className="board-hub-top";const hubCopy=document.createElement("div");hubCopy.className="board-hub-copy";hubCopy.innerHTML=`<div class="sectionhead">Party Surface</div><div class="name">${party.territoryName||"Unknown zone"}</div><div class="hero-note">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)} | ${party.members.length} slots | ${formatAge(party.sourceAgeSeconds)}</div>`;if(source)hubCopy.appendChild(renderIdentity(source));hubTop.append(renderPortraitFrame(source||party,{kind:"face",className:"faceframe",label:`Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}`}),hubCopy);const stats=document.createElement("div");stats.className="board-hub-stats";stats.append(microStat("Live",String(party.liveCount),party.liveCount===0),microStat("Stale",String(party.staleCount),party.staleCount>0),microStat("Disc",String(party.disconnectedCount),party.disconnectedCount>0),microStat("Strangers",String(party.strangerCount),party.strangerCount>0));const mapSection=renderMinimapSection(party.map,party.sourcePosition,"Field Map",aggregatePartyInCombat(party),buildAggregateMinimapPoints(party,source),source?"SRC":"");mapSection.classList.add("board-map-section");center.append(hubTop,stats,mapOrCctvSection(surfaceKey,mapSection,"CCTV"),Object.assign(document.createElement("div"),{className:"hint",textContent:"SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client."}));main.append(left,center,right);board.appendChild(main);wrap.append(board,renderEnmityBoard(party.combat));return wrap}
+function renderAggregateModule(party,allowActions){const sourceMember=aggregateSourceMember(party);switch(getInspectorModule("party",allowActions)){case"map":{const mapSection=renderMinimapSection(party.map,party.sourcePosition,"Source Minimap",aggregatePartyInCombat(party),buildAggregateMinimapPoints(party,sourceMember),sourceMember?"SRC":"");return mapOrCctvSection(partyKey(party),mapSection,"CCTV")}case"party":return renderAggregatePartyTable(party,"Party");case"threat":return renderThreats(party.combat);case"actions":return renderRemoteControlSection({accountId:party.sourceAccountId,characterName:party.sourceCharacterName,worldName:party.sourceWorldName,sourcePolicy:party.sourcePolicy,sourceLastScreenshot:party.s)TTSLHUD"
+           + R"TTSLHUD(ourceLastScreenshot,sourceLastCctvFrame:party.sourceLastCctvFrame},"Source Remote Control","Aggregate-party stranger actions route through the source client.");default:return renderAggregateSummary(party)}}
+function renderAggregateParty(party,options={}){
+  const allowActions=!!options.allowActions;
+  const card=document.createElement("section");
+  card.className="card";
+
+  const head=document.createElement("div");
+  head.className="head";
+
+  const info=document.createElement("div");
+  info.innerHTML=`<div class="name">Party | ${party.territoryName||"Unknown zone"}</div><div class="zone">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}</div><div class="sub">${party.monitoredCount} monitored | ${party.strangerCount} stranger</div>`;
+
+  const badges=document.createElement("div");
+  badges.className="badges";
+  badges.append(
+    chip(`${party.liveCount} live`,"ok"),
+    chip(`${party.staleCount} stale`,"warn"),
+    chip(`${party.disconnectedCount} disconnected`,"bad")
+  );
+
+  const metrics=document.createElement("div");
+  metrics.className="meta wide";
+  metrics.append(
+    tile("Monitored",String(party.monitoredCount),party.monitoredCount>0?"":"bad"),
+    tile("Strangers",String(party.strangerCount),party.strangerCount>0?"warn":""),
+    tile("Age",formatAge(party.sourceAgeSeconds))
+  );
+  if(showDetails)
+    metrics.append(tile("Source host",displayHost(party.sourceHostName),party.sourceHostName?"":"bad"),tile("Policy",policyText(party.sourcePolicy),party.sourcePolicy?.allowEchoCommands||party.sourcePolicy?.allowScreenshotRequests?"":"warn"),tile("Path",displayPathLeaf(party.sourceGameInstallPath),party.sourceGameInstallPath?"":"bad",displayPathTitle(party.sourceGameInstallPath)));
+
+  const foot=document.createElement("div");
+  foot.className="foot";
+  foot.textContent=`Stranger source locked to first monitored client: ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)} | Connected ${party.sourceConnectedAtUtc}`;
+
+  head.append(info,badges);
+  card.append(head,metrics);
+  if(showDetails)
+    card.appendChild(renderAggregateTelemetry(party));
+  card.append(renderInspectorTabs("party",allowActions),renderAggregateModule(party,allowActions));
+  if(showDetails)
+    card.appendChild(foot);
+  return card;
+}
+function renderEmptyState(totalClients){const empty=document.createElement("div");empty.className="empty";empty.textContent=totalClients===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor.":"All tracked clients are stale or disconnected.";return empty}
+function renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const panel=document.createElement("section");panel.className="overviewpanel";panel.innerHTML=`<div class="sectionhead">Situation</div>`;const grid=document.createElement("div");grid.className="overviewgrid";const visibleSurfaces=aggregateParties.checked?visibleAggregate.length+visibleLoose.length:visibleClients.length;grid.append(overviewCard("Tracked",String(totalClients),`${liveClients} live | ${totalClients-liveClients} stale/disconnected`),overviewCard("Visible",String(visibleSurfaces),aggregateParties.checked?`${visibleAggregate.length} party surfaces | ${visibleLoose.length} loose`:`${visibleClients.length} client surfaces`),overviewCard("Path",state.gamePathInfo?.captured?"Ready":"Missing",pathSummary(state.gamePathInfo)),overviewCard("Extract",state.assetExtraction?.running?"Busy":state.assetExtraction?.lastExitCode===0?"Ready":"Idle",extractionSummary(state.assetExtraction)));panel.appendChild(grid);return panel}
+function buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose){return aggregateParties.checked?[...visibleAggregate.map(party=>({key:partyKey(party),kind:"party",item:party})),...visibleLoose.map(client=>({key:clientKey(client),kind:"client",item:client}))]:visibleClients.map(client=>({key:clientKey(client),kind:"client",item:client}))}
+function resolveSelectedEntry(entries){if(entries.length===0){selectedEntityKey="";persistStringPreference("selectedEntity","");return null}const found=entries.find(entry=>entry.key===selectedEntityKey);if(found)return found;selectedEntityKey=entries[0].key;persistStringPreference("selectedEntity",selectedEntityKey);return entries[0]}
+function wireSelectableSurface(element,key){element.tabIndex=0;element.setAttribute("role","button");element.addEventListener("click",()=>selectEntity(key));element.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();selectEntity(key)}})}
+function renderOperatorItem(entry,active){const button=document.createElement("button");button.type="button";button.className=`opitem ${active?"active":""}`.trim();button.addEventListener("click",()=>selectEntity(entry.key));if(entry.kind==="party"){const party=entry.item;const partyMeta=showDetails?`${party.monitoredCount} monitored | ${party.strangerCount} stranger | ${formatAge(party.sourceAgeSeconds)} | ${displayHost(party.sourceHostName)}`:`${party.monitoredCount} monitored | ${party.strangerCount} stranger | ${formatAge(party.sourceAgeSeconds)}`;button.innerHTML=`<div class="oprow"><div class="opname">Party | ${party.territoryName||"Unknown zone"}</div><div>${""}</div></div><div class="opsub">Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}</div><div class="opmeta">${partyMeta}</div>`;button.querySelector(".oprow div:last-child").replaceWith(chip(`${party.liveCount} live`,party.liveCount>0?"ok":"bad"));return button}const client=entry.item;const clientMeta=showDetails?`${formatAge(client.ageSeconds)} | ${displayHost(client.hostName)} | ${policyText(client.policy)}`:formatAge(client.ageSeconds);button.innerHTML=`<div class="oprow"><div class="opname">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div>${""}</div></div><div class="opsub">${client.territoryName||"Unknown zone"} | ${client.job||"UNK"} | ${queueStateText(client)}</div><div class="opmeta">${clientMeta}</div>`;button.querySelector(".oprow div:last-child").replaceWith(chip(clientStatusText(client),clientStatusKind(client)));return button}
+function renderOperatorLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const shell=document.createElement("div");shell.className="operator-shell";const rail=document.createElement("aside");rail.className="operator-rail";if(showDetails){rail.append(renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients),Object.assign(document.createElement("div"),{className:"hint",textContent:"Select a client or aggregate party surface to inspect the detail pane."}))}const entries=buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose);const detail=document.cr)TTSLHUD"
+           + R"TTSLHUD(eateElement("section");detail.className="operator-detail";if(entries.length===0){detail.appendChild(renderEmptyState(totalClients));shell.append(rail,detail);return shell}const selected=resolveSelectedEntry(entries);const list=document.createElement("div");list.className="oplist";for(const entry of entries)list.appendChild(renderOperatorItem(entry,entry.key===selected?.key));rail.appendChild(list);detail.appendChild(selected.kind==="party"?renderAggregateParty(selected.item,{allowActions:true}):renderClient(selected.item,{allowActions:true}));shell.append(rail,detail);return shell}
+function renderCompactClientCard(client,active=false,selectable=false){const card=document.createElement("section");card.className=`card ${selectable?"selectable-card":""} ${active?"active":""}`.trim();const head=document.createElement("div");head.className="head";const infoWrap=document.createElement("div");infoWrap.className="compact-client-head";const info=document.createElement("div");info.className="compact-client-copy";info.innerHTML=`<div class="name">${displayCharacter(client.characterName,client.worldName,client.krangledName)}</div><div class="zone">${client.territoryName||"Unknown zone"}</div><div class="sub">${displayHost(client.hostName)} | ${formatAge(client.ageSeconds)}</div>`;info.appendChild(renderIdentity({job:client.job,jobIconId:client.jobIconId,level:client.player?.level,gender:client.gender,raceId:client.raceId,tribeId:client.tribeId}));infoWrap.append(renderPortraitFrame(client,{kind:"face",className:"faceframe small",label:entityDisplayCharacter(client)}),info);const badges=document.createElement("div");badges.className="badges";badges.append(chip(clientStatusText(client),clientStatusKind(client)),chip(queueStateText(client),client.conditions?.waitingForDuty?"warn":client.conditions?.boundByDuty?"ok":""));head.append(infoWrap,badges);const meta=document.createElement("div");meta.className="meta wide";meta.append(tile("HP",hpText(client.player?.currentHp,client.player?.maxHp),client.player?.currentHp==null?"bad":""),tile("MP",mpText(client.player?.currentMp,client.player?.maxMp),client.player?.currentMp==null?"bad":""),tile("Repair",repairText(client.repair),client.repair?"":"bad"));card.append(head,meta,renderStates(client));if(selectable)wireSelectableSurface(card,clientKey(client));return card}
+function renderCommandPartyBoard(party,active){const board=document.createElement("section");board.className=`command-board ${active?"active":""}`.trim();wireSelectableSurface(board,partyKey(party));board.appendChild(renderAggregateSummary(party));return board}
+function renderCommandLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const shell=document.createElement("div");shell.className="command-shell";const entries=buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose);if(entries.length===0){shell.appendChild(renderEmptyState(totalClients));return shell}const selected=resolveSelectedEntry(entries);if(showDetails)shell.appendChild(renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients));const columns=document.createElement("div");columns.className="command-columns";const stage=document.createElement("div");stage.className="command-stage";const side=document.createElement("div");side.className="command-side";if(aggregateParties.checked&&visibleAggregate.length>0){const boards=document.createElement("div");boards.className="command-board-grid";for(const party of visibleAggregate)boards.appendChild(renderCommandPartyBoard(party,selected?.key===partyKey(party)));stage.appendChild(boards);if(visibleLoose.length>0){const reserve=document.createElement("section");reserve.className="overviewpanel";reserve.innerHTML=`<div class="sectionhead">Loose Clients</div><div class="hint">Clients not currently represented inside an aggregate party surface.</div>`;const grid=document.createElement("div");grid.className="compactgrid";for(const client of visibleLoose)grid.appendChild(renderCompactClientCard(client,selected?.key===clientKey(client),true));reserve.appendChild(grid);stage.appendChild(reserve)}}else{const note=document.createElement("section");note.className="overviewpanel";note.innerHTML=`<div class="sectionhead">Command View</div><div class="hint">${aggregateParties.checked?"No aggregate party surfaces are available right now, so command view is showing compact client cards.":"Aggregate parties are disabled. Enable the toggle above to unlock the full party command board."}</div>`;stage.appendChild(note);const grid=document.createElement("div");grid.className="compactgrid";const source=aggregateParties.checked?visibleLoose:visibleClients;if(source.length===0)stage.appendChild(renderEmptyState(totalClients));else{for(const client of source)grid.appendChild(renderCompactClientCard(client,selected?.key===clientKey(client),true));stage.appendChild(grid)}}side.appendChild(selected.kind==="party"?renderAggregateParty(selected.item,{allowActions:true}):renderClient(selected.item,{allowActions:true}));columns.append(stage,side);shell.appendChild(columns);return shell}
+function matrixCell(label,value,extraClass=""){const cell=document.createElement("div");cell.className=`matrixcell ${extraClass}`.trim();cell.dataset.label=label;cell.textContent=value;return cell}
+function renderMatrixRow(entry,active){const button=document.createElement("button");button.type="button";button.className=`matrix-row ${active?"active":""}`.trim();button.addEventListener("click",()=>selectEntity(entry.key));if(entry.kind==="party"){const party=entry.item;const kind=document.createElement("div");kind.className="matrixcell";kind.dataset.label="Type";kind.appendChild(Object.assign(document.createElement("span"),{className:"kindtag",textContent:"Party"}));button.append(kind,matrixCell("Name",`Source ${displayCharacter(party.sourceCharacterName,party.sourceWorldName,party.sourceKrangledName)}`),matrixCell("Zone",party.territoryName||"Unknown zone"),matrixCell("Status",`${party.liveCount}/${party.staleCount}/${party.disconnectedCount}`),matrixCell("Flow",aggregatePartyInCombat(party)?"Combat":"Travel"),matrixCell("Vitals",`Mon ${party.monitoredCount} | Str ${party.strangerCount}`,"mono"),matrixCell("Age",formatAge(party.sourceAgeSeconds),"mono"));return button}const client=entry.item;const kind=document.createElement("div");kind.className="matrixcell";kind.dataset.label="Type";kind.appendChild(Object.assign(document.createElement("span"),{className:"kindtag",textContent:"Client"}));button.append(kind,matrixCell("Name",displayCharacter(client.characterName,client.worldName,client.krangledName)),matrixCell("Zone",client.territoryName||"Unknown zone"),matrixCell("Status",clientStatusText(client)),matrixCell("Flow",`${queueStateText(client)}${client.conditions?.inCombat?" | Hot":""}`),matrixCell("Vitals",compactVitalsText(client.player?.currentHp,client.player?.maxHp,client.player?.currentMp,client.player?.maxMp),"mono"),matrixCell("Age",f)TTSLHUD"
+           + R"TTSLHUD(ormatAge(client.ageSeconds),"mono"));return button}
+function renderMatrixLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const shell=document.createElement("div");shell.className="matrix-shell";if(showDetails)shell.appendChild(renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients));const entries=buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose);if(entries.length===0){shell.appendChild(renderEmptyState(totalClients));return shell}const selected=resolveSelectedEntry(entries);const layout=document.createElement("div");layout.className="matrix-layout";const left=document.createElement("section");left.className="matrixpane";left.innerHTML=`<div class="sectionhead">Surface Matrix</div>`;const table=document.createElement("div");table.className="matrixtable";const head=document.createElement("div");head.className="matrixhead";head.innerHTML=`<div>Type</div><div>Name</div><div>Zone</div><div>Status</div><div>Flow</div><div>Vitals</div><div>Age</div>`;table.appendChild(head);for(const entry of entries)table.appendChild(renderMatrixRow(entry,entry.key===selected?.key));left.appendChild(table);layout.appendChild(left);if(showDetails){const right=document.createElement("section");right.className="matrixpane";right.innerHTML=`<div class="sectionhead">Inspector</div>`;right.appendChild(selected.kind==="party"?renderAggregateParty(selected.item,{allowActions:true}):renderClient(selected.item,{allowActions:true}));layout.appendChild(right)}shell.appendChild(layout);return shell}
+function renderSurface(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){if(currentLayoutMode==="classic"){const fragment=document.createDocumentFragment();if(aggregateParties.checked){for(const party of visibleAggregate)fragment.appendChild(renderAggregateParty(party));for(const client of visibleLoose)fragment.appendChild(renderClient(client));if(visibleAggregate.length===0&&visibleLoose.length===0)fragment.appendChild(renderEmptyState(totalClients));return fragment}if(visibleClients.length===0){fragment.appendChild(renderEmptyState(totalClients));return fragment}for(const client of visibleClients)fragment.appendChild(renderClient(client));return fragment}if(currentLayoutMode==="command")return renderCommandLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients);if(currentLayoutMode==="matrix")return renderMatrixLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients);return renderOperatorLayout(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients)}
+function flattenGroups(groups){return groups.flatMap(group=>group.clients.map(client=>({...client,accountId:group.accountId})))}
+function pathSummary(info){if(!info||!info.captured)return"same-PC game path not captured yet";const host=info.sourceHostName?` on ${displayHost(info.sourceHostName)}`:"";return`same-PC game path ready from ${displayCharacter(info.sourceCharacterName,info.sourceWorldName,info.sourceKrangledName)}${host}`}
+function assetSummary(plan,catalog){const warning=(catalog?.warnings||[])[0];if(!plan||!plan.summary)return warning||"Asset plan pending.";const s=plan.summary;const readyJobIcons=Object.keys(catalog?.jobIcons||{}).length;const readyRaceIcons=Object.keys(catalog?.raceIcons||{}).length;const readyTribeIcons=Object.keys(catalog?.tribeIcons||{}).length;const readyMaps=Object.keys(catalog?.maps||{}).length;const base=`Asset plan: ${s.jobIcons} job icon tex path(s), ${s.maps} map texture(s), ${s.races} race id(s), ${s.tribes} tribe id(s), ${s.enemies} enemy id(s) | web cache ${readyJobIcons} job icon(s), ${readyRaceIcons} race icon(s), ${readyTribeIcons} clan icon(s), ${readyMaps} map png(s)`;return warning?`${base} | ${warning}`:base}
+function extractionSummary(state){if(!state)return"Extraction idle.";if(state.running)return`Extraction running: ${state.message||"working..."}`;if(state.lastCompletedUtc)return`Extraction ${state.lastExitCode===0?"ready":"failed"}: ${state.message||"see server log"}`;return state.message||"Extraction idle."}
+async function triggerExtract(){try{extractAssets.disabled=true;const res=await fetch("/api/extract-assets",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const payload=await res.json();if(!res.ok||!payload.ok)throw new Error(payload.error||`HTTP ${res.status}`);extractStatus.textContent=payload.message||"Extraction started.";await refresh()}catch(err){extractStatus.textContent=`Extraction request failed: ${err}`;extractAssets.disabled=false}}
+function remoteControlKey(target){return`${String(target?.accountId||"").trim()}|${String(target?.characterName||"").trim()}|${String(target?.worldName||"").trim()}`}
+function activeRemoteDraftKey(){const active=document.activeElement;return active instanceof HTMLInputElement?String(active.dataset.remoteDraftKey||"").trim():""}
+async function queueRemoteAction(target,actionType,text="",options={}){try{const payload={accountId:target.accountId,characterName:target.characterName,worldName:target.worldName,actionType};if(text)payload.text=text;for(const [key,value] of Object.entries(options?.extra||{})){if(value!=null&&value!=="")payload[key]=value}const res=await fetch("/api/queue-action",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const response=await res.json();if(!res.ok||!response.ok)throw new Error(response.error||`HTTP ${res.status}`);if(!options?.silent)extractStatus.textContent=response.message||"Queued remote action.";await refresh();if(options?.refreshDelayMs){window.setTimeout(()=>{void refresh()},Math.max(0,Number(options.refreshDelayMs)||0))}return true}catch(err){extractStatus.textContent=`Remote action failed: ${err}`;return false}}
+function renderRemoteControlSection(target,title,noteText=""){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">${title}</div>`;const controls=document.createElement("div");controls.className="controls";const policy=target?.policy||target?.sourcePolicy||{};const lastScreenshot=target?.lastScreenshot||target?.sourceLastScreenshot||null;const lastCctvFrame=target?.lastCctvFrame||target?.sourceLastCctvFrame||null;if(policy.allowEchoCommands){const row=document.createElement("div");row.className="controlrow";const draftKey=remoteControlKey(target);const input=document.createElement("input");input.type="text";input.maxLength=220;input.placeholder="Plain text goes to /echo. Slash commands like /sit run verbatim";input.dataset.remoteDraftKey=draftKey;input.value=remoteControlDrafts.get(draftKey)||"";input.addEventListener("input",()=>remoteControlDrafts.set(draftKey,input.value));input.addEventListener("blur",()=>{const value=String(input.value||"");if(value)remoteControlDrafts.set(draftKey,value);else remoteControlDrafts.delete(draftKey)});const button=document.createElement("button");button.type="but)TTSLHUD"
+           + R"TTSLHUD(ton";button.textContent="Send Text";button.addEventListener("click",()=>{const text=String(input.value||"").trim();if(!text)return;button.disabled=true;queueRemoteAction(target,"echoCommand",text).then(ok=>{button.disabled=false;if(ok){input.value="";remoteControlDrafts.delete(draftKey)}})});input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();button.click()}});row.append(input,button);controls.appendChild(row)}if(policy.allowScreenshotRequests||lastScreenshot){const row=document.createElement("div");row.className="controlrow";if(policy.allowScreenshotRequests){const button=document.createElement("button");button.type="button";button.textContent="Request Screenshot";button.addEventListener("click",()=>{button.disabled=true;queueRemoteAction(target,"requestScreenshot").finally(()=>{button.disabled=false})});row.appendChild(button)}if(lastScreenshot?.url){const link=document.createElement("a");link.href=lastScreenshot.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Last Screenshot Sent";row.appendChild(link);const stamp=document.createElement("span");stamp.className="controlnote";stamp.textContent=`${lastScreenshot.capturedAtUtc||"Unknown time"}`;row.appendChild(stamp)}controls.appendChild(row)}if(policy.allowCctvStreaming||lastCctvFrame){const row=document.createElement("div");row.className="controlrow";if(lastCctvFrame?.url){const link=document.createElement("a");link.href=`${lastCctvFrame.url}${lastCctvFrame.url.includes("?")?"&":"?"}t=${encodeURIComponent(lastCctvFrame.capturedAtUtc||Date.now())}`;link.target="_blank";link.rel="noopener noreferrer";link.textContent=`Last CCTV Frame${lastCctvFrame.quality?` (${String(lastCctvFrame.quality).toUpperCase()})`:""}`;row.appendChild(link);const stamp=document.createElement("span");stamp.className="controlnote";stamp.textContent=`${lastCctvFrame.capturedAtUtc||"Unknown time"}`;row.appendChild(stamp)}else if(policy.allowCctvStreaming){row.appendChild(Object.assign(document.createElement("span"),{className:"controlnote",textContent:"CCTV frames appear here after the first live capture."}))}controls.appendChild(row)}const note=document.createElement("div");note.className="controlnote";if(noteText){note.textContent=noteText}else if(policy.allowEchoCommands||policy.allowScreenshotRequests||policy.allowCctvStreaming){note.textContent="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane."}else{note.textContent="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV."}controls.appendChild(note);section.appendChild(controls);return section}
+async function refresh(){try{const editingRemoteDraftKey=activeRemoteDraftKey();const res=await fetch("/api/state",{cache:"no-store"});if(!res.ok)throw new Error(`HTTP ${res.status}`);const state=await res.json();currentAssetCatalog=state.assetCatalog||{jobIcons:{},maps:{},raceIcons:{},tribeIcons:{},warnings:[]};const clients=flattenGroups(state.accountGroups).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const live=clients.filter(c=>!c.stale&&!c.isDisconnected).length;const aggregate=Array.isArray(state.aggregateParties)?state.aggregateParties:[];const looseFromServer=Array.isArray(state.looseClients)?state.looseClients:clients;const visibleClients=showStale.checked?clients:clients.filter(c=>!c.stale&&!c.isDisconnected);const visibleLoose=(showStale.checked?looseFromServer:looseFromServer.filter(c=>!c.stale&&!c.isDisconnected)).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const visibleAggregate=aggregateParties.checked?(showStale.checked?aggregate:aggregate.filter(p=>p.liveCount>0)):[];syncCctvSessions(buildCctvSurfaceRegistry(visibleClients,visibleAggregate));summary.textContent=`${clients.length} client(s) tracked | ${live} live | ${clients.length-live} stale/disconnected${aggregateParties.checked?` | ${aggregate.length} party group(s)`:""}`;stamp.textContent=`Generated ${state.generatedAtUtc} | stale after ${state.staleSeconds}s | ${pathSummary(state.gamePathInfo)}`;assetPlan.textContent=assetSummary(state.assetPlan,currentAssetCatalog);extractStatus.textContent=extractionSummary(state.assetExtraction);extractAssets.textContent=state.assetExtraction?.running?"Extracting...":"Extract Assets";extractAssets.disabled=!!state.assetExtraction?.running||!state.gamePathInfo?.captured;if(editingRemoteDraftKey)return;app.className=`layout-${currentLayoutMode}`;app.replaceChildren();app.appendChild(renderSurface(state,visibleClients,visibleAggregate,visibleLoose,clients.length,live))}catch(err){summary.textContent="Refresh failed";stamp.textContent=String(err);assetPlan.textContent="Asset plan unavailable.";extractStatus.textContent="Extraction status unavailable.";extractAssets.disabled=false}}
+wireNumericPreference(mapBoxPxInput,"mapBoxPx",DEFAULT_MAP_BOX_PX,96,320);wireNumericPreference(combatWidthInput,"combatWidth",DEFAULT_COMBAT_WIDTH_YALMS,5,300);wireNumericPreference(combatHeightInput,"combatHeight",DEFAULT_COMBAT_HEIGHT_YALMS,5,300);wireNumericPreference(travelWidthInput,"travelWidth",DEFAULT_TRAVEL_WIDTH_YALMS,5,500);wireNumericPreference(travelHeightInput,"travelHeight",DEFAULT_TRAVEL_HEIGHT_YALMS,5,500);currentLayoutMode=loadStringPreference("layoutMode",DEFAULT_LAYOUT_MODE,LAYOUT_MODES);selectedEntityKey=loadStringPreference("selectedEntity","",null);clientInspectorModule=loadStringPreference("clientInspectorModule",INSPECTOR_DEFAULTS.client,new Set(INSPECTOR_MODULES.client));partyInspectorModule=loadStringPreference("partyInspectorModule",INSPECTOR_DEFAULTS.party,new Set(INSPECTOR_MODULES.party));showDetails=loadBooleanPreference("showDetails",DEFAULT_SHOW_DETAILS);applyLayoutMode(currentLayoutMode);applyDetailsVisibility(showDetails);extractAssets.addEventListener("click",triggerExtract);detailsToggle.addEventListener("click",()=>applyDetailsVisibility(!showDetails));krangle.addEventListener("change",refresh);krangleEnemies.addEventListener("change",refresh);showStale.addEventListener("change",refresh);aggregateParties.addEventListener("change",refresh);icons.addEventListener("change",refresh);enumerate.addEventListener("change",refresh);for(const button of layoutButtons)button.addEventListener("click",()=>{applyLayoutMode(button.dataset.mode);refresh()});refresh();setInterval(refresh,1000);
+</script></body></html>)TTSLHUD";
+}
+
 
 struct HttpRequest {
     std::string method;
@@ -5165,15 +5780,22 @@ private:
 struct AppState {
     fs::path app_root;
     NativeAppConfig config;
+    std::string data_root_error;
+    fs::path active_data_root;
     StateStore store;
     HttpServer server;
     HWND hwnd = nullptr;
     HWND host_edit = nullptr;
     HWND port_edit = nullptr;
     HWND stale_edit = nullptr;
+    HWND data_root_edit = nullptr;
+    HWND krangle_check = nullptr;
     HWND start_button = nullptr;
     HWND open_button = nullptr;
     HWND screenshots_button = nullptr;
+    HWND browse_data_button = nullptr;
+    HWND open_data_button = nullptr;
+    HWND reset_data_button = nullptr;
     HWND cache_button = nullptr;
     HWND extracted_button = nullptr;
     HWND copy_url_button = nullptr;
@@ -5189,7 +5811,8 @@ struct AppState {
     explicit AppState(fs::path root)
         : app_root(std::move(root)),
           config(LoadNativeConfig(app_root)),
-          store(app_root),
+          active_data_root(ResolveRuntimeDataRoot(config, data_root_error)),
+          store(app_root, active_data_root),
           server(store) {}
 };
 
@@ -5211,6 +5834,15 @@ HWND CreateButton(HWND parent, const wchar_t* text, int id, int x, int y, int w,
                            WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
                            x, y, w, h, parent, reinterpret_cast<HMENU>(static_cast<intptr_t>(id)),
                            GetModuleHandleW(nullptr), nullptr);
+}
+
+HWND CreateCheckbox(HWND parent, const wchar_t* text, int id, int x, int y, int w, int h, bool checked) {
+    HWND handle = CreateWindowExW(0, L"BUTTON", text,
+                                  WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX,
+                                  x, y, w, h, parent, reinterpret_cast<HMENU>(static_cast<intptr_t>(id)),
+                                  GetModuleHandleW(nullptr), nullptr);
+    SendMessageW(handle, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
+    return handle;
 }
 
 void CopyTextToClipboard(HWND hwnd, const std::string& text) {
@@ -5253,7 +5885,7 @@ void RefreshClientList() {
     if (!g_app || !g_app->client_list) {
         return;
     }
-    const auto rows = g_app->store.ClientListRows();
+    const auto rows = g_app->store.ClientListRows(g_app->config.native_krangle_display);
     SendMessageW(g_app->client_list, LB_RESETCONTENT, 0, 0);
     for (const auto& row : rows) {
         const auto wide = Utf8ToWide(row);
@@ -5315,7 +5947,7 @@ void StartServerFromUi() {
     g_app->config.host = host;
     g_app->config.port = port;
     g_app->config.stale_seconds = stale;
-    SaveNativeConfig(g_app->app_root, g_app->config);
+    SaveNativeConfig(g_app->config);
 
     std::string error;
     if (!g_app->server.Start(host, static_cast<uint16_t>(port), error)) {
@@ -5340,11 +5972,135 @@ void OpenUrl(const std::string& url) {
     ShellExecuteW(nullptr, L"open", Utf8ToWide(url).c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
+bool SamePath(const fs::path& left, const fs::path& right) {
+    std::error_code left_error;
+    std::error_code right_error;
+    auto normalized_left = fs::weakly_canonical(left, left_error);
+    auto normalized_right = fs::weakly_canonical(right, right_error);
+    if (left_error) {
+        normalized_left = left.lexically_normal();
+    }
+    if (right_error) {
+        normalized_right = right.lexically_normal();
+    }
+    return _wcsicmp(normalized_left.wstring().c_str(), normalized_right.wstring().c_str()) == 0;
+}
+
+std::wstring ConfiguredDataRootText() {
+    if (!g_app) {
+        return {};
+    }
+    return Utf8ToWide(PathToUtf8(DataRootFromConfigValue(g_app->config.data_root)));
+}
+
+void RefreshDataRootEdit() {
+    if (g_app && g_app->data_root_edit) {
+        SetWindowTextW(g_app->data_root_edit, ConfiguredDataRootText().c_str());
+    }
+}
+
+fs::path DataRootFromUiText() {
+    if (!g_app || !g_app->data_root_edit) {
+        return DefaultDataRoot();
+    }
+    return DataRootFromConfigValue(WideToUtf8(GetText(g_app->data_root_edit)));
+}
+
+bool SaveDataRootFromUi(const fs::path& requested_root, bool notify_if_unchanged) {
+    if (!g_app) {
+        return false;
+    }
+
+    const auto normalized_root = NormalizeDataRootPath(requested_root);
+    const auto previous_root = DataRootFromConfigValue(g_app->config.data_root);
+    if (SamePath(normalized_root, previous_root)) {
+        RefreshDataRootEdit();
+        if (notify_if_unchanged) {
+            g_app->store.Log("Data folder already configured: " + PathToUtf8(normalized_root));
+        }
+        return true;
+    }
+
+    std::string error;
+    if (!EnsureDataRootFolders(normalized_root, error)) {
+        const auto message = "Invalid data folder: " + error;
+        g_app->store.Log(message);
+        RefreshDataRootEdit();
+        MessageBoxW(g_app->hwnd, Utf8ToWide(message).c_str(), L"TTSL Native Server", MB_ICONERROR | MB_OK);
+        return false;
+    }
+
+    g_app->config.data_root = PathToUtf8(normalized_root);
+    SaveNativeConfig(g_app->config);
+    RefreshDataRootEdit();
+
+    const auto path_text = PathToUtf8(normalized_root);
+    if (SamePath(normalized_root, g_app->active_data_root)) {
+        g_app->store.Log("Data folder saved and already active: " + path_text);
+        if (notify_if_unchanged) {
+            MessageBoxW(g_app->hwnd, (L"Data folder is already active:\n" + Utf8ToWide(path_text)).c_str(), L"TTSL Native Server", MB_OK);
+        }
+    } else {
+        const auto message = "Data folder saved for next launch: " + path_text;
+        g_app->store.Log(message);
+        MessageBoxW(g_app->hwnd,
+                    (L"Data folder saved for next launch:\n" + Utf8ToWide(path_text) +
+                     L"\n\nRestart TTSL Native Server to use it. Current session keeps using:\n" +
+                     Utf8ToWide(PathToUtf8(g_app->active_data_root)))
+                        .c_str(),
+                    L"TTSL Native Server",
+                    MB_OK | MB_ICONINFORMATION);
+    }
+    return true;
+}
+
+int CALLBACK BrowseDataRootCallback(HWND hwnd, UINT message, LPARAM, LPARAM data) {
+    if (message == BFFM_INITIALIZED && data != 0) {
+        SendMessageW(hwnd, BFFM_SETSELECTION, TRUE, data);
+    }
+    return 0;
+}
+
+std::optional<fs::path> BrowseForDataRoot(HWND owner) {
+    auto initial = ConfiguredDataRootText();
+    HRESULT coinit = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+    BROWSEINFOW browse{};
+    browse.hwndOwner = owner;
+    browse.lpszTitle = L"Select TTSL Native Server data folder";
+    browse.ulFlags = BIF_RETURNONLYFSDIRS | BIF_NEWDIALOGSTYLE;
+    browse.lpfn = BrowseDataRootCallback;
+    browse.lParam = reinterpret_cast<LPARAM>(initial.c_str());
+
+    PIDLIST_ABSOLUTE pidl = SHBrowseForFolderW(&browse);
+    if (pidl == nullptr) {
+        if (SUCCEEDED(coinit)) {
+            CoUninitialize();
+        }
+        return std::nullopt;
+    }
+
+    std::wstring selected(MAX_PATH, L'\0');
+    const BOOL ok = SHGetPathFromIDListW(pidl, selected.data());
+    CoTaskMemFree(pidl);
+    if (SUCCEEDED(coinit)) {
+        CoUninitialize();
+    }
+    if (!ok) {
+        return std::nullopt;
+    }
+    selected.resize(wcslen(selected.c_str()));
+    return fs::path(selected);
+}
+
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
     case WM_CREATE: {
         g_app->hwnd = hwnd;
         g_app->store.SetNotifyWindow(hwnd);
+        if (!g_app->data_root_error.empty()) {
+            g_app->store.Log(g_app->data_root_error);
+        }
 
         CreateLabel(hwnd, L"Bind host", 14, 16, 70, 22);
         g_app->host_edit = CreateEdit(hwnd, Utf8ToWide(g_app->config.host).c_str(), IDC_HOST, 88, 12, 130, 25);
@@ -5365,18 +6121,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
         g_app->clear_stale_button = CreateButton(hwnd, L"Clear Stale", IDC_CLEAR_STALE, 398, 48, 100, 27);
         g_app->clear_cache_button = CreateButton(hwnd, L"Clear Cache", IDC_CLEAR_CACHE, 506, 48, 100, 27);
         g_app->extract_button = CreateButton(hwnd, L"Extract Assets", IDC_EXTRACT_ASSETS, 614, 48, 116, 27);
+        g_app->krangle_check = CreateCheckbox(hwnd, L"Krangle", IDC_NATIVE_KRANGLE, 744, 52, 90, 22, g_app->config.native_krangle_display);
 
-        g_app->status_label = CreateLabel(hwnd, L"Server stopped", 14, 86, 1000, 22);
-        g_app->clients_label = CreateLabel(hwnd, L"Tracked clients: 0 total, 0 live", 14, 110, 1000, 22);
-        CreateLabel(hwnd, L"Active clients", 14, 136, 150, 18);
-        CreateLabel(hwnd, L"Runtime log", 448, 136, 150, 18);
+        CreateLabel(hwnd, L"Data folder", 14, 88, 70, 22);
+        g_app->data_root_edit = CreateEdit(hwnd, ConfiguredDataRootText().c_str(), IDC_DATA_ROOT, 88, 84, 600, 25);
+        g_app->browse_data_button = CreateButton(hwnd, L"Browse", IDC_BROWSE_DATA_ROOT, 700, 83, 76, 27);
+        g_app->open_data_button = CreateButton(hwnd, L"Open Data", IDC_OPEN_DATA_ROOT, 786, 83, 92, 27);
+        g_app->reset_data_button = CreateButton(hwnd, L"Reset Default", IDC_RESET_DATA_ROOT, 888, 83, 120, 27);
+
+        g_app->status_label = CreateLabel(hwnd, L"Server stopped", 14, 124, 1000, 22);
+        g_app->clients_label = CreateLabel(hwnd, L"Tracked clients: 0 total, 0 live", 14, 148, 1000, 22);
+        CreateLabel(hwnd, L"Active clients", 14, 174, 150, 18);
+        CreateLabel(hwnd, L"Runtime log", 448, 174, 150, 18);
         g_app->client_list = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
                                              WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOINTEGRALHEIGHT,
-                                             14, 158, 420, 360, hwnd, reinterpret_cast<HMENU>(static_cast<intptr_t>(IDC_CLIENT_LIST)),
+                                             14, 196, 420, 390, hwnd, reinterpret_cast<HMENU>(static_cast<intptr_t>(IDC_CLIENT_LIST)),
                                              GetModuleHandleW(nullptr), nullptr);
         g_app->log_list = CreateWindowExW(WS_EX_CLIENTEDGE, L"LISTBOX", L"",
                                           WS_CHILD | WS_VISIBLE | WS_VSCROLL | LBS_NOINTEGRALHEIGHT,
-                                          448, 158, 560, 360, hwnd, reinterpret_cast<HMENU>(static_cast<intptr_t>(IDC_LOG)),
+                                          448, 196, 560, 390, hwnd, reinterpret_cast<HMENU>(static_cast<intptr_t>(IDC_LOG)),
                                           GetModuleHandleW(nullptr), nullptr);
         SendMessageW(g_app->client_list, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
         SendMessageW(g_app->log_list, WM_SETFONT, reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)), TRUE);
@@ -5387,6 +6150,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
     }
     case WM_COMMAND: {
         const int id = LOWORD(wparam);
+        const int notification = HIWORD(wparam);
+        if (id == IDC_DATA_ROOT && notification == EN_KILLFOCUS) {
+            SaveDataRootFromUi(DataRootFromUiText(), false);
+            return 0;
+        }
         if (id == IDC_START_STOP) {
             if (g_app->server.IsRunning()) {
                 StopServerFromUi();
@@ -5404,6 +6172,22 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
         if (id == IDC_OPEN_SCREENSHOTS) {
             int status = 200;
             g_app->store.OpenScreenshotFolder(status);
+            return 0;
+        }
+        if (id == IDC_BROWSE_DATA_ROOT) {
+            const auto selected = BrowseForDataRoot(hwnd);
+            if (selected.has_value()) {
+                SaveDataRootFromUi(*selected, true);
+            }
+            return 0;
+        }
+        if (id == IDC_OPEN_DATA_ROOT) {
+            int status = 200;
+            g_app->store.OpenDataFolder(status);
+            return 0;
+        }
+        if (id == IDC_RESET_DATA_ROOT) {
+            SaveDataRootFromUi(DefaultDataRoot(), true);
             return 0;
         }
         if (id == IDC_OPEN_CACHE) {
@@ -5440,6 +6224,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
         if (id == IDC_EXTRACT_ASSETS) {
             int status = 200;
             g_app->store.ExtractAssets(status);
+            return 0;
+        }
+        if (id == IDC_NATIVE_KRANGLE) {
+            g_app->config.native_krangle_display = SendMessageW(g_app->krangle_check, BM_GETCHECK, 0, 0) == BST_CHECKED;
+            SaveNativeConfig(g_app->config);
+            g_app->store.Log(std::string("Native client-list Krangle ") + (g_app->config.native_krangle_display ? "enabled." : "disabled."));
+            RefreshClientList();
             return 0;
         }
         break;
@@ -5519,7 +6310,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int show_command) {
                                 CW_USEDEFAULT,
                                 CW_USEDEFAULT,
                                 1040,
-                                575,
+                                650,
                                 nullptr,
                                 nullptr,
                                 instance,

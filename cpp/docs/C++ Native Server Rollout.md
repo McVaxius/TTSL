@@ -50,7 +50,7 @@ Status: complete for the first native parity pass
 Port the Python server data shaping that the full HUD expects:
 
 - Build `assetPlan` from incoming client, party, map, job, race, tribe, and enemy telemetry.
-- Build `assetCatalog` from native `cpp\extracted` and `cpp\cache` folders.
+- Build `assetCatalog` from the configured native `extracted` and `cache` folders.
 - Preserve same-PC game path capture in `gamePathInfo`.
 - Aggregate clients into party surfaces:
   - `aggregateParties`
@@ -61,8 +61,8 @@ Port the Python server data shaping that the full HUD expects:
 Implemented in this pass:
 
 - `assetPlan` now derives territory, map, race, tribe, job, job-icon, map-texture, and enemy IDs from incoming client snapshots.
-- `cpp\ttsl_asset_plan.json` is generated as a runtime artifact.
-- `assetCatalog` now reads `cpp\extracted\ttsl_asset_extract_summary.json` when present and exposes browser-ready extracted files through `cpp\cache`.
+- `ttsl_asset_plan.json` is generated as a runtime artifact under the configured data folder.
+- `assetCatalog` now reads `extracted\ttsl_asset_extract_summary.json` when present and exposes browser-ready extracted files through the configured cache folder.
 - Party-linked clients are grouped into `aggregateParties`.
 - Non-represented clients remain in `looseClients`.
 - Same-PC game path metadata is carried through `gamePathInfo`.
@@ -140,7 +140,7 @@ Implemented in this pass:
 - Race and tribe SVG icons are generated without Python.
 - Native EXD sheet reading loads localized race/clan names for generated race and tribe icons.
 - Asset extraction progress now advances through metadata, job-icon, map-texture, race-icon, tribe-icon, and summary-writing stages.
-- Extraction writes `cpp\extracted\ttsl_asset_extract_summary.json`.
+- Extraction writes `extracted\ttsl_asset_extract_summary.json` under the configured data folder.
 - Browser-ready generated assets continue to flow through `assetCatalog` and `/assets/...`.
 
 Remaining Phase 3 validation:
@@ -164,7 +164,7 @@ Risk: this uses live web scraping and should remain resilient to Lodestone marku
 Current state:
 
 - Native WinHTTP search/download/cache is live.
-- Metadata and downloaded images are cached under `cpp\cache\lodestone`.
+- Metadata and downloaded images are cached under the configured data folder's `cache\lodestone`.
 - `/api/state` now emits:
   - `client.lodestone`
   - `party.sourceLodestone`
@@ -182,15 +182,18 @@ Expand the native window beyond basic status:
 - Active clients table.
 - Bind host/port/stale settings persisted to a config file.
 - Runtime asset extraction status.
-- Open extracted/cache folders.
+- Open data/extracted/cache folders.
 - Copy URL and server diagnostics.
 - Clear stale clients and clear cache buttons.
 
 Implemented in this pass:
 
-- Native window now has cache, extracted-assets, copy URL, diagnostics, clear stale, clear cache, and extract-assets controls.
+- Native window now has data-folder, cache, extracted-assets, copy URL, diagnostics, clear stale, clear cache, and extract-assets controls.
 - Active clients are listed in the native window with live/stale/offline status, age, job, and zone.
-- Host, port, and stale timeout persist to `cpp\ttsl-native-config.json`.
+- Host, port, stale timeout, and configured data root persist to `%LOCALAPPDATA%\TTSL Native Server\ttsl-native-config.json`.
+- Runtime cache, extracted assets, and `ttsl_asset_plan.json` live under the configured data root.
+- Native web HUD now mirrors the Python HUD controls and starts extraction automatically when same-PC telemetry requests missing or 24-hour-stale browser assets.
+- Native and web Krangle toggles are independent: the native checkbox affects the local Windows client list, while web toggles stay in browser local storage.
 - Native management API endpoints were added for cache/extracted folder opens and stale/cache clearing.
 
 ## Phase 6 - Packaging And Plugin Integration
@@ -226,7 +229,7 @@ Use [checklist.md](checklist.md) for the detailed checklist. The highest-signal 
 4. Open `http://127.0.0.1:6942/` and confirm Classic, Operator, Command, and Matrix modes render live data.
 5. Confirm `/api/state.assetPlan.samePcCaptured = true` and that job icon, map, race, and tribe counts populate from the live client.
 6. Click `Extract Assets` and confirm status advances through active extraction messages instead of appearing stuck.
-7. Confirm `cpp\extracted\ttsl_asset_extract_summary.json` reports `status = ok`, `lastExitCode = 0`, and no failed files for a clean extraction.
+7. Confirm the configured data folder's `extracted\ttsl_asset_extract_summary.json` reports `status = ok`, `lastExitCode = 0`, and no failed files for a clean extraction.
 8. Confirm job icons, map PNGs, race SVGs, tribe SVGs, and map/radar overlays render in the HUD.
 9. Test echo text input, screenshot request, and CCTV request from the HUD.
 10. Confirm Lodestone portraits/cache behavior for a real character.

@@ -92,6 +92,28 @@ The server listens at:
 http://127.0.0.1:6942/
 ```
 
+## Runtime Data
+
+The native bootstrap config is stored at:
+
+```text
+%LOCALAPPDATA%\TTSL Native Server\ttsl-native-config.json
+```
+
+By default, the data folder is the same `%LOCALAPPDATA%\TTSL Native Server` folder. The native UI can choose another data folder with `Browse` or return to the default with `Reset Default`; data-folder changes apply on the next app launch.
+
+Runtime artifacts live under the configured data folder:
+
+```text
+cache\
+extracted\
+ttsl_asset_plan.json
+```
+
+The web HUD served by the native server mirrors the Python HUD controls, including layout modes, detail toggle, aggregate parties, map sizing, and web-only Krangle toggles. The native app window also has its own persisted Krangle checkbox for the local client list.
+
+After same-PC telemetry reports `gameInstallPath`, `/api/state` automatically starts native extraction when requested browser assets are missing or older than 24 hours. Manual `Extract Assets` remains available; auto extraction writes the same `cache`, `extracted`, and `ttsl_asset_plan.json` files under the configured data folder.
+
 ## Smoke Check
 
 This starts the Debug build, requests server state, then stops only that process.

@@ -75,8 +75,11 @@ http://127.0.0.1:6942/
 - [ ] Confirm the active-client list updates as plugin clients connect.
 - [ ] Confirm active-client rows show live/stale/offline status, age, job, and zone.
 - [ ] Change host, port, or stale timeout, close/reopen, and confirm settings persist.
-- [ ] Click `Cache` and confirm `cpp\cache` opens.
-- [ ] Click `Extracted` and confirm `cpp\extracted` opens.
+- [ ] Set a custom `Data folder`, close/reopen, and confirm `/api/state.assetExtraction.summaryPath` points under it.
+- [ ] Click `Open Data` and confirm the active data folder opens.
+- [ ] Click `Reset Default`, close/reopen, and confirm the data folder returns to `%LOCALAPPDATA%\TTSL Native Server`.
+- [ ] Click `Cache` and confirm the configured data folder's `cache` folder opens.
+- [ ] Click `Extracted` and confirm the configured data folder's `extracted` folder opens.
 - [ ] Click `Copy URL` and confirm the HUD URL is on the clipboard.
 - [ ] Click `Diagnostics` and confirm diagnostics are copied to the clipboard.
 - [ ] Click `Clear Stale` and confirm stale/disconnected clients are removed.
@@ -95,10 +98,12 @@ http://127.0.0.1:6942/
 - [ ] Confirm disconnected clients remain visible until retention cleanup.
 - [ ] Confirm party-linked clients appear in `aggregateParties`.
 - [ ] Confirm non-party clients appear in `looseClients`.
+- [ ] Confirm the native app window Krangle checkbox only changes native client-list names and persists across app restarts.
 
 ## HUD Modes
 
 - [ ] Open the HUD at `http://127.0.0.1:6942/`.
+- [ ] Confirm the native browser HUD exposes the Python HUD layout controls, detail toggle, aggregate parties, map sizing, and web Krangle toggles.
 - [ ] Confirm `Classic` mode renders client cards.
 - [ ] Confirm `Operator` mode renders the left rail and selected detail panel.
 - [ ] Confirm `Command` mode renders command-oriented cards.
@@ -128,6 +133,8 @@ http://127.0.0.1:6942/
 - [ ] Confirm `/api/state.assetPlan.summary.jobIcons` increases when job icon IDs are reported.
 - [ ] Confirm `/api/state.assetPlan.summary.maps` increases when map texture telemetry is reported.
 - [ ] Confirm `/api/state.assetPlan.summary.races` and `tribes` increase when race/tribe IDs are reported.
+- [ ] Confirm `/api/state.assetExtraction.message` reports auto extraction after same-PC telemetry provides `gameInstallPath` and requested assets are missing.
+- [ ] Confirm generated browser assets older than 24 hours are treated as stale and refreshed under the configured data folder.
 - [ ] Click `Extract Assets`.
 - [ ] Confirm the button changes to `Extracting...`.
 - [ ] Confirm `/api/state.assetExtraction.running` becomes `true`.
@@ -135,12 +142,12 @@ http://127.0.0.1:6942/
 - [ ] Wait for extraction to finish.
 - [ ] Confirm `/api/state.assetExtraction.running` returns to `false`.
 - [ ] Confirm `/api/state.assetExtraction.lastExitCode` is `0` for a clean extraction.
-- [ ] Confirm `cpp\extracted\ttsl_asset_extract_summary.json` is written.
+- [ ] Confirm the configured data folder's `extracted\ttsl_asset_extract_summary.json` is written.
 - [ ] Confirm `ttsl_asset_extract_summary.json` has `status = "ok"` and an empty `failedFiles` array for a clean extraction.
-- [ ] Confirm job icon PNGs are written under `cpp\extracted\generated\job-icons`.
-- [ ] Confirm map PNGs are written under `cpp\extracted\generated\maps`.
-- [ ] Confirm race SVGs are written under `cpp\extracted\generated\race-icons`.
-- [ ] Confirm tribe SVGs are written under `cpp\extracted\generated\tribe-icons`.
+- [ ] Confirm job icon PNGs are written under the configured data folder's `extracted\generated\job-icons`.
+- [ ] Confirm map PNGs are written under the configured data folder's `extracted\generated\maps`.
+- [ ] Confirm race SVGs are written under the configured data folder's `extracted\generated\race-icons`.
+- [ ] Confirm tribe SVGs are written under the configured data folder's `extracted\generated\tribe-icons`.
 - [ ] Confirm extracted race/tribe summary entries show `nameSource = "exd"` when local EXD data is available.
 - [ ] Confirm race/clan names in the summary match the live character's race/clan instead of generic `Race N` or `Tribe N` labels.
 - [ ] Open a job icon `/assets/...png` URL and confirm HTTP 200.
@@ -157,7 +164,7 @@ http://127.0.0.1:6942/
 - [ ] Confirm `/api/state.aggregateParties[].sourceLodestone.status` appears for aggregate parties.
 - [ ] Confirm `/api/state.aggregateParties[].members[].lodestone.status` appears for party members.
 - [ ] Wait for a real character lookup to resolve.
-- [ ] Confirm `cpp\cache\lodestone` contains a per-character folder with `metadata.json`.
+- [ ] Confirm the configured data folder's `cache\lodestone` contains a per-character folder with `metadata.json`.
 - [ ] If the lookup resolves, confirm `face.*` and/or `portrait.*` files are cached.
 - [ ] If the lookup resolves, confirm the HUD portrait frame uses the cached image instead of initials.
 - [ ] If the lookup does not resolve, confirm the HUD keeps initials and `/api/state` reports `not_found` or `error` without breaking the page.
@@ -184,14 +191,14 @@ http://127.0.0.1:6942/
 - [ ] Trigger a CCTV frame request.
 - [ ] Confirm the HUD shows a `Last CCTV` link.
 - [ ] Click the `Last CCTV` link and confirm the image loads.
-- [ ] Confirm uploaded files are stored under `cpp\cache\screenshots` or `cpp\cache\cctv`.
+- [ ] Confirm uploaded files are stored under the configured data folder's `cache\screenshots` or `cache\cctv`.
 - [R] Overlay-free screenshot/CCTV capture requires a plugin-side capture implementation change outside the C++ server.
 
 ## File And Process Hygiene
 
 - [ ] Confirm no unwanted command terminal is left open.
 - [ ] Confirm no stray `ttsl-native-server.exe` process remains after closing the app.
-- [ ] Confirm runtime artifacts remain under `cpp\cache`, `cpp\extracted`, or `cpp\ttsl_asset_plan.json`.
+- [ ] Confirm runtime artifacts remain under the configured data folder's `cache`, `extracted`, or `ttsl_asset_plan.json` paths.
 - [ ] Confirm build output remains under `cpp\build`.
 - [ ] Confirm no work happened in `Z:`.
 
