@@ -1,0 +1,6 @@
+/build/
+/cache/
+/extracted/
+/ttsl_asset_plan.json
+/ttsl_asset_extract_summary.json
+/ttsl-native-config.json

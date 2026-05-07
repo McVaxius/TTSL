@@ -1,0 +1,3 @@
+#include "resource.h"
+
+IDI_TTSL_APP ICON "../icon/ttsl-native-server.ico"
