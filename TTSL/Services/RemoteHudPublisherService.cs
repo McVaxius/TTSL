@@ -35,6 +35,10 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private static readonly TimeSpan MaxRetryBackoff = TimeSpan.FromSeconds(15);
     private const int MinimumReasonableCaptureWidth = 480;
     private const int MinimumReasonableCaptureHeight = 270;
+    private const int CharacterVisualCaptureTimeoutMs = 12000;
+    private const float InspectPreviewTopTrimFraction = 0.65f;
+    private const float InspectPreviewBottomTrimFraction = 0.20f;
+    private const int InspectPreviewExpandedHeightMultiplier = 2;
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -45,6 +49,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private readonly HttpClient httpClient = new() { Timeout = HttpTimeout };
     private readonly CancellationTokenSource shutdownCts = new();
     private readonly ConcurrentQueue<string> pendingWebChatInputs = new();
+    private readonly ConcurrentQueue<PendingCharacterVisualCapture> pendingCharacterVisualCaptures = new();
 
     private int sendInFlight;
     private bool isDisposing;
@@ -59,6 +64,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private ClientIdentity? lastIdentity;
     private string? lastLoggedMapSnapshotSignature;
     private string? lastLoggedCaptureSelectionSignature;
+    private PendingCharacterVisualCapture? activeCharacterVisualCapture;
     private bool goodbyeSent;
 
     public RemoteHudPublisherService(Plugin plugin)
@@ -104,6 +110,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         goodbyeSent = false;
         lastIdentity = identity;
         ProcessQueuedWebChatInputs();
+        ProcessCharacterVisualCaptures();
 
         var now = DateTime.UtcNow;
         if (lastAttemptFailed && now < nextAttemptUtc)
@@ -212,6 +219,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
             AccountId = identity.AccountId,
             CharacterName = identity.CharacterName,
             WorldName = identity.WorldName,
+            EntityId = localPlayer.EntityId,
             KrangledName = KrangleService.KrangleName($"{identity.CharacterName}@{identity.WorldName}"),
             HostName = Environment.MachineName,
             GameInstallPath = GetGameInstallPath(),
@@ -252,6 +260,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
             AccountId = identity.AccountId,
             CharacterName = identity.CharacterName,
             WorldName = identity.WorldName,
+            EntityId = localPlayer.EntityId,
             KrangledName = KrangleService.KrangleName($"{identity.CharacterName}@{identity.WorldName}"),
             HostName = Environment.MachineName,
             EnumeratePartyMembers = plugin.Configuration.EnumeratePartyMembers,
@@ -279,6 +288,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
             AllowEchoCommands = plugin.Configuration.AllowWebEchoCommands,
             AllowScreenshotRequests = plugin.Configuration.AllowWebScreenshotRequests,
             AllowCctvStreaming = plugin.Configuration.AllowWebCctvStreaming,
+            AllowPluginFullBodyFallback = plugin.Configuration.EnablePluginFullBodyFallback,
         };
     }
 
@@ -339,6 +349,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
                 ContentId = contentId,
                 Name = originalName,
                 WorldName = worldName,
+                EntityId = character?.EntityId,
                 KrangledName = KrangleService.KrangleName(string.IsNullOrWhiteSpace(worldName) ? originalName : $"{originalName}@{worldName}"),
                 Job = job,
                 JobId = jobId == 0 ? null : jobId,
@@ -1006,6 +1017,10 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
                     case "requestscreenshot":
                         await CaptureAndUploadScreenshotAsync(baseUrl, action.ActionId, action.CaptureMode, action.CaptureQuality).ConfigureAwait(false);
+                        break;
+
+                    case "requestcharactervisual":
+                        QueueCharacterVisualCapture(baseUrl, action);
                         break;
 
                     default:

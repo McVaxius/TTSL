@@ -35,6 +35,7 @@ public sealed class Configuration : IPluginConfiguration
     public bool AllowWebEchoCommands { get; set; } = false;
     public bool AllowWebScreenshotRequests { get; set; } = false;
     public bool AllowWebCctvStreaming { get; set; } = false;
+    public bool EnablePluginFullBodyFallback { get; set; } = false;
 
     public void Save()
     {
@@ -116,6 +117,7 @@ public sealed class AccountScopedConfiguration
     public bool AllowWebEchoCommands { get; set; } = false;
     public bool AllowWebScreenshotRequests { get; set; } = false;
     public bool AllowWebCctvStreaming { get; set; } = false;
+    public bool EnablePluginFullBodyFallback { get; set; } = false;
 
     public static AccountScopedConfiguration FromConfiguration(Configuration source)
     {
@@ -145,6 +147,7 @@ public sealed class AccountScopedConfiguration
             AllowWebEchoCommands = source.AllowWebEchoCommands,
             AllowWebScreenshotRequests = source.AllowWebScreenshotRequests,
             AllowWebCctvStreaming = source.AllowWebCctvStreaming,
+            EnablePluginFullBodyFallback = source.EnablePluginFullBodyFallback,
         };
     }
 
@@ -174,5 +177,6 @@ public sealed class AccountScopedConfiguration
         target.AllowWebEchoCommands = AllowWebEchoCommands;
         target.AllowWebScreenshotRequests = AllowWebScreenshotRequests;
         target.AllowWebCctvStreaming = AllowWebCctvStreaming;
+        target.EnablePluginFullBodyFallback = EnablePluginFullBodyFallback;
     }
 }

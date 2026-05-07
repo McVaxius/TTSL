@@ -1882,6 +1882,11 @@ struct PendingAction {
     std::string text;
     std::string capture_mode;
     std::string capture_quality;
+    std::string capture_kind;
+    std::string target_character_name;
+    std::string target_world_name;
+    std::string target_content_id;
+    std::string target_entity_id;
     std::string queued_at_utc;
 
     std::string ToJson() const {
@@ -1897,6 +1902,21 @@ struct PendingAction {
         }
         if (!capture_quality.empty()) {
             stream << ",\"captureQuality\":" << JsonQuote(capture_quality);
+        }
+        if (!capture_kind.empty()) {
+            stream << ",\"captureKind\":" << JsonQuote(capture_kind);
+        }
+        if (!target_character_name.empty()) {
+            stream << ",\"targetCharacterName\":" << JsonQuote(target_character_name);
+        }
+        if (!target_world_name.empty()) {
+            stream << ",\"targetWorldName\":" << JsonQuote(target_world_name);
+        }
+        if (!target_content_id.empty()) {
+            stream << ",\"targetContentId\":" << JsonQuote(target_content_id);
+        }
+        if (!target_entity_id.empty()) {
+            stream << ",\"targetEntityId\":" << target_entity_id;
         }
         stream << ",\"queuedAtUtc\":" << JsonQuote(queued_at_utc) << "}";
         return stream.str();
@@ -2399,11 +2419,29 @@ private:
         if (class_pos == std::string::npos) {
             return {};
         }
+        const auto tag_start = block.rfind('<', class_pos);
+        if (tag_start == std::string::npos) {
+            return {};
+        }
+        auto tag_name_start = tag_start + 1;
+        while (tag_name_start < block.size() && std::isspace(static_cast<unsigned char>(block[tag_name_start])) != 0) {
+            ++tag_name_start;
+        }
+        auto tag_name_end = tag_name_start;
+        while (tag_name_end < block.size() &&
+               (std::isalnum(static_cast<unsigned char>(block[tag_name_end])) != 0 || block[tag_name_end] == '-' || block[tag_name_end] == '_')) {
+            ++tag_name_end;
+        }
+        if (tag_name_end <= tag_name_start) {
+            return {};
+        }
+        const auto tag_name = block.substr(tag_name_start, tag_name_end - tag_name_start);
         const auto tag_end = block.find('>', class_pos);
         if (tag_end == std::string::npos) {
             return {};
         }
-        const auto close = block.find("</", tag_end + 1);
+        const auto close_token = "</" + tag_name;
+        const auto close = ToLower(block).find(ToLower(close_token), tag_end + 1);
         return StripTags(block.substr(tag_end + 1, close == std::string::npos ? std::string::npos : close - tag_end - 1));
     }
 
@@ -2707,7 +2745,9 @@ private:
         }
 
         const auto now = UnixNow();
-        const auto expires = now + 24 * 60 * 60;
+        const auto ready_expires = now + 24 * 60 * 60;
+        const auto not_found_expires = now + 30 * 60;
+        const auto error_expires = now + 15 * 60;
         try {
             const auto search_url = "https://na.finalfantasyxiv.com/lodestone/character/?q=" +
                                     UrlQueryEscape(character_name) + "&worldname=" + UrlQueryEscape(world_name);
@@ -2715,13 +2755,13 @@ private:
             const auto entries = ParseSearchResults(search_html);
             const auto selected = SelectSearchEntry(entries, character_name, world_name);
             if (!selected.has_value()) {
-                std::map<std::string, std::string> metadata;
-                PutString(metadata, "status", "not_found");
+                std::map<std::string, std::string> metadata = MetadataHasAssets(existing) ? existing : std::map<std::string, std::string>{};
+                PutString(metadata, "status", MetadataHasAssets(existing) ? "ready" : "not_found");
                 PutString(metadata, "characterName", character_name);
                 PutString(metadata, "worldName", world_name);
                 PutString(metadata, "resolvedAtUtc", NowIsoUtc());
-                PutInt(metadata, "expiresAtUnix", expires);
-                PutString(metadata, "expiresAtUtc", IsoFromUnix(expires));
+                PutInt(metadata, "expiresAtUnix", MetadataHasAssets(existing) ? ready_expires : not_found_expires);
+                PutString(metadata, "expiresAtUtc", IsoFromUnix(MetadataHasAssets(existing) ? ready_expires : not_found_expires));
                 PutString(metadata, "lastError", "No exact Lodestone search match was found for this character and world.");
                 std::lock_guard lock(mutex_);
                 StoreMetadataLocked(identity_key, character_name, world_name, metadata);
@@ -2774,8 +2814,8 @@ private:
             PutString(metadata, "faceCachePath", face_path.string());
             PutString(metadata, "portraitCachePath", portrait_path.string());
             PutString(metadata, "resolvedAtUtc", NowIsoUtc());
-            PutInt(metadata, "expiresAtUnix", expires);
-            PutString(metadata, "expiresAtUtc", IsoFromUnix(expires));
+            PutInt(metadata, "expiresAtUnix", ready_expires);
+            PutString(metadata, "expiresAtUtc", IsoFromUnix(ready_expires));
             PutString(metadata, "lastError", "");
             std::lock_guard lock(mutex_);
             StoreMetadataLocked(identity_key, character_name, world_name, metadata);
@@ -2786,8 +2826,8 @@ private:
             PutString(metadata, "characterName", character_name);
             PutString(metadata, "worldName", world_name);
             PutString(metadata, "resolvedAtUtc", NowIsoUtc());
-            PutInt(metadata, "expiresAtUnix", expires);
-            PutString(metadata, "expiresAtUtc", IsoFromUnix(expires));
+            PutInt(metadata, "expiresAtUnix", MetadataHasAssets(existing) ? ready_expires : error_expires);
+            PutString(metadata, "expiresAtUtc", IsoFromUnix(MetadataHasAssets(existing) ? ready_expires : error_expires));
             PutString(metadata, "lastError", ex.what());
             std::lock_guard lock(mutex_);
             StoreMetadataLocked(identity_key, character_name, world_name, metadata);
@@ -2814,6 +2854,7 @@ public:
           cache_root_(data_root_ / "cache"),
           screenshot_root_(cache_root_ / "screenshots"),
           cctv_root_(cache_root_ / "cctv"),
+          character_visual_root_(cache_root_ / "character-visuals"),
           lodestone_cache_(cache_root_) {
         char host_name[256]{};
         DWORD size = sizeof(host_name);
@@ -2823,6 +2864,7 @@ public:
         fs::create_directories(extracted_root_);
         fs::create_directories(screenshot_root_);
         fs::create_directories(cctv_root_);
+        fs::create_directories(character_visual_root_);
     }
 
     ~StateStore() {
@@ -3109,6 +3151,35 @@ public:
                 action.capture_quality = capture_quality;
                 action.queued_at_utc = NowIsoUtc();
                 message = action.capture_mode == "cctv" ? "Queued CCTV frame request." : "Queued screenshot request.";
+            } else if (action_type == "requestcharactervisual") {
+                if (!JsonBoolFieldFromObject(policy_json, "allowPluginFullBodyFallback")) {
+                    status = 409;
+                    return ConflictJson("That client does not allow plugin full-body fallback captures.");
+                }
+                auto target_name = JsonStringFieldOrEmpty(fields, "targetCharacterName");
+                auto target_world = JsonStringFieldOrEmpty(fields, "targetWorldName");
+                if (target_name.empty()) {
+                    target_name = character_name;
+                }
+                if (target_world.empty()) {
+                    target_world = world_name;
+                }
+                if (target_name.empty() || target_world.empty()) {
+                    status = 409;
+                    return ConflictJson("Target character name/world is empty.");
+                }
+                action.action_id = "visual-" + std::to_string(GetTickCount64());
+                action.action_type = "requestCharacterVisual";
+                action.capture_kind = "portrait";
+                action.target_character_name = target_name;
+                action.target_world_name = target_world;
+                action.target_content_id = JsonStringFieldOrEmpty(fields, "targetContentId");
+                const auto target_entity_id = JsonIntField(fields, "targetEntityId");
+                if (target_entity_id.has_value() && *target_entity_id > 0) {
+                    action.target_entity_id = std::to_string(*target_entity_id);
+                }
+                action.queued_at_utc = NowIsoUtc();
+                message = "Queued plugin full-body fallback request.";
             } else {
                 status = 409;
                 return ConflictJson("Unsupported action type: " + (action_type.empty() ? std::string("missing") : action_type));
@@ -3217,6 +3288,94 @@ public:
                ",\"error\":null,\"screenshot\":" + screenshot.str() + "}";
     }
 
+    std::string SaveUploadedCharacterVisual(const std::string& body, int& status) {
+        std::map<std::string, std::string> fields;
+        if (!ParseTopLevelObject(body, fields)) {
+            status = 400;
+            return ErrorJson("JSON object body is required");
+        }
+
+        const auto account_id = JsonStringFieldOrEmpty(fields, "accountId");
+        const auto character_name = JsonStringFieldOrEmpty(fields, "characterName");
+        const auto world_name = JsonStringFieldOrEmpty(fields, "worldName");
+        auto target_name = JsonStringFieldOrEmpty(fields, "targetCharacterName");
+        auto target_world = JsonStringFieldOrEmpty(fields, "targetWorldName");
+        const auto image_base64 = JsonStringFieldOrEmpty(fields, "imageBase64");
+        auto content_type = ToLower(JsonStringFieldOrEmpty(fields, "contentType"));
+        auto capture_kind = ToLower(JsonStringFieldOrEmpty(fields, "captureKind"));
+        const auto captured_at = JsonStringFieldOrEmpty(fields, "capturedAtUtc").empty()
+                                     ? NowIsoUtc()
+                                     : JsonStringFieldOrEmpty(fields, "capturedAtUtc");
+        const auto action_id = JsonStringFieldOrEmpty(fields, "actionId");
+
+        if (account_id.empty() || character_name.empty() || world_name.empty()) {
+            status = 400;
+            return ErrorJson("accountId, characterName, and worldName are required");
+        }
+        if (target_name.empty()) {
+            target_name = character_name;
+        }
+        if (target_world.empty()) {
+            target_world = world_name;
+        }
+        if (target_name.empty() || target_world.empty()) {
+            status = 400;
+            return ErrorJson("targetCharacterName and targetWorldName are required");
+        }
+        if (image_base64.empty()) {
+            status = 409;
+            return ConflictJson("Character visual payload is empty.");
+        }
+        if (content_type != "image/jpeg" && content_type != "image/png") {
+            status = 409;
+            return ConflictJson("Unsupported character visual content type: " + content_type);
+        }
+        if (capture_kind != "face") {
+            capture_kind = "portrait";
+        }
+
+        const auto bytes = DecodeBase64(image_base64);
+        if (bytes.empty()) {
+            status = 409;
+            return ConflictJson("Invalid character visual base64 payload.");
+        }
+
+        const std::string extension = content_type == "image/jpeg" ? ".jpg" : ".png";
+        const auto identity_key = CharacterVisualKey(target_name, target_world);
+        const auto root = CharacterVisualDir(identity_key, target_name, target_world);
+        fs::create_directories(root);
+        const auto file_name = capture_kind + extension;
+        const auto file_path = root / file_name;
+        {
+            std::ofstream output(file_path, std::ios::binary | std::ios::trunc);
+            output.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+        }
+
+        const auto metadata_path = root / "metadata.json";
+        {
+            std::ofstream output(metadata_path, std::ios::binary | std::ios::trunc);
+            output << "{"
+                   << "\"status\":\"ready\""
+                   << ",\"source\":\"pluginFallback\""
+                   << ",\"targetCharacterName\":" << JsonQuote(target_name)
+                   << ",\"targetWorldName\":" << JsonQuote(target_world)
+                   << ",\"sourceAccountId\":" << JsonQuote(account_id)
+                   << ",\"sourceCharacterName\":" << JsonQuote(character_name)
+                   << ",\"sourceWorldName\":" << JsonQuote(world_name)
+                   << ",\"captureKind\":" << JsonQuote(capture_kind)
+                   << ",\"contentType\":" << JsonQuote(content_type)
+                   << ",\"capturedAtUtc\":" << JsonQuote(captured_at)
+                   << ",\"actionId\":" << JsonQuote(action_id)
+                   << ",\"cachePath\":" << JsonQuote(file_path.string())
+                   << "}\n";
+        }
+
+        const auto visual = BuildCharacterVisualJson(target_name, target_world);
+        Log("Stored plugin full-body fallback for " + target_name + " @ " + target_world + ": " + file_name);
+        status = 200;
+        return "{\"ok\":true,\"message\":\"Character visual stored.\",\"error\":null,\"visual\":" + visual + "}";
+    }
+
     std::string SnapshotJson() {
         const auto now = std::chrono::steady_clock::now();
         const auto generated_at = NowIsoUtc();
@@ -3226,6 +3385,7 @@ public:
         std::string asset_plan_json;
         std::string asset_catalog_json;
         std::string asset_extraction_json;
+        std::string cache_diagnostics_json;
         size_t total_clients = 0;
         std::string game_path;
         std::string game_source_name;
@@ -3284,6 +3444,7 @@ public:
             }
             asset_catalog_json = BuildAssetCatalogJsonLocked();
             asset_extraction_json = AssetExtractionJsonLocked();
+            cache_diagnostics_json = CacheDiagnosticsJson();
         }
 
         if (previous_worker.joinable()) {
@@ -3320,7 +3481,13 @@ public:
                << ",\"looseClients\":" << loose_clients_json
                << ",\"assetPlan\":" << asset_plan_json
                << ",\"assetCatalog\":" << asset_catalog_json
-               << ",\"assetExtraction\":" << asset_extraction_json;
+               << ",\"assetExtraction\":" << asset_extraction_json
+               << ",\"runtimePaths\":{\"dataRoot\":" << JsonQuote(data_root_.string())
+               << ",\"cacheRoot\":" << JsonQuote(cache_root_.string())
+               << ",\"extractedRoot\":" << JsonQuote(extracted_root_.string())
+               << ",\"assetPlanPath\":" << JsonQuote(asset_plan_path_.string())
+               << "}"
+               << ",\"cacheDiagnostics\":" << cache_diagnostics_json;
         stream << ",\"gamePathInfo\":{\"captured\":" << (!game_path.empty() ? "true" : "false")
                << ",\"gameInstallPath\":" << (game_path.empty() ? "null" : JsonQuote(game_path))
                << ",\"sourceCharacterName\":" << (game_source_name.empty() ? "null" : JsonQuote(game_source_name))
@@ -3461,6 +3628,7 @@ public:
             lodestone_cache_.Reset();
             fs::create_directories(screenshot_root_);
             fs::create_directories(cctv_root_);
+            fs::create_directories(character_visual_root_);
             status = 200;
             const auto message = "Cleared native cache folder.";
             Log(message);
@@ -3508,6 +3676,154 @@ public:
     }
 
 private:
+    static std::string StableTextDigest(const std::string& value) {
+        uint64_t hash = 1469598103934665603ULL;
+        for (const unsigned char ch : value) {
+            hash ^= ch;
+            hash *= 1099511628211ULL;
+        }
+        std::ostringstream stream;
+        stream << std::hex << std::setw(16) << std::setfill('0') << hash;
+        return stream.str().substr(0, 12);
+    }
+
+    static std::string CharacterVisualKey(const std::string& character_name, const std::string& world_name) {
+        return ToLower(Trim(character_name)) + "@" + ToLower(Trim(world_name));
+    }
+
+    fs::path CharacterVisualDir(const std::string& identity_key, const std::string& character_name, const std::string& world_name) const {
+        return character_visual_root_ /
+               (SanitizeFileFragment(character_name + "_" + world_name) + "_" + StableTextDigest(identity_key));
+    }
+
+    std::optional<std::string> CacheUrlForPath(const fs::path& path) const {
+        try {
+            const auto cache_root = fs::weakly_canonical(cache_root_);
+            const auto candidate = fs::weakly_canonical(path);
+            if (!fs::is_regular_file(candidate)) {
+                return std::nullopt;
+            }
+            const auto root_text = cache_root.wstring();
+            const auto candidate_text = candidate.wstring();
+            if (candidate_text.size() < root_text.size() ||
+                _wcsnicmp(candidate_text.c_str(), root_text.c_str(), root_text.size()) != 0) {
+                return std::nullopt;
+            }
+            const auto relative = fs::relative(candidate, cache_root).generic_string();
+            const auto modified = fs::last_write_time(candidate).time_since_epoch().count();
+            return "/assets/" + UrlPathEscape(relative) + "?v=" + std::to_string(modified);
+        } catch (...) {
+            return std::nullopt;
+        }
+    }
+
+    std::string BuildCharacterVisualJson(const std::string& character_name, const std::string& world_name) const {
+        const auto identity_key = CharacterVisualKey(character_name, world_name);
+        const auto metadata_path = CharacterVisualDir(identity_key, character_name, world_name) / "metadata.json";
+        std::map<std::string, std::string> metadata;
+        if (fs::is_regular_file(metadata_path)) {
+            try {
+                std::ifstream input(metadata_path, std::ios::binary);
+                std::ostringstream buffer;
+                buffer << input.rdbuf();
+                ParseTopLevelObject(buffer.str(), metadata);
+            } catch (...) {
+                metadata.clear();
+            }
+        }
+        if (metadata.empty() || JsonStringFieldOrEmpty(metadata, "status") != "ready") {
+            return "{\"status\":\"unavailable\",\"source\":\"pluginFallback\",\"faceUrl\":null,\"portraitUrl\":null}";
+        }
+        const auto url = CacheUrlForPath(fs::path(JsonStringFieldOrEmpty(metadata, "cachePath")));
+        if (!url.has_value()) {
+            return "{\"status\":\"unavailable\",\"source\":\"pluginFallback\",\"faceUrl\":null,\"portraitUrl\":null}";
+        }
+
+        std::ostringstream stream;
+        stream << "{"
+               << "\"status\":\"ready\""
+               << ",\"source\":\"pluginFallback\""
+               << ",\"targetCharacterName\":" << JsonValueOrNull(metadata, "targetCharacterName")
+               << ",\"targetWorldName\":" << JsonValueOrNull(metadata, "targetWorldName")
+               << ",\"captureKind\":" << JsonValueOrNull(metadata, "captureKind")
+               << ",\"capturedAtUtc\":" << JsonValueOrNull(metadata, "capturedAtUtc")
+               << ",\"faceUrl\":null"
+               << ",\"portraitUrl\":" << JsonQuote(*url)
+               << "}";
+        return stream.str();
+    }
+
+    std::string BuildVisualsJson(const std::string& character_name, const std::string& world_name, const std::string& lodestone_json) const {
+        const auto ingame_json = BuildCharacterVisualJson(character_name, world_name);
+        std::map<std::string, std::string> lodestone;
+        std::map<std::string, std::string> ingame;
+        ParseTopLevelObject(lodestone_json, lodestone);
+        ParseTopLevelObject(ingame_json, ingame);
+
+        const auto lodestone_face = JsonStringFieldOrEmpty(lodestone, "faceUrl");
+        const auto lodestone_portrait = JsonStringFieldOrEmpty(lodestone, "portraitUrl");
+        const auto ingame_portrait = JsonStringFieldOrEmpty(ingame, "portraitUrl");
+        const auto preferred_portrait = !lodestone_portrait.empty() ? lodestone_portrait : ingame_portrait;
+        const auto preferred_source = !lodestone_portrait.empty() || !lodestone_face.empty()
+                                          ? "lodestone"
+                                          : (!ingame_portrait.empty() ? "pluginFallback" : "none");
+
+        std::ostringstream stream;
+        stream << "{"
+               << "\"preferredSource\":" << JsonQuote(preferred_source)
+               << ",\"preferredFaceUrl\":" << (lodestone_face.empty() ? "null" : JsonQuote(lodestone_face))
+               << ",\"preferredPortraitUrl\":" << (preferred_portrait.empty() ? "null" : JsonQuote(preferred_portrait))
+               << ",\"lodestone\":" << lodestone_json
+               << ",\"pluginFallback\":" << ingame_json
+               << "}";
+        return stream.str();
+    }
+
+    static std::pair<uintmax_t, uintmax_t> DirectoryStats(const fs::path& root) {
+        uintmax_t files = 0;
+        uintmax_t bytes = 0;
+        std::error_code ignored;
+        if (!fs::exists(root, ignored)) {
+            return {0, 0};
+        }
+        for (fs::recursive_directory_iterator it(root, fs::directory_options::skip_permission_denied, ignored), end;
+             it != end;
+             it.increment(ignored)) {
+            if (ignored) {
+                ignored.clear();
+                continue;
+            }
+            if (it->is_regular_file(ignored)) {
+                ++files;
+                bytes += it->file_size(ignored);
+            }
+        }
+        return {files, bytes};
+    }
+
+    std::string CacheDiagnosticsJson() const {
+        const auto [cache_files, cache_bytes] = DirectoryStats(cache_root_);
+        const auto [extracted_files, extracted_bytes] = DirectoryStats(extracted_root_);
+        const auto [lodestone_files, lodestone_bytes] = DirectoryStats(cache_root_ / "lodestone");
+        const auto [visual_files, visual_bytes] = DirectoryStats(character_visual_root_);
+        std::ostringstream stream;
+        stream << "{"
+               << "\"dataRoot\":" << JsonQuote(data_root_.string())
+               << ",\"cacheRoot\":" << JsonQuote(cache_root_.string())
+               << ",\"extractedRoot\":" << JsonQuote(extracted_root_.string())
+               << ",\"assetPlanPath\":" << JsonQuote(asset_plan_path_.string())
+               << ",\"cacheFiles\":" << cache_files
+               << ",\"cacheBytes\":" << cache_bytes
+               << ",\"extractedFiles\":" << extracted_files
+               << ",\"extractedBytes\":" << extracted_bytes
+               << ",\"lodestoneFiles\":" << lodestone_files
+               << ",\"lodestoneBytes\":" << lodestone_bytes
+               << ",\"characterVisualFiles\":" << visual_files
+               << ",\"characterVisualBytes\":" << visual_bytes
+               << "}";
+        return stream.str();
+    }
+
     bool StartAssetWorkerThread(std::string asset_plan_json, std::string game_path, const std::string& log_message, std::string& error) {
         try {
             std::thread worker([this, asset_plan_json = std::move(asset_plan_json), game_path = std::move(game_path)]() mutable {
@@ -4058,6 +4374,7 @@ private:
     std::string BuildMonitoredMemberJson(const ClientState& client, const ClientState& source, const std::map<std::string, std::string>* party_member, std::chrono::steady_clock::time_point now) const {
         std::map<std::string, std::string> player;
         ParseTopLevelObject(RawFieldOrNull(client, "player"), player);
+        const auto lodestone_json = lodestone_cache_.GetVisualJson(client.character_name, client.world_name);
 
         std::ostringstream stream;
         stream << "{"
@@ -4094,7 +4411,8 @@ private:
                << ",\"isSubmitting\":" << (!client.disconnected && ClientAgeSeconds(client, now) < stale_seconds_ ? "true" : "false")
                << ",\"isSource\":" << (ClientKeyText(client) == ClientKeyText(source) ? "true" : "false")
                << ",\"isStranger\":false"
-               << ",\"lodestone\":" << lodestone_cache_.GetVisualJson(client.character_name, client.world_name)
+               << ",\"lodestone\":" << lodestone_json
+               << ",\"visuals\":" << BuildVisualsJson(client.character_name, client.world_name, lodestone_json)
                << "}";
         return stream.str();
     }
@@ -4105,6 +4423,7 @@ private:
         if (member_world.empty()) {
             member_world = fallback_world;
         }
+        const auto lodestone_json = lodestone_cache_.GetVisualJson(member_name, member_world);
         std::ostringstream stream;
         stream << "{"
                << "\"accountId\":\"\""
@@ -4125,7 +4444,8 @@ private:
                << ",\"raceId\":" << JsonValueOrNull(member, "raceId")
                << ",\"tribeId\":" << JsonValueOrNull(member, "tribeId")
                << ",\"position\":" << JsonValueOrNull(member, "position")
-               << ",\"lodestone\":" << lodestone_cache_.GetVisualJson(member_name, member_world)
+               << ",\"lodestone\":" << lodestone_json
+               << ",\"visuals\":" << BuildVisualsJson(member_name, member_world, lodestone_json)
                << ",\"conditions\":null,\"policy\":null,\"repair\":null,\"lastScreenshot\":null,\"lastCctvFrame\":null"
                << ",\"territoryId\":null,\"territoryName\":\"Unavailable\",\"lastSeenUtc\":\"Unavailable\",\"updateKind\":\"party\""
                << ",\"stale\":false,\"isDisconnected\":false,\"isMonitored\":false,\"isSubmitting\":false,\"isSource\":false,\"isStranger\":true"
@@ -4274,6 +4594,7 @@ private:
                     ++stranger_count;
                 }
             }
+            const auto source_lodestone_json = lodestone_cache_.GetVisualJson(source->character_name, source->world_name);
 
             std::ostringstream party;
             party << "{"
@@ -4289,7 +4610,8 @@ private:
                   << ",\"sourcePolicy\":" << RawFieldOrNull(*source, "policy")
                   << ",\"sourceLastScreenshot\":" << (source->last_screenshot_json.empty() ? "null" : source->last_screenshot_json)
                   << ",\"sourceLastCctvFrame\":" << (source->last_cctv_frame_json.empty() ? "null" : source->last_cctv_frame_json)
-                  << ",\"sourceLodestone\":" << lodestone_cache_.GetVisualJson(source->character_name, source->world_name)
+                  << ",\"sourceLodestone\":" << source_lodestone_json
+                  << ",\"sourceVisuals\":" << BuildVisualsJson(source->character_name, source->world_name, source_lodestone_json)
                   << ",\"territoryId\":" << RawFieldOrNull(*source, "territoryId")
                   << ",\"territoryName\":" << RawFieldOrNull(*source, "territoryName")
                   << ",\"map\":" << RawFieldOrNull(*source, "map")
@@ -4966,6 +5288,7 @@ private:
     std::string ClientJson(const ClientState& client, std::chrono::steady_clock::time_point now) const {
         const auto age = ClientAgeSeconds(client, now);
         const bool stale = age >= stale_seconds_;
+        const auto lodestone_json = lodestone_cache_.GetVisualJson(client.character_name, client.world_name);
         std::ostringstream stream;
         stream << "{"
                << "\"accountId\":" << JsonQuote(client.account_id)
@@ -4977,11 +5300,12 @@ private:
                << ",\"stale\":" << (stale ? "true" : "false")
                << ",\"isDisconnected\":" << (client.disconnected ? "true" : "false")
                << ",\"goodbyeUtc\":" << (client.goodbye_utc.empty() ? "null" : JsonQuote(client.goodbye_utc))
-               << ",\"lodestone\":" << lodestone_cache_.GetVisualJson(client.character_name, client.world_name);
+               << ",\"lodestone\":" << lodestone_json
+               << ",\"visuals\":" << BuildVisualsJson(client.character_name, client.world_name, lodestone_json);
 
         static const std::vector<std::string> server_fields = {
             "accountId", "characterName", "worldName", "connectedAtUtc", "lastSeenUtc",
-            "ageSeconds", "stale", "isDisconnected", "goodbyeUtc", "lastScreenshot", "lastCctvFrame", "lodestone"
+            "ageSeconds", "stale", "isDisconnected", "goodbyeUtc", "lastScreenshot", "lastCctvFrame", "lodestone", "visuals"
         };
         for (const auto& [key, value] : client.fields) {
             if (std::find(server_fields.begin(), server_fields.end(), key) != server_fields.end()) {
@@ -5028,6 +5352,7 @@ private:
     fs::path cache_root_;
     fs::path screenshot_root_;
     fs::path cctv_root_;
+    fs::path character_visual_root_;
     mutable LodestonePortraitCache lodestone_cache_;
     std::string server_host_name_;
     mutable std::mutex mutex_;
@@ -5160,12 +5485,14 @@ function renderIdentity(entity){const wrap=document.createElement("div");wrap.cl
 const entityDisplayCharacter=entity=>displayCharacter(entity?.characterName??entity?.name??entity?.sourceCharacterName,entity?.worldName??entity?.sourceWorldName,entity?.krangledName??entity?.sourceKrangledName);
 const entityLevelValue=entity=>entity?.level??entity?.player?.level??null;
 const entityLodestone=entity=>entity?.lodestone||entity?.sourceLodestone||null;
+const entityVisuals=entity=>entity?.visuals||entity?.sourceVisuals||null;
 const entityAncestryText=entity=>localizedAssetName(tribeIconAsset(entity?.tribeId)||raceIconAsset(entity?.raceId),entity?.gender)||"Unknown race";
 const entityIdentityLine=entity=>`${entityAncestryText(entity)} | ${entity?.job||"--"} | ${levelText(entityLevelValue(entity))}`;
 const entityInitials=entity=>{const parts=String(entity?.characterName??entity?.name??entity?.sourceCharacterName??"?").trim().split(/\\s+/).filter(Boolean);const letters=`${parts[0]?.[0]||"?"}${parts[1]?.[0]||""}`;return letters.toUpperCase()||"?"};
-function portraitUrlFor(entity,kind="face"){const lodestone=entityLodestone(entity);if(!lodestone)return null;return kind==="portrait"?(lodestone.portraitUrl||lodestone.faceUrl||null):(lodestone.faceUrl||lodestone.portraitUrl||null)}
-function renderPortraitFrame(entity,{kind="face",className="faceframe",label="",title=""}={}){const frame=document.createElement("div");frame.className=className;const altLabel=label||entityDisplayCharacter(entity);const sourceUrl=portraitUrlFor(entity,kind);if(sourceUrl){const img=document.createElement("img");img.src=sourceUrl;img.alt=altLabel;img.loading="lazy";frame.appendChild(img)}else{frame.classList.add("placeholder");frame.textContent=entityInitials(entity)}const lodestone=entityLodestone(entity);const stateText=lodestone?.status&&lodestone.status!=="ready"?` | Lodestone ${lodestone.status}`:"";frame.title=title||`${altLabel}${stateText}`;return frame}
+function portraitUrlFor(entity,kind="face"){const visuals=entityVisuals(entity),lodestone=entityLodestone(entity);if(kind==="portrait")return visuals?.preferredPortraitUrl||lodestone?.portraitUrl||lodestone?.faceUrl||null;return visuals?.preferredFaceUrl||lodestone?.faceUrl||lodestone?.portraitUrl||null}
+function renderPortraitFrame(entity,{kind="face",className="faceframe",label="",title=""}={}){const frame=document.createElement("div");frame.className=className;const altLabel=label||entityDisplayCharacter(entity);const sourceUrl=portraitUrlFor(entity,kind);if(sourceUrl){const img=document.createElement("img");img.src=sourceUrl;img.alt=altLabel;img.loading="lazy";frame.appendChild(img)}else{frame.classList.add("placeholder");frame.textContent=entityInitials(entity)}const lodestone=entityLodestone(entity),visuals=entityVisuals(entity);const stateText=lodestone?.status&&lodestone.status!=="ready"?` | Lodestone ${lodestone.status}`:"";const fallbackText=visuals?.pluginFallback?.status==="ready"?" | Plugin fallback ready":"";frame.title=title||`${altLabel}${stateText}${fallbackText}`;return frame}
 const lodestoneStatus=entity=>String(entityLodestone(entity)?.status||"unavailable");
+const visualSourceLabel=entity=>{const visuals=entityVisuals(entity);if(visuals?.preferredSource==="pluginFallback")return"Fallback";if(visuals?.preferredSource==="lodestone")return"Lodestone";const status=lodestoneStatus(entity);return status==="pending"||status==="refreshing"?"Pending":status==="error"||status==="not_found"?"Error":"No visual"};
 const CCTV_QUALITY_PRESETS={low:{label:"Low",intervalMs:2600},medium:{label:"Medium",intervalMs:1400},high:{label:"High",intervalMs:800}};
 const cctvSessions=new Map();
 function buildRemoteTarget(target){if(!target)return null;const accountId=String(target.accountId||target.sourceAccountId)TTSLHUD"
@@ -5183,10 +5510,11 @@ function setCctvQuality(surfaceKey,quality){const session=cctvSessions.get(Strin
 function renderCctvSection(surfaceKey,title="CCTV"){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return null;const section=document.createElement("div");section.className="section board-map-section cctv-section";section.innerHTML=`<div class="sectionhead">${title}</div>`;const top=document.createElement("div");top.className="cctv-top";const meta=document.createElement("div");meta.className="hint";const frame=session.remote?.lastCctvFrame||null;meta.textContent=`${session.label||"Tracked client"} | ${cctvPreset(session.quality).label}${frame?.capturedAtUtc?` | ${frame.capturedAtUtc}`:" | waiting for first frame"}`;const actions=document.createElement("div");actions.className="mini-actions";for(const [quality,preset] of Object.entries(CCTV_QUALITY_PRESETS)){const button=document.createElement("button");button.type="button";button.textContent=preset.label;button.classList.toggle("active",quality===session.quality);button.addEventListener("click",event=>{stopEvent(event);setCctvQuality(surfaceKey,quality)});actions.appendChild(button)}const close=document.createElement("button");close.type="button";close.textContent="Close";close.addEventListener("click",event=>{stopEvent(event);stopCctvSession(surfaceKey,true)});actions.appendChild(close);top.append(meta,actions);const frameWrap=document.createElement("div");frameWrap.className="cctv-frame";frameWrap.style.maxWidth=`${currentViewportSettings(false).boxPx}px`;if(frame?.url){const img=document.createElement("img");img.src=`${frame.url}${frame.url.includes("?")?"&":"?"}t=${encodeURIComponent(frame.capturedAtUtc||Date.now())}`;img.alt=`Live CCTV for ${session.label||"tracked client"}`;img.loading="eager";frameWrap.appendChild(img)}else{frameWrap.appendChild(Object.assign(document.createElement("div"),{className:"hint",textContent:"Awaiting the first CCTV frame from the client."}))}section.append(top,frameWrap,Object.assign(document.createElement("div"),{className:"controlnote",textContent:"CCTV uses rolling game-window captures and replaces the map pane until closed."}));return section}
 function mapOrCctvSection(surfaceKey,mapSection,title){const cctv=renderCctvSection(surfaceKey,title);return cctv||mapSection}
 async function requestShortcutScreenshot(target,options={}){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowScreenshotRequests)return false;return queueRemoteAction(remote,"requestScreenshot","",options)}
+async function requestPluginFallback(target,options={}){const remote=buildRemoteTarget(options.sourceTarget||target);if(!remote?.policy?.allowPluginFullBodyFallback)return false;return queueRemoteAction(remote,"requestCharacterVisual","",{...options,extra:{...(options.extra||{}),targetCharacterName:target?.characterName||target?.name||target?.sourceCharacterName,targetWorldName:target?.worldName||target?.sourceWorldName,targetContentId:target?.contentId||"",targetEntityId:target?.entityId||target?.targetEntityId||null}})}
 async function promptShortcutCommand(target,label){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowEchoCommands)return;const draftKey=remoteControlKey(remote);const seeded=String(remoteControlDrafts.get(draftKey)||"");const input=window.prompt(`Send text or slash command to ${label}`,seeded);if(input==null)return;const text=String(input).trim();if(!text)return;remoteControlDrafts.set(draftKey,text);const ok=await queueRemoteAction(remote,"echoCommand",text);if(ok)remoteControlDrafts.delete(draftKey)}
 async function openShortcutScreenshotFolder(button){button.disabled=true;try{const res=await fetch("/api/open-screenshot-folder",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"}),data=await res.json().catch(()=>({ok:fals)TTSLHUD"
            + R"TTSLHUD(e,error:`HTTP ${res.status}`}));if(!res.ok||!data?.ok){extractStatus.textContent=data?.error||data?.message||`Failed to open screenshot folder (HTTP ${res.status})`;return false}extractStatus.textContent=data?.message||"Opened screenshot folder on the server host.";return true}catch(err){extractStatus.textContent=`Failed to open screenshot folder: ${err}`;return false}finally{button.disabled=false}}
-function renderShortcutStrip(target,label,options={}){const controls=document.createElement("div");controls.className="mini-actions";const remote=buildRemoteTarget(target),surfaceKey=String(options.surfaceKey||"").trim();const cctv=document.createElement("button");cctv.type="button";cctv.textContent="CCTV";const cctvActive=surfaceKey&&isCctvActiveForSurfaceTarget(surfaceKey,target);if(cctvActive)cctv.classList.add("active");cctv.disabled=!surfaceKey||!remote?.policy?.allowCctvStreaming;cctv.title=cctv.disabled?"CCTV is not allowed for this client.":cctvActive?`Close CCTV for ${label}`:`Replace the map pane with live CCTV for ${label}`;cctv.addEventListener("click",event=>{stopEvent(event);if(cctvActive)stopCctvSession(surfaceKey,true);else openCctvSession(surfaceKey,target,label)});const screenshot=document.createElement("button");screenshot.type="button";screenshot.textContent="SS";screenshot.disabled=!remote?.policy?.allowScreenshotRequests;screenshot.title=screenshot.disabled?"Screenshot requests are not allowed for this client.":`Request a screenshot from ${label}`;screenshot.addEventListener("click",event=>{stopEvent(event);screenshot.disabled=true;requestShortcutScreenshot(remote).finally(()=>{screenshot.disabled=!remote?.policy?.allowScreenshotRequests})});const screenshotFolder=document.createElement("button");screenshotFolder.type="button";screenshotFolder.textContent="SSF";screenshotFolder.title="Open the screenshot folder on the TTSL server host.";screenshotFolder.addEventListener("click",event=>{stopEvent(event);void openShortcutScreenshotFolder(screenshotFolder)});const command=document.createElement("button");command.type="button";command.textContent="CMD";command.disabled=!remote?.policy?.allowEchoCommands;command.title=command.disabled?"Web text or slash commands are not allowed for this client.":`Open a command prompt for ${label}`;command.addEventListener("click",event=>{stopEvent(event);void promptShortcutCommand(remote,label)});controls.append(cctv,screenshot,screenshotFolder,command);return controls}
+function renderShortcutStrip(target,label,options={}){const controls=document.createElement("div");controls.className="mini-actions";const remote=buildRemoteTarget(target),surfaceKey=String(options.surfaceKey||"").trim();const cctv=document.createElement("button");cctv.type="button";cctv.textContent="CCTV";const cctvActive=surfaceKey&&isCctvActiveForSurfaceTarget(surfaceKey,target);if(cctvActive)cctv.classList.add("active");cctv.disabled=!surfaceKey||!remote?.policy?.allowCctvStreaming;cctv.title=cctv.disabled?"CCTV is not allowed for this client.":cctvActive?`Close CCTV for ${label}`:`Replace the map pane with live CCTV for ${label}`;cctv.addEventListener("click",event=>{stopEvent(event);if(cctvActive)stopCctvSession(surfaceKey,true);else openCctvSession(surfaceKey,target,label)});const screenshot=document.createElement("button");screenshot.type="button";screenshot.textContent="SS";screenshot.disabled=!remote?.policy?.allowScreenshotRequests;screenshot.title=screenshot.disabled?"Screenshot requests are not allowed for this client.":`Request a screenshot from ${label}`;screenshot.addEventListener("click",event=>{stopEvent(event);screenshot.disabled=true;requestShortcutScreenshot(remote).finally(()=>{screenshot.disabled=!remote?.policy?.allowScreenshotRequests})});const screenshotFolder=document.createElement("button");screenshotFolder.type="button";screenshotFolder.textContent="SSF";screenshotFolder.title="Open the screenshot folder on the TTSL server host.";screenshotFolder.addEventListener("click",event=>{stopEvent(event);void openShortcutScreenshotFolder(screenshotFolder)});const command=document.createElement("button");command.type="button";command.textContent="CMD";command.disabled=!remote?.policy?.allowEchoCommands;command.title=command.disabled?"Web text or slash commands are not allowed for this client.":`Open a command prompt for ${label}`;command.addEventListener("click",event=>{stopEvent(event);void promptShortcutCommand(remote,label)});const fallback=document.createElement("button");fallback.type="button";fallback.textContent="FB";fallback.disabled=!remote?.policy?.allowPluginFullBodyFallback;fallback.title=fallback.disabled?"Plugin full-body fallback is off for this client.":`Request plugin full-body fallback for ${label}`;fallback.addEventListener("click",event=>{stopEvent(event);fallback.disabled=true;requestPluginFallback(target,{refreshDelayMs:900}).finally(()=>{fallback.disabled=!remote?.policy?.allowPluginFullBodyFallback})});controls.append(cctv,screenshot,screenshotFolder,command,fallback);return controls}
 function microStat(label,value,bad=false){const stat=document.createElement("div");stat.className=`microstat ${bad?"bad":""}`.trim();stat.innerHTML=`<div class="microstat-label">${label}</div><div class="microstat-value">${value}</div>`;return stat}
 function collectHostiles(combat){const hostiles=[];if(combat?.currentTarget)hostiles.push(combat.currentTarget);for(const hostile of combat?.hostiles||[]){if(!hostiles.some(existing=>existing.dataId===hostile.dataId&&existing.distance===hostile.distance&&existing.name===hostile.name))hostiles.push(hostile)}return hostiles}
 function buildEnemyPoints(combat){return Array.isArray(combat?.hostiles)?combat.hostiles.filter(enemy=>enemy.position).map((enemy,index)=>({position:enemy.position,color:enemy.isCurrentTarget?"#ff5e7d":enemy.isTargetingTrackedParty?"#ff9b7a":"#ff7f7f",label:enemy.isCurrentTarget?"TGT":`E${index+1}`})):[]}
@@ -5364,7 +5692,7 @@ function renderAggregateTelemetry(party){if(!showDetails)return null;return fact
 function aggregateSourceMember(party){return party.members.find(member=>member.isSource&&member.position)||party.members.find(member=>member.isSource)||party.members.find(member=>member.position&&!member.isStranger)||party.members.find(member=>!member.isStranger)||null}
 function buildSoloSurfaceMember(client){return{...client,name:client.characterName,level:entityLevelValue(client),currentHp:client.player?.currentHp,maxHp:client.player?.maxHp,currentMp:client.player?.currentMp,maxMp:client.player?.maxMp,isSolo:true,isSource:false,isSubmitting:!client.stale&&!client.isDisconnected,isStranger:false}}
 function renderPartyMemberCard(member,options={}){const card=document.createElement("div");card.className=`party-slot-card ${member.isSolo?"solo":""} ${member.isSource||member.isSolo?"source":""} ${member.stale?"stale":""} ${member.isDisconnected?"disconnected":""} ${member.isStranger?"stranger":""}`.trim();const top=document.createElement("div");top.className="party-slot-top";const body=document.createElement("div");body.className="member-body";const strangerStatus=lodestoneStatus(member);body.innerHTML=`<div class="member-card-name">${entityDisplayCharacter(member)}</div><div class="member-line">${entityIdentityLine(member)}</div><div class="member-line">${member.isStranger?`Party HP/MP telemetry | Lodestone ${strangerStatus==="ready"?"ready":strangerStatus==="pending"||strangerStatus==="refreshing"?"queued":"unresolved"} | direct actions disabled`:`${member.territoryName||"Unknown zone"} | ${member.lastSeenUtc||"Unknown"}`}</div>`;const badges=document.createElement("div");badges.className="member-badges";i)TTSLHUD"
-           + R"TTSLHUD(f(member.isSolo)badges.appendChild(chip("Solo","ok"));else if(member.isSource)badges.appendChild(chip("Source","ok"));if(member.isStranger){badges.appendChild(chip("Stranger","bad"));badges.appendChild(chip(strangerStatus==="ready"?"Lodestone":"Lookup",strangerStatus==="ready"?"ok":strangerStatus==="pending"||strangerStatus==="refreshing"?"warn":"bad"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"),chip(member.isSubmitting?"Tracked":"Paused",member.isSubmitting?"ok":"warn"))}const shortcuts=renderShortcutStrip(member,entityDisplayCharacter(member),options);if(!member.isSolo)badges.appendChild(shortcuts);body.appendChild(badges);top.append(renderPortraitFrame(member,{kind:"face",className:member.isSolo?"faceframe":"faceframe small",label:entityDisplayCharacter(member)}),body);const stats=document.createElement("div");stats.className="member-microstats";stats.append(microStat("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null),microStat("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null),microStat("XYZ",posText(member.position),!member.position));card.append(top,stats);if(member.isSolo)card.appendChild(shortcuts);return card}
+           + R"TTSLHUD(f(member.isSolo)badges.appendChild(chip("Solo","ok"));else if(member.isSource)badges.appendChild(chip("Source","ok"));if(member.isStranger){badges.appendChild(chip("Stranger","bad"));badges.appendChild(chip(visualSourceLabel(member),strangerStatus==="ready"?"ok":strangerStatus==="pending"||strangerStatus==="refreshing"?"warn":"bad"))}else{badges.append(chip(member.isDisconnected?"Disconnected":member.stale?"Stale":"Live",member.isDisconnected?"bad":member.stale?"warn":"ok"),chip(member.isSubmitting?"Tracked":"Paused",member.isSubmitting?"ok":"warn"),chip(visualSourceLabel(member),entityVisuals(member)?.preferredSource==="pluginFallback"?"warn":lodestoneStatus(member)==="ready"?"ok":"bad"))}const shortcuts=renderShortcutStrip(member,entityDisplayCharacter(member),options);if(!member.isSolo)badges.appendChild(shortcuts);body.appendChild(badges);top.append(renderPortraitFrame(member,{kind:"face",className:member.isSolo?"faceframe":"faceframe small",label:entityDisplayCharacter(member)}),body);const stats=document.createElement("div");stats.className="member-microstats";stats.append(microStat("HP",hpText(member.currentHp,member.maxHp),member.currentHp==null),microStat("MP",mpText(member.currentMp,member.maxMp),member.currentMp==null),microStat("XYZ",posText(member.position),!member.position));card.append(top,stats);if(member.isSolo)card.appendChild(shortcuts);return card}
 function denseCell(label,value,extraClass=""){const cell=document.createElement("div");cell.className=`densecell ${extraClass}`.trim();cell.dataset.label=label;cell.textContent=value;return cell}
 function aggregateMemberDistance(sourceMember,member){if(member===sourceMember||member?.isSource)return"SRC";if(!sourceMember?.position||!member?.position)return"--";const dx=Number(member.position.x)-Number(sourceMember.position.x),dz=Number(member.position.z)-Number(sourceMember.position.z);return`${Math.hypot(dx,dz).toFixed(1)}y`}
 function aggregateMemberStatus(member){if(member.isStranger)return"Stranger";const liveState=member.isDisconnected?"Disc":member.stale?"Stale":"Live";if(member.isSource)return`Source | ${liveState}`;return member.isSubmitting?`Sub | ${liveState}`:liveState}
@@ -5415,7 +5743,7 @@ function renderAggregateParty(party,options={}){
   return card;
 }
 function renderEmptyState(totalClients){const empty=document.createElement("div");empty.className="empty";empty.textContent=totalClients===0?"No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor.":"All tracked clients are stale or disconnected.";return empty}
-function renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const panel=document.createElement("section");panel.className="overviewpanel";panel.innerHTML=`<div class="sectionhead">Situation</div>`;const grid=document.createElement("div");grid.className="overviewgrid";const visibleSurfaces=aggregateParties.checked?visibleAggregate.length+visibleLoose.length:visibleClients.length;grid.append(overviewCard("Tracked",String(totalClients),`${liveClients} live | ${totalClients-liveClients} stale/disconnected`),overviewCard("Visible",String(visibleSurfaces),aggregateParties.checked?`${visibleAggregate.length} party surfaces | ${visibleLoose.length} loose`:`${visibleClients.length} client surfaces`),overviewCard("Path",state.gamePathInfo?.captured?"Ready":"Missing",pathSummary(state.gamePathInfo)),overviewCard("Extract",state.assetExtraction?.running?"Busy":state.assetExtraction?.lastExitCode===0?"Ready":"Idle",extractionSummary(state.assetExtraction)));panel.appendChild(grid);return panel}
+function renderOverviewPanel(state,visibleClients,visibleAggregate,visibleLoose,totalClients,liveClients){const panel=document.createElement("section");panel.className="overviewpanel";panel.innerHTML=`<div class="sectionhead">Situation</div>`;const grid=document.createElement("div");grid.className="overviewgrid";const visibleSurfaces=aggregateParties.checked?visibleAggregate.length+visibleLoose.length:visibleClients.length,cache=state.cacheDiagnostics||{};grid.append(overviewCard("Tracked",String(totalClients),`${liveClients} live | ${totalClients-liveClients} stale/disconnected`),overviewCard("Visible",String(visibleSurfaces),aggregateParties.checked?`${visibleAggregate.length} party surfaces | ${visibleLoose.length} loose`:`${visibleClients.length} client surfaces`),overviewCard("Data",cache.cacheRoot?"Ready":"Missing",cache.cacheRoot||"No cache root reported"),overviewCard("Extract",state.assetExtraction?.running?"Busy":state.assetExtraction?.lastExitCode===0?"Ready":"Idle",`${extractionSummary(state.assetExtraction)} | cache ${cache.cacheFiles??0} files`));panel.appendChild(grid);return panel}
 function buildSurfaceEntries(visibleClients,visibleAggregate,visibleLoose){return aggregateParties.checked?[...visibleAggregate.map(party=>({key:partyKey(party),kind:"party",item:party})),...visibleLoose.map(client=>({key:clientKey(client),kind:"client",item:client}))]:visibleClients.map(client=>({key:clientKey(client),kind:"client",item:client}))}
 function resolveSelectedEntry(entries){if(entries.length===0){selectedEntityKey="";persistStringPreference("selectedEntity","");return null}const found=entries.find(entry=>entry.key===selectedEntityKey);if(found)return found;selectedEntityKey=entries[0].key;persistStringPreference("selectedEntity",selectedEntityKey);return entries[0]}
 function wireSelectableSurface(element,key){element.tabIndex=0;element.setAttribute("role","button");element.addEventListener("click",()=>selectEntity(key));element.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();selectEntity(key)}})}
@@ -5731,6 +6059,10 @@ private:
             } else if (request.method == "POST" && request.path == "/api/upload-screenshot") {
                 int status = 200;
                 const auto body = state_.SaveUploadedScreenshot(request.body, status);
+                SendResponse(client, status, "application/json; charset=utf-8", body);
+            } else if (request.method == "POST" && request.path == "/api/upload-character-visual") {
+                int status = 200;
+                const auto body = state_.SaveUploadedCharacterVisual(request.body, status);
                 SendResponse(client, status, "application/json; charset=utf-8", body);
             } else if (request.method == "POST" && request.path == "/api/open-screenshot-folder") {
                 int status = 200;

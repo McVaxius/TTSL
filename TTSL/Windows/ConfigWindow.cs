@@ -215,6 +215,15 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         ImGui.SameLine();
         HelpMarker("Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets.");
 
+        var enablePluginFullBodyFallback = cfg.EnablePluginFullBodyFallback;
+        if (ImGui.Checkbox("Enable plugin full-body fallback", ref enablePluginFullBodyFallback))
+        {
+            cfg.EnablePluginFullBodyFallback = enablePluginFullBodyFallback;
+            changed = true;
+        }
+        ImGui.SameLine();
+        HelpMarker("Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable.");
+
         ImGui.TextDisabled("Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0.");
         ImGui.TextDisabled("Clients are grouped by incoming account ID and character on the server page.");
         ImGui.TextDisabled("The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar.");
