@@ -19,6 +19,7 @@
 #include <commctrl.h>
 #include <wincodec.h>
 #include <winhttp.h>
+#include <bcrypt.h>
 
 #include <algorithm>
 #include <atomic>
@@ -667,6 +668,127 @@ std::vector<uint8_t> DecodeBase64(const std::string& input) {
         }
     }
     return output;
+}
+
+std::string EncodeBase64(const uint8_t* data, size_t size) {
+    static constexpr char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string output;
+    output.reserve(((size + 2) / 3) * 4);
+    for (size_t index = 0; index < size; index += 3) {
+        const uint32_t a = data[index];
+        const uint32_t b = index + 1 < size ? data[index + 1] : 0;
+        const uint32_t c = index + 2 < size ? data[index + 2] : 0;
+        const uint32_t triple = (a << 16) | (b << 8) | c;
+        output.push_back(alphabet[(triple >> 18) & 0x3F]);
+        output.push_back(alphabet[(triple >> 12) & 0x3F]);
+        output.push_back(index + 1 < size ? alphabet[(triple >> 6) & 0x3F] : '=');
+        output.push_back(index + 2 < size ? alphabet[triple & 0x3F] : '=');
+    }
+    return output;
+}
+
+std::vector<uint8_t> Sha1Digest(const std::string& input) {
+    BCRYPT_ALG_HANDLE algorithm = nullptr;
+    BCRYPT_HASH_HANDLE hash = nullptr;
+    std::vector<uint8_t> hash_object;
+    std::vector<uint8_t> digest;
+    auto cleanup = [&]() {
+        if (hash != nullptr) {
+            BCryptDestroyHash(hash);
+        }
+        if (algorithm != nullptr) {
+            BCryptCloseAlgorithmProvider(algorithm, 0);
+        }
+    };
+
+    if (BCryptOpenAlgorithmProvider(&algorithm, BCRYPT_SHA1_ALGORITHM, nullptr, 0) != 0) {
+        cleanup();
+        return {};
+    }
+
+    DWORD object_length = 0;
+    DWORD result_length = 0;
+    if (BCryptGetProperty(algorithm, BCRYPT_OBJECT_LENGTH, reinterpret_cast<PUCHAR>(&object_length),
+                          sizeof(object_length), &result_length, 0) != 0 ||
+        object_length == 0) {
+        cleanup();
+        return {};
+    }
+
+    DWORD hash_length = 0;
+    if (BCryptGetProperty(algorithm, BCRYPT_HASH_LENGTH, reinterpret_cast<PUCHAR>(&hash_length),
+                          sizeof(hash_length), &result_length, 0) != 0 ||
+        hash_length == 0) {
+        cleanup();
+        return {};
+    }
+
+    hash_object.resize(object_length);
+    digest.resize(hash_length);
+    if (BCryptCreateHash(algorithm, &hash, hash_object.data(), static_cast<ULONG>(hash_object.size()),
+                         nullptr, 0, 0) != 0 ||
+        BCryptHashData(hash,
+                       reinterpret_cast<PUCHAR>(const_cast<char*>(input.data())),
+                       static_cast<ULONG>(input.size()),
+                       0) != 0 ||
+        BCryptFinishHash(hash, digest.data(), static_cast<ULONG>(digest.size()), 0) != 0) {
+        cleanup();
+        return {};
+    }
+
+    cleanup();
+    return digest;
+}
+
+std::string WebSocketAcceptKey(const std::string& client_key) {
+    static constexpr char WebSocketGuid[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    const auto digest = Sha1Digest(client_key + WebSocketGuid);
+    return digest.empty() ? std::string{} : EncodeBase64(digest.data(), digest.size());
+}
+
+std::map<std::string, std::string> ParseQueryString(const std::string& query) {
+    std::map<std::string, std::string> values;
+    size_t index = 0;
+    while (index <= query.size()) {
+        const auto next = query.find('&', index);
+        const auto part = query.substr(index, next == std::string::npos ? std::string::npos : next - index);
+        if (!part.empty()) {
+            const auto equals = part.find('=');
+            const auto key = UrlDecode(equals == std::string::npos ? part : part.substr(0, equals));
+            const auto value = equals == std::string::npos ? std::string{} : UrlDecode(part.substr(equals + 1));
+            if (!key.empty()) {
+                values[key] = value;
+            }
+        }
+        if (next == std::string::npos) {
+            break;
+        }
+        index = next + 1;
+    }
+    return values;
+}
+
+std::string NormalizeCctvQuality(std::string quality) {
+    quality = ToLower(Trim(std::move(quality)));
+    if (quality == "low" || quality == "medium" || quality == "high") {
+        return quality;
+    }
+    return "high";
+}
+
+int CctvQualityRank(const std::string& quality) {
+    const auto normalized = NormalizeCctvQuality(quality);
+    if (normalized == "high") {
+        return 3;
+    }
+    if (normalized == "medium") {
+        return 2;
+    }
+    return 1;
+}
+
+std::string RemoteClientKey(const std::string& account_id, const std::string& character_name, const std::string& world_name) {
+    return account_id + "\x1F" + character_name + "\x1F" + world_name;
 }
 
 std::string SanitizeRemoteText(std::string text) {
@@ -1979,6 +2101,228 @@ struct ClientState {
     std::string last_cctv_frame_json;
 };
 
+struct WebSocketPeer {
+    explicit WebSocketPeer(SOCKET socket_handle)
+        : socket(socket_handle),
+          id(next_id.fetch_add(1, std::memory_order_relaxed)) {}
+
+    SOCKET socket = INVALID_SOCKET;
+    uint64_t id = 0;
+    std::mutex send_mutex;
+    std::atomic_bool open = true;
+
+    static std::atomic_uint64_t next_id;
+};
+
+std::atomic_uint64_t WebSocketPeer::next_id{1};
+
+enum class WebSocketMessageType {
+    Text,
+    Binary,
+    Close,
+};
+
+struct WebSocketMessage {
+    WebSocketMessageType type = WebSocketMessageType::Close;
+    std::vector<uint8_t> payload;
+};
+
+bool SocketSendAll(SOCKET socket_handle, const uint8_t* data, size_t size) {
+    size_t sent = 0;
+    while (sent < size) {
+        const auto remaining = size - sent;
+        const int chunk = static_cast<int>(std::min<size_t>(remaining, 64 * 1024));
+        const int result = send(socket_handle, reinterpret_cast<const char*>(data + sent), chunk, 0);
+        if (result <= 0) {
+            return false;
+        }
+        sent += static_cast<size_t>(result);
+    }
+    return true;
+}
+
+bool SocketSendAll(SOCKET socket_handle, const std::string& data) {
+    return SocketSendAll(socket_handle, reinterpret_cast<const uint8_t*>(data.data()), data.size());
+}
+
+bool SocketReadExact(SOCKET socket_handle, uint8_t* data, size_t size) {
+    size_t received_total = 0;
+    while (received_total < size) {
+        const auto remaining = size - received_total;
+        const int chunk = static_cast<int>(std::min<size_t>(remaining, 64 * 1024));
+        const int received = recv(socket_handle, reinterpret_cast<char*>(data + received_total), chunk, 0);
+        if (received <= 0) {
+            return false;
+        }
+        received_total += static_cast<size_t>(received);
+    }
+    return true;
+}
+
+bool WebSocketSendFrame(const std::shared_ptr<WebSocketPeer>& peer, uint8_t opcode, const uint8_t* payload, size_t size) {
+    if (!peer || !peer->open || peer->socket == INVALID_SOCKET) {
+        return false;
+    }
+
+    std::vector<uint8_t> frame;
+    frame.reserve(size + 16);
+    frame.push_back(static_cast<uint8_t>(0x80 | (opcode & 0x0F)));
+    if (size <= 125) {
+        frame.push_back(static_cast<uint8_t>(size));
+    } else if (size <= 0xFFFF) {
+        frame.push_back(126);
+        frame.push_back(static_cast<uint8_t>((size >> 8) & 0xFF));
+        frame.push_back(static_cast<uint8_t>(size & 0xFF));
+    } else {
+        frame.push_back(127);
+        const uint64_t length = static_cast<uint64_t>(size);
+        for (int shift = 56; shift >= 0; shift -= 8) {
+            frame.push_back(static_cast<uint8_t>((length >> shift) & 0xFF));
+        }
+    }
+    if (size > 0) {
+        frame.insert(frame.end(), payload, payload + size);
+    }
+
+    std::lock_guard lock(peer->send_mutex);
+    const bool ok = SocketSendAll(peer->socket, frame.data(), frame.size());
+    if (!ok) {
+        peer->open = false;
+    }
+    return ok;
+}
+
+bool WebSocketSendText(const std::shared_ptr<WebSocketPeer>& peer, const std::string& text) {
+    return WebSocketSendFrame(peer, 0x1, reinterpret_cast<const uint8_t*>(text.data()), text.size());
+}
+
+bool WebSocketSendBinary(const std::shared_ptr<WebSocketPeer>& peer, const std::vector<uint8_t>& payload) {
+    return WebSocketSendFrame(peer, 0x2, payload.data(), payload.size());
+}
+
+bool WebSocketSendClose(const std::shared_ptr<WebSocketPeer>& peer) {
+    static constexpr uint8_t empty = 0;
+    const bool ok = WebSocketSendFrame(peer, 0x8, &empty, 0);
+    if (peer) {
+        peer->open = false;
+    }
+    return ok;
+}
+
+bool WebSocketReceiveMessage(const std::shared_ptr<WebSocketPeer>& peer, WebSocketMessage& message) {
+    static constexpr size_t MaxMessageSize = 16 * 1024 * 1024;
+    message = {};
+    uint8_t active_opcode = 0;
+    std::vector<uint8_t> accumulated;
+
+    while (peer && peer->open && peer->socket != INVALID_SOCKET) {
+        std::array<uint8_t, 2> header{};
+        if (!SocketReadExact(peer->socket, header.data(), header.size())) {
+            peer->open = false;
+            return false;
+        }
+
+        const bool fin = (header[0] & 0x80) != 0;
+        const uint8_t opcode = header[0] & 0x0F;
+        const bool masked = (header[1] & 0x80) != 0;
+        uint64_t payload_length = header[1] & 0x7F;
+        if (payload_length == 126) {
+            std::array<uint8_t, 2> extended{};
+            if (!SocketReadExact(peer->socket, extended.data(), extended.size())) {
+                peer->open = false;
+                return false;
+            }
+            payload_length = (static_cast<uint64_t>(extended[0]) << 8) | extended[1];
+        } else if (payload_length == 127) {
+            std::array<uint8_t, 8> extended{};
+            if (!SocketReadExact(peer->socket, extended.data(), extended.size())) {
+                peer->open = false;
+                return false;
+            }
+            payload_length = 0;
+            for (const auto byte : extended) {
+                payload_length = (payload_length << 8) | byte;
+            }
+        }
+        if (payload_length > MaxMessageSize || accumulated.size() + static_cast<size_t>(payload_length) > MaxMessageSize) {
+            peer->open = false;
+            return false;
+        }
+
+        std::array<uint8_t, 4> mask{};
+        if (masked && !SocketReadExact(peer->socket, mask.data(), mask.size())) {
+            peer->open = false;
+            return false;
+        }
+
+        std::vector<uint8_t> payload(static_cast<size_t>(payload_length));
+        if (!payload.empty() && !SocketReadExact(peer->socket, payload.data(), payload.size())) {
+            peer->open = false;
+            return false;
+        }
+        if (masked) {
+            for (size_t index = 0; index < payload.size(); ++index) {
+                payload[index] ^= mask[index % 4];
+            }
+        }
+
+        if (opcode == 0x8) {
+            WebSocketSendFrame(peer, 0x8, payload.data(), payload.size());
+            message.type = WebSocketMessageType::Close;
+            peer->open = false;
+            return true;
+        }
+        if (opcode == 0x9) {
+            WebSocketSendFrame(peer, 0xA, payload.data(), payload.size());
+            continue;
+        }
+        if (opcode == 0xA) {
+            continue;
+        }
+        if (opcode == 0x1 || opcode == 0x2) {
+            active_opcode = opcode;
+            accumulated = std::move(payload);
+        } else if (opcode == 0x0 && active_opcode != 0) {
+            accumulated.insert(accumulated.end(), payload.begin(), payload.end());
+        } else {
+            peer->open = false;
+            return false;
+        }
+
+        if (fin) {
+            message.type = active_opcode == 0x1 ? WebSocketMessageType::Text : WebSocketMessageType::Binary;
+            message.payload = std::move(accumulated);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool DecodeCctvEnvelope(const std::vector<uint8_t>& payload, std::string& metadata_json, std::vector<uint8_t>& jpeg_bytes, std::string& error) {
+    if (payload.size() < 4) {
+        error = "CCTV frame envelope is too small.";
+        return false;
+    }
+
+    const uint32_t json_length =
+        (static_cast<uint32_t>(payload[0]) << 24) |
+        (static_cast<uint32_t>(payload[1]) << 16) |
+        (static_cast<uint32_t>(payload[2]) << 8) |
+        static_cast<uint32_t>(payload[3]);
+    if (json_length == 0 || json_length > payload.size() - 4) {
+        error = "CCTV frame envelope has an invalid metadata length.";
+        return false;
+    }
+
+    metadata_json.assign(reinterpret_cast<const char*>(payload.data() + 4), json_length);
+    jpeg_bytes.assign(payload.begin() + 4 + json_length, payload.end());
+    if (jpeg_bytes.size() < 4 || jpeg_bytes[0] != 0xFF || jpeg_bytes[1] != 0xD8) {
+        error = "CCTV frame payload is not a JPEG image.";
+        return false;
+    }
+    return true;
+}
+
 class LodestonePortraitCache {
 public:
     explicit LodestonePortraitCache(fs::path cache_root)
@@ -2871,6 +3215,22 @@ private:
 };
 
 class StateStore {
+    struct CctvViewerState {
+        std::weak_ptr<WebSocketPeer> peer;
+        std::string quality = "high";
+    };
+
+    struct CctvStreamState {
+        std::string account_id;
+        std::string character_name;
+        std::string world_name;
+        std::weak_ptr<WebSocketPeer> plugin;
+        std::unordered_map<uint64_t, CctvViewerState> viewers;
+        std::string active_quality = "high";
+        std::vector<uint8_t> latest_frame;
+        std::string latest_frame_json;
+    };
+
 public:
     explicit StateStore(fs::path app_root, fs::path data_root)
         : app_root_(std::move(app_root)),
@@ -2929,6 +3289,270 @@ public:
 
     fs::path ScreenshotRoot() const {
         return screenshot_root_;
+    }
+
+    bool RegisterCctvPlugin(const std::shared_ptr<WebSocketPeer>& peer,
+                            const std::string& account_id,
+                            const std::string& character_name,
+                            const std::string& world_name,
+                            std::string& error) {
+        if (!peer || account_id.empty() || character_name.empty() || world_name.empty()) {
+            error = "accountId, characterName, and worldName are required";
+            return false;
+        }
+
+        std::shared_ptr<WebSocketPeer> previous_plugin;
+        std::shared_ptr<WebSocketPeer> control_peer;
+        std::string control_json;
+        const auto key = MakeKey(account_id, character_name, world_name);
+        {
+            std::lock_guard lock(mutex_);
+            auto& stream = cctv_streams_[key];
+            stream.account_id = account_id;
+            stream.character_name = character_name;
+            stream.world_name = world_name;
+            previous_plugin = stream.plugin.lock();
+            if (previous_plugin && previous_plugin->id == peer->id) {
+                previous_plugin.reset();
+            }
+            stream.plugin = peer;
+            PruneCctvViewersLocked(stream);
+            if (!stream.viewers.empty()) {
+                stream.active_quality = DesiredCctvQualityLocked(stream);
+                control_peer = peer;
+                control_json = CctvControlJson("start", stream.active_quality);
+            }
+        }
+
+        if (previous_plugin) {
+            WebSocketSendClose(previous_plugin);
+        }
+        if (control_peer) {
+            WebSocketSendText(control_peer, control_json);
+        }
+        Log("CCTV plugin socket connected: " + FormatKey(account_id, character_name, world_name));
+        return true;
+    }
+
+    void UnregisterCctvPlugin(const std::string& key, const std::shared_ptr<WebSocketPeer>& peer) {
+        if (key.empty() || !peer) {
+            return;
+        }
+
+        std::vector<std::shared_ptr<WebSocketPeer>> viewers;
+        {
+            std::lock_guard lock(mutex_);
+            auto found = cctv_streams_.find(key);
+            if (found == cctv_streams_.end()) {
+                return;
+            }
+            const auto plugin = found->second.plugin.lock();
+            if (plugin && plugin->id == peer->id) {
+                found->second.plugin.reset();
+                for (auto& [_, viewer] : found->second.viewers) {
+                    if (auto viewer_peer = viewer.peer.lock()) {
+                        viewers.push_back(viewer_peer);
+                    }
+                }
+            }
+        }
+
+        for (const auto& viewer : viewers) {
+            WebSocketSendText(viewer, "{\"type\":\"status\",\"status\":\"waiting\",\"message\":\"CCTV plugin disconnected\"}");
+        }
+    }
+
+    std::string WatchCctvStream(const std::shared_ptr<WebSocketPeer>& viewer,
+                                const std::string& account_id,
+                                const std::string& character_name,
+                                const std::string& world_name,
+                                const std::string& requested_quality,
+                                std::vector<uint8_t>& latest_frame,
+                                int& status) {
+        latest_frame.clear();
+        const auto key = MakeKey(account_id, character_name, world_name);
+        const auto quality = NormalizeCctvQuality(requested_quality);
+        std::shared_ptr<WebSocketPeer> plugin;
+        std::string control_json;
+        bool plugin_connected = false;
+        size_t viewer_count = 0;
+        std::string active_quality = quality;
+
+        {
+            std::lock_guard lock(mutex_);
+            const auto client = clients_.find(key);
+            if (client == clients_.end()) {
+                status = 409;
+                return ConflictJson("Target client is not currently tracked.");
+            }
+            const auto policy = client->second.fields.find("policy");
+            const std::string policy_json = policy == client->second.fields.end() ? "{}" : policy->second;
+            if (!JsonBoolFieldFromObject(policy_json, "allowCctvStreaming")) {
+                status = 409;
+                return ConflictJson("That client does not allow web CCTV streaming.");
+            }
+
+            auto& stream = cctv_streams_[key];
+            stream.account_id = account_id;
+            stream.character_name = character_name;
+            stream.world_name = world_name;
+            PruneCctvViewersLocked(stream);
+            const bool had_viewers = !stream.viewers.empty();
+            const auto before_quality = stream.active_quality;
+            stream.viewers[viewer->id] = CctvViewerState{viewer, quality};
+            stream.active_quality = DesiredCctvQualityLocked(stream);
+            latest_frame = stream.latest_frame;
+            if (latest_frame.empty() && !stream.latest_frame_json.empty()) {
+                // Browser still gets latest URL through /api/cctv/latest; no binary frame cached in memory.
+            }
+            plugin = stream.plugin.lock();
+            plugin_connected = static_cast<bool>(plugin);
+            viewer_count = stream.viewers.size();
+            if (plugin) {
+                if (!had_viewers) {
+                    control_json = CctvControlJson("start", stream.active_quality);
+                } else if (stream.active_quality != before_quality) {
+                    control_json = CctvControlJson("quality", stream.active_quality);
+                }
+            }
+            active_quality = stream.active_quality;
+        }
+
+        if (plugin && !control_json.empty()) {
+            WebSocketSendText(plugin, control_json);
+        }
+
+        status = 200;
+        std::ostringstream stream;
+        stream << "{\"ok\":true,\"type\":\"status\",\"status\":"
+               << JsonQuote(plugin_connected ? "watching" : "waiting")
+               << ",\"quality\":" << JsonQuote(quality)
+               << ",\"activeQuality\":" << JsonQuote(active_quality)
+               << ",\"viewerCount\":" << viewer_count
+               << ",\"error\":null}";
+        return stream.str();
+    }
+
+    void UnwatchCctvStream(const std::string& key, const std::shared_ptr<WebSocketPeer>& viewer) {
+        if (key.empty() || !viewer) {
+            return;
+        }
+
+        std::shared_ptr<WebSocketPeer> plugin;
+        std::string control_json;
+        {
+            std::lock_guard lock(mutex_);
+            auto found = cctv_streams_.find(key);
+            if (found == cctv_streams_.end()) {
+                return;
+            }
+            auto& stream = found->second;
+            const auto before_quality = stream.active_quality;
+            stream.viewers.erase(viewer->id);
+            PruneCctvViewersLocked(stream);
+            plugin = stream.plugin.lock();
+            if (plugin) {
+                if (stream.viewers.empty()) {
+                    control_json = CctvControlJson("stop", before_quality);
+                } else {
+                    stream.active_quality = DesiredCctvQualityLocked(stream);
+                    if (stream.active_quality != before_quality) {
+                        control_json = CctvControlJson("quality", stream.active_quality);
+                    }
+                }
+            }
+        }
+
+        if (plugin && !control_json.empty()) {
+            WebSocketSendText(plugin, control_json);
+        }
+    }
+
+    bool PublishCctvFrame(const std::shared_ptr<WebSocketPeer>& plugin,
+                          const std::string& account_id,
+                          const std::string& character_name,
+                          const std::string& world_name,
+                          const std::vector<uint8_t>& envelope,
+                          const std::string& metadata_json,
+                          const std::vector<uint8_t>& jpeg_bytes,
+                          std::string& error) {
+        if (!plugin || envelope.empty()) {
+            error = "CCTV plugin socket is invalid.";
+            return false;
+        }
+
+        const auto key = MakeKey(account_id, character_name, world_name);
+        {
+            std::lock_guard lock(mutex_);
+            auto& stream = cctv_streams_[key];
+            stream.account_id = account_id;
+            stream.character_name = character_name;
+            stream.world_name = world_name;
+            const auto registered_plugin = stream.plugin.lock();
+            if (registered_plugin && registered_plugin->id != plugin->id) {
+                error = "CCTV frame came from a superseded plugin socket.";
+                return false;
+            }
+            if (!registered_plugin) {
+                stream.plugin = plugin;
+            }
+        }
+
+        const auto frame_json = StoreLiveCctvFrame(account_id, character_name, world_name, metadata_json, jpeg_bytes);
+        std::vector<std::shared_ptr<WebSocketPeer>> viewers;
+        {
+            std::lock_guard lock(mutex_);
+            auto& stream = cctv_streams_[key];
+            const auto registered_plugin = stream.plugin.lock();
+            if (registered_plugin && registered_plugin->id != plugin->id) {
+                error = "CCTV frame came from a superseded plugin socket.";
+                return false;
+            }
+            stream.latest_frame = envelope;
+            stream.latest_frame_json = frame_json;
+            if (auto client = clients_.find(key); client != clients_.end()) {
+                client->second.last_cctv_frame_json = frame_json;
+            }
+            PruneCctvViewersLocked(stream);
+            for (auto& [_, viewer] : stream.viewers) {
+                if (auto viewer_peer = viewer.peer.lock()) {
+                    viewers.push_back(viewer_peer);
+                }
+            }
+        }
+
+        for (const auto& viewer : viewers) {
+            WebSocketSendBinary(viewer, envelope);
+        }
+        return true;
+    }
+
+    std::string CctvLatest(const std::string& query, int& status) const {
+        const auto params = ParseQueryString(query);
+        const auto account = params.contains("accountId") ? params.at("accountId") : std::string{};
+        const auto character = params.contains("characterName") ? params.at("characterName") : std::string{};
+        const auto world = params.contains("worldName") ? params.at("worldName") : std::string{};
+        if (account.empty() || character.empty() || world.empty()) {
+            status = 400;
+            return ErrorJson("accountId, characterName, and worldName are required");
+        }
+
+        const auto key = MakeKey(account, character, world);
+        std::string frame_json;
+        {
+            std::lock_guard lock(mutex_);
+            if (auto stream = cctv_streams_.find(key); stream != cctv_streams_.end()) {
+                frame_json = stream->second.latest_frame_json;
+            }
+            if (frame_json.empty()) {
+                if (auto client = clients_.find(key); client != clients_.end()) {
+                    frame_json = client->second.last_cctv_frame_json;
+                }
+            }
+        }
+
+        status = 200;
+        return std::string("{\"ok\":true,\"frame\":") + (frame_json.empty() ? "null" : frame_json) + ",\"error\":null}";
     }
 
     void Log(const std::string& message) {
@@ -3241,6 +3865,7 @@ public:
                                      ? NowIsoUtc()
                                      : JsonStringFieldOrEmpty(fields, "capturedAtUtc");
         const auto action_id = JsonStringFieldOrEmpty(fields, "actionId");
+        const auto capture_status = Trim(JsonValueOrNull(fields, "captureStatus"));
 
         if (account_id.empty() || character_name.empty() || world_name.empty()) {
             status = 400;
@@ -3289,6 +3914,9 @@ public:
                    << ",\"actionId\":" << JsonQuote(action_id);
         if (is_cctv) {
             screenshot << ",\"quality\":" << JsonQuote(capture_quality);
+            if (!capture_status.empty() && capture_status != "null" && capture_status.front() == '{') {
+                screenshot << ",\"captureStatus\":" << capture_status;
+            }
         }
         screenshot << "}";
 
@@ -3703,6 +4331,85 @@ public:
     }
 
 private:
+    static std::string CctvControlJson(const std::string& type, const std::string& quality) {
+        std::ostringstream stream;
+        stream << "{\"type\":" << JsonQuote(type)
+               << ",\"quality\":" << JsonQuote(NormalizeCctvQuality(quality))
+               << "}";
+        return stream.str();
+    }
+
+    static void PruneCctvViewersLocked(CctvStreamState& stream) {
+        for (auto it = stream.viewers.begin(); it != stream.viewers.end();) {
+            auto peer = it->second.peer.lock();
+            if (!peer || !peer->open) {
+                it = stream.viewers.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    static std::string DesiredCctvQualityLocked(const CctvStreamState& stream) {
+        std::string desired = "low";
+        int desired_rank = 0;
+        for (const auto& [_, viewer] : stream.viewers) {
+            const auto quality = NormalizeCctvQuality(viewer.quality);
+            const auto rank = CctvQualityRank(quality);
+            if (rank > desired_rank) {
+                desired = quality;
+                desired_rank = rank;
+            }
+        }
+        return desired_rank == 0 ? "high" : desired;
+    }
+
+    std::string StoreLiveCctvFrame(const std::string& account_id,
+                                   const std::string& character_name,
+                                   const std::string& world_name,
+                                   const std::string& metadata_json,
+                                   const std::vector<uint8_t>& jpeg_bytes) const {
+        std::map<std::string, std::string> metadata;
+        ParseTopLevelObject(metadata_json, metadata);
+        const auto captured_at = JsonStringFieldOrEmpty(metadata, "capturedAtUtc").empty()
+                                     ? NowIsoUtc()
+                                     : JsonStringFieldOrEmpty(metadata, "capturedAtUtc");
+        const auto quality = NormalizeCctvQuality(JsonStringFieldOrEmpty(metadata, "quality"));
+        const auto width = JsonIntField(metadata, "width");
+        const auto height = JsonIntField(metadata, "height");
+        const auto capture_status = Trim(JsonValueOrNull(metadata, "captureStatus"));
+
+        fs::create_directories(cctv_root_);
+        const auto stem = SanitizeFileFragment(character_name + "_" + world_name + "_" + account_id);
+        const auto file_name = stem + "_cctv_live.jpg";
+        const auto file_path = cctv_root_ / file_name;
+        {
+            std::ofstream output(file_path, std::ios::binary | std::ios::trunc);
+            output.write(reinterpret_cast<const char*>(jpeg_bytes.data()), static_cast<std::streamsize>(jpeg_bytes.size()));
+        }
+
+        const auto relative = fs::relative(file_path, cache_root_).generic_string();
+        std::ostringstream stream;
+        stream << "{"
+               << "\"capturedAtUtc\":" << JsonQuote(captured_at)
+               << ",\"url\":" << JsonQuote("/assets/" + UrlPathEscape(relative))
+               << ",\"contentType\":\"image/jpeg\""
+               << ",\"fileName\":" << JsonQuote(file_name)
+               << ",\"quality\":" << JsonQuote(quality)
+               << ",\"bytes\":" << jpeg_bytes.size();
+        if (!capture_status.empty() && capture_status != "null" && capture_status.front() == '{') {
+            stream << ",\"captureStatus\":" << capture_status;
+        }
+        if (width.has_value() && *width > 0) {
+            stream << ",\"width\":" << *width;
+        }
+        if (height.has_value() && *height > 0) {
+            stream << ",\"height\":" << *height;
+        }
+        stream << "}";
+        return stream.str();
+    }
+
     static std::string StableTextDigest(const std::string& value) {
         uint64_t hash = 1469598103934665603ULL;
         for (const unsigned char ch : value) {
@@ -5397,6 +6104,7 @@ private:
     bool asset_extract_has_exit_code_ = false;
     std::string last_auto_extract_signature_;
     std::chrono::steady_clock::time_point last_auto_extract_started_steady_{};
+    std::unordered_map<std::string, CctvStreamState> cctv_streams_;
     HWND notify_hwnd_ = nullptr;
 };
 
@@ -5415,26 +6123,26 @@ header{position:sticky;top:0;padding:12px 14px 10px;border-bottom:1px solid var(
 .masthead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px}.eyebrow{margin:0 0 4px;color:var(--accent);font-size:11px;letter-spacing:.14em;text-transform:uppercase}.headline-note{color:var(--muted);font-size:12px}.modebar{display:flex;gap:8px;flex-wrap:wrap}.modechip,.toolbar button,.controlrow button,.controlrow a,.opitem,.matrix-row{border:1px solid rgba(255,255,255,.14);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--text);font:inherit;cursor:pointer;text-decoration:none;transition:transform .14s ease,background .14s ease,border-color .14s ease}.modechip{padding:6px 11px;border-radius:999px;font-weight:700}.modechip.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,transparent),color-mix(in srgb,var(--accent2) 18%,transparent));border-color:color-mix(in srgb,var(--accent) 52%,rgba(255,255,255,.14))}
 h1{margin:0;font-size:27px;line-height:1;font-family:var(--font-display)}.statusbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}.statuspill{min-height:44px;display:flex;align-items:center;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);font-size:12px;line-height:1.25}
 .toolbar{display:flex;flex-wrap:wrap;gap:8px 12px;color:var(--muted);font-size:11px;align-items:center}.toolbar label{display:inline-flex;align-items:center;gap:5px}.toolbar button{padding:5px 10px;border-radius:999px}.toolbar button:disabled{opacity:.45;cursor:not-allowed}.toolbar input[type="number"]{width:64px;padding:3px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--text);font:inherit}
-main{padding:12px;display:grid;gap:12px;align-items:start}.layout-classic{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}.card,.overviewpanel,.operator-rail,.operator-detail,.matrixpane{display:grid;gap:8px;padding:10px;border-radius:14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);box-shadow:var(--shadow)}
+main{padding:8px;display:grid;gap:8px;align-items:start}.layout-classic{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}.card,.overviewpanel,.operator-rail,.operator-detail,.matrixpane{display:grid;gap:6px;padding:8px;border-radius:8px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);box-shadow:var(--shadow)}
 .head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}.name{font-weight:700;font-size:15px;line-height:1.15}.zone,.sub,.foot,.hint{font-size:10px;color:var(--muted);line-height:1.35}.badges,.states,.ident{display:flex;flex-wrap:wrap;gap:5px}.ident{align-items:center}.badge,.state{padding:3px 7px;border-radius:999px;font-size:11px;font-weight:700;border:1px solid transparent}
 .badge.ok,.state.on{color:var(--ok);background:rgba(121,229,141,.14);border-color:rgba(121,229,141,.22)}.badge.warn,.state.warn{color:var(--warn);background:rgba(255,191,116,.12);border-color:rgba(255,191,116,.22)}.badge.bad,.state.bad{color:var(--bad);background:rgba(255,127,127,.12);border-color:rgba(255,127,127,.22)}.badge.tank{color:var(--tank);background:rgba(120,197,255,.12);border-color:rgba(120,197,255,.22)}.badge.heal{color:var(--heal);background:rgba(147,242,165,.12);border-color:rgba(147,242,165,.22)}.badge.dps{color:var(--dps);background:rgba(255,155,122,.12);border-color:rgba(255,155,122,.22)}.badge.util{color:var(--util);background:rgba(213,183,255,.12);border-color:rgba(213,183,255,.22)}.state.off{color:#627385;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.06)}
 .meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.meta.wide{grid-template-columns:repeat(3,minmax(0,1fr))}.tile{padding:6px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04)}.label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}.value{font-size:11px;font-weight:600;line-height:1.25;word-break:break-word}.value.bad{color:var(--bad)}
-.section{display:grid;gap:5px;padding:8px;border-radius:11px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.04);min-width:0}.section.tight{padding:7px}.sectionhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.facts{display:grid;gap:5px}.factrow{display:grid;grid-template-columns:78px minmax(0,1fr);gap:7px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.05)}.factrow:last-child{padding-bottom:0;border-bottom:none}.factlabel{color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.factvalue.bad{color:var(--bad)}
+.section{display:grid;gap:4px;padding:6px;border-radius:8px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.04);min-width:0}.section.tight{padding:6px}.sectionhead{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.facts{display:grid;gap:5px}.factrow{display:grid;grid-template-columns:78px minmax(0,1fr);gap:7px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,.05)}.factrow:last-child{padding-bottom:0;border-bottom:none}.factlabel{color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.factvalue.bad{color:var(--bad)}
 .party{display:grid;gap:3px}.member{display:grid;grid-template-columns:20px minmax(0,1fr) 42px 46px;gap:4px;align-items:center;padding:4px 6px;border-radius:8px;background:rgba(255,255,255,.035);font-size:11px}.slot,.job,.hp,.dist{text-align:right;color:var(--muted)}.membername{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .controls{display:grid;gap:6px}.)TTSLHUD")
            + R"TTSLHUD(controlrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.controlrow input{flex:1 1 180px;padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--text);font:inherit}.controlrow button,.controlrow a{padding:5px 9px;border-radius:999px}.controlrow button:disabled{opacity:.45;cursor:not-allowed}.controlnote{font-size:10px;color:var(--muted)}
-.radarbox{display:grid;justify-items:center;gap:3px}canvas{display:block;max-width:100%;aspect-ratio:1/1;background:rgba(6,10,16,.92);border:1px solid var(--line);border-radius:12px}.iconimg{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:rgba(255,255,255,.04);object-fit:cover}.mapframe{position:relative;max-width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,16,.92)}.mapimg{position:absolute;display:block;max-width:none;max-height:none}.mapoverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;background:transparent;border:none}
+.radarbox{display:grid;justify-items:center;gap:3px}canvas{display:block;max-width:100%;aspect-ratio:1/1;background:rgba(6,10,16,.92);border:1px solid var(--line);border-radius:8px}.iconimg{width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:rgba(255,255,255,.04);object-fit:cover}.mapframe{position:relative;max-width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:8px;border:1px solid var(--line);background:rgba(6,10,16,.92)}.mapimg{position:absolute;display:block;max-width:none;max-height:none}.mapoverlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;background:transparent;border:none}
 .aggmembers{display:grid;gap:4px}.aggmember{display:grid;gap:4px;padding:6px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.04)}.aggmember.stranger{border-color:rgba(255,127,127,.18)}.aggmain{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;flex-wrap:wrap}.aggname{display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap}.aggname .slot,.aggname .job,.aggname .lvl{color:var(--muted);font-size:10px;font-weight:700}.aggname .membername{font-size:12px;font-weight:700;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px}.aggmeta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}.aggnote{font-size:10px;color:var(--muted)}.aggnote.bad{color:var(--bad)}.inspector-stack{display:grid;gap:8px}.inspector-tabs{display:flex;flex-wrap:wrap;gap:6px}.inspector-tab{padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:var(--muted);font:inherit;cursor:pointer;transition:background .14s ease,border-color .14s ease,color .14s ease}.inspector-tab.active{color:var(--text);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent),rgba(255,255,255,.05));border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.12))}.dense-table{display:grid;gap:4px}.dense-head,.dense-row{display:grid;grid-template-columns:48px minmax(140px,1.4fr) 92px 112px 72px 64px;gap:6px;align-items:center}.dense-head{padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.03);color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase}.dense-row{padding:7px 8px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)}.dense-row.source{border-color:color-mix(in srgb,var(--accent) 32%,rgba(255,255,255,.04))}.dense-row.stranger{border-color:rgba(255,127,127,.18)}.densecell{min-width:0;font-size:11px;line-height:1.25;word-break:break-word}.densecell.mono{font-family:Consolas,"Courier New",monospace}
 .empty{padding:20px;text-align:center;color:var(--muted);background:rgba(16,25,37,.84);border:1px dashed rgba(255,255,255,.14);border-radius:12px}.overviewgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.overviewcard{padding:9px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.04)}.overviewvalue{font-size:20px;font-family:var(--font-display);line-height:1}.overviewnote{color:var(--muted);font-size:10px;line-height:1.3;margin-top:4px}
 .operator-shell{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:12px}.operator-rail,.operator-detail{align-content:start}.oplist{display:grid;gap:8px}.opitem{width:100%;text-align:left;padding:9px 10px;border-radius:11px}.opitem.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 18%,transparent),rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14))}.oprow{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.opname{font-weight:700;font-size:13px}.opsub,.opmeta{color:var(--muted);font-size:10px;line-height:1.35}
 .command-shell{display:grid;gap:12px}.command-columns{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,.9fr);gap:12px}.command-stage,.command-side{display:grid;gap:12px}.command-board-grid{display:grid;gap:12px}.command-board,.selectable-card{border-radius:14px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),var(--panel2));box-shadow:var(--shadow);outline:none}.command-board{display:grid;gap:10px;padding:10px;cursor:pointer}.command-board.active,.selectable-card.active{border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14));background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,transparent),var(--panel2))}.command-board:focus-visible,.selectable-card:focus-visible{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 52%,transparent),var(--shadow)}.command-board-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}.command-board-title{display:grid;gap:3px}.compactgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
 .matrix-shell{display:grid;gap:12px}.matrix-layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,.9fr);gap:12px}.matrixtable{display:grid;gap:6px}.matrixhead,.matrix-row{display:grid;grid-template-columns:72px minmax(170px,1.4fr) minmax(120px,1fr) 96px 120px 96px 78px;gap:8px;align-items:center}.matrixhead{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03);color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}.matrix-row{width:100%;text-align:left;padding:9px 10px;border-radius:10px}.matrix-row.active{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 15%,transparent),rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 48%,rgba(255,255,255,.14))}.matrixcell{min-width:0;font-size:11px;line-height:1.25;word-break:break-word}.matrixcell.mono{font-family:Consolas,"Courier New",monospace}.kindtag{display:inline-flex;align-items:center;justify-content:center;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06);font-size:10px;font-weight:700;text-transform:uppercase}
 .board-summary{display:grid;gap:12px}.solo-board{display:grid;grid-template-columns:minmax(280px,1.08fr) minmax(220px,.92fr);gap:12px;align-items:stretch}.solo-column,.solo-visual{display:grid;gap:10px}.hero-face{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center;padding:10px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}.hero-title{display:grid;gap:4px}.hero-note{font-size:11px;color:var(--muted);line-height:1.4}.faceframe,.portrait-frame{position:relative;overflo)TTSLHUD"
-           + R"TTSLHUD(w:hidden;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));display:grid;place-items:center;color:var(--muted);font-family:var(--font-display);font-weight:700;letter-spacing:.08em}.faceframe{width:72px;height:72px;font-size:22px}.faceframe.small{width:56px;height:56px;font-size:18px;border-radius:12px}.portrait-frame{min-height:320px;padding:12px;font-size:28px}.faceframe img,.portrait-frame img{width:100%;height:100%;display:block;object-fit:cover}.portrait-frame img{object-fit:contain;background:radial-gradient(circle at top,rgba(255,255,255,.12),rgba(255,255,255,0) 60%)}.faceframe.placeholder,.portrait-frame.placeholder{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}.quickstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mini-actions{display:flex;flex-wrap:wrap;gap:6px}.mini-actions button{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--text);font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease}.mini-actions button:disabled{opacity:.38;cursor:not-allowed;transform:none}.mini-actions button:not(:disabled):hover{background:color-mix(in srgb,var(--accent) 16%,rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.14))}.mini-actions .placeholder{border-style:dashed}.party-board{display:grid;gap:12px}.solo-party-board{width:100%;max-width:none}.party-board-main{display:grid;grid-template-columns:minmax(0,.9fr) minmax(280px,1.1fr) minmax(0,.9fr);gap:12px;align-items:start}.solo-party-main{grid-template-columns:minmax(0,1.22fr) minmax(0,.88fr)}.solo-portrait-frame{width:100%;max-width:300px;min-height:300px;justify-self:center}.party-column{display:grid;gap:10px;min-width:0}.party-slot-card{display:grid;gap:8px;padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04)}.party-slot-card.solo{gap:10px;padding:14px}.party-slot-card.source{border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.06))}.party-slot-card.stranger{border-color:rgba(255,127,127,.18)}.party-slot-card.stale{border-color:rgba(255,191,116,.24)}.party-slot-card.disconnected{border-color:rgba(255,127,127,.24)}.party-slot-top{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start}.party-slot-card.solo .party-slot-top{grid-template-columns:72px minmax(0,1fr);gap:12px}.party-slot-card.solo .member-card-name{font-size:16px}.party-slot-card.solo .member-line{font-size:12px;line-height:1.45}.party-slot-card.solo .microstat-label{font-size:10px}.party-slot-card.solo .microstat-value{font-size:12px}.party-slot-card.solo .faceframe.small{width:72px;height:72px;font-size:22px;border-radius:14px}.member-body{display:grid;gap:4px;min-width:0}.member-card-name{font-size:13px;font-weight:700;line-height:1.2}.member-line{font-size:10px;color:var(--muted);line-height:1.35}.member-badges{display:flex;flex-wrap:wrap;gap:5px}.member-microstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.microstat{padding:6px 7px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)}.microstat.bad .microstat-value{color:var(--bad)}.microstat-label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.microstat-value{margin-top:2px;font-size:11px;font-weight:700;line-height:1.25;word-break:break-word}.board-hub{display:grid;gap:10px;padding:12px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}.board-hub-top{display:grid;grid-template-columns:72px minmax(0,1fr);gap:10px;align-items:center}.board-hub-copy{display:grid;gap:4px}.board-hub-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.board-map-section{background:rgba(6,10,16,.42);min-width:0;overflow:hidden}.board-map-section .mapframe,.board-map-section canvas{margin:0 auto;max-width:100%}.board-enmity .sectionhead{margin-bottom:2px}.enmity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.enmity-row{display:grid;gap:4px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}.enmity-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.enmity-name{font-size:12px;font-weight:700;line-height:1.25}.enmity-note{font-size:10px;color:var(--muted);line-height:1.35}.compact-client-head{display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:start}.compact-client-copy{display:grid;gap:3px}
+           + R"TTSLHUD(w:hidden;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));display:grid;place-items:center;color:var(--muted);font-family:var(--font-display);font-weight:700;letter-spacing:.08em}.faceframe{width:64px;height:64px;font-size:20px}.faceframe.small{width:48px;height:48px;font-size:16px;border-radius:8px}.portrait-frame{min-height:220px;padding:8px;font-size:24px}.faceframe img,.portrait-frame img{width:100%;height:100%;display:block;object-fit:cover}.portrait-frame img{object-fit:contain;background:radial-gradient(circle at top,rgba(255,255,255,.12),rgba(255,255,255,0) 60%)}.faceframe.placeholder,.portrait-frame.placeholder{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02))}.quickstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.mini-actions{display:flex;flex-wrap:wrap;gap:5px}.mini-actions button{padding:5px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--text);font:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:background .14s ease,border-color .14s ease,transform .14s ease}.mini-actions button:disabled{opacity:.38;cursor:not-allowed;transform:none}.mini-actions button:not(:disabled):hover{background:color-mix(in srgb,var(--accent) 16%,rgba(255,255,255,.04));border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.14))}.mini-actions .placeholder{border-style:dashed}.party-board{display:grid;gap:8px}.solo-party-board{width:100%;max-width:none}.party-board-main{display:grid;grid-template-columns:minmax(0,.9fr) minmax(280px,1.1fr) minmax(0,.9fr);gap:8px;align-items:start}.solo-party-main{grid-template-columns:minmax(0,1.22fr) minmax(0,.88fr)}.solo-portrait-frame{width:100%;max-width:240px;min-height:220px;justify-self:center}.party-column{display:grid;gap:6px;min-width:0}.party-slot-card{display:grid;gap:6px;padding:7px;border-radius:8px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04)}.party-slot-card.solo{gap:6px;padding:8px}.party-slot-card.source{border-color:color-mix(in srgb,var(--accent) 44%,rgba(255,255,255,.06))}.party-slot-card.stranger{border-color:rgba(255,127,127,.18)}.party-slot-card.stale{border-color:rgba(255,191,116,.24)}.party-slot-card.disconnected{border-color:rgba(255,127,127,.24)}.party-slot-top{display:grid;grid-template-columns:48px minmax(0,1fr);gap:7px;align-items:start}.party-slot-card.solo .party-slot-top{grid-template-columns:64px minmax(0,1fr);gap:8px}.party-slot-card.solo .member-card-name{font-size:15px}.party-slot-card.solo .member-line{font-size:11px;line-height:1.35}.party-slot-card.solo .microstat-label{font-size:9px}.party-slot-card.solo .microstat-value{font-size:11px}.party-slot-card.solo .faceframe.small{width:64px;height:64px;font-size:20px;border-radius:8px}.member-body{display:grid;gap:3px;min-width:0}.member-card-name{font-size:13px;font-weight:700;line-height:1.2}.member-line{font-size:10px;color:var(--muted);line-height:1.3}.member-badges{display:flex;flex-wrap:wrap;gap:4px}.member-microstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.microstat{padding:5px 6px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04)}.microstat.bad .microstat-value{color:var(--bad)}.microstat-label{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.microstat-value{margin-top:2px;font-size:11px;font-weight:700;line-height:1.25;word-break:break-word}.board-hub{display:grid;gap:6px;padding:8px;border-radius:8px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))}.board-hub-top{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;align-items:center}.board-hub-copy{display:grid;gap:3px}.board-hub-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.board-map-section{background:rgba(6,10,16,.42);min-width:0;overflow:hidden}.board-map-section .mapframe,.board-map-section canvas{margin:0 auto;max-width:100%}.board-enmity .sectionhead{margin-bottom:2px}.enmity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.enmity-row{display:grid;gap:4px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05)}.enmity-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.enmity-name{font-size:12px;font-weight:700;line-height:1.25}.enmity-note{font-size:10px;color:var(--muted);line-height:1.35}.compact-client-head{display:grid;grid-template-columns:48px minmax(0,1fr);gap:8px;align-items:start}.compact-client-copy{display:grid;gap:3px}
 @media (max-width:1180px){.statusbar,.overviewgrid,.operator-shell,.command-columns,.matrix-layout,.solo-board,.party-board-main{grid-template-columns:1fr}}
-.solo-party-main{grid-template-columns:minmax(220px,.56fr) minmax(420px,1.94fr)}.board-map-section>.mapframe,.board-map-section>canvas{width:100%;justify-self:center}.party-slot-card:not(.solo) .member-microstats{grid-template-columns:repeat(3,minmax(82px,108px));justify-content:start}.party-slot-card:not(.solo) .microstat{min-width:0}.member-badges .mini-actions{margin-left:auto}.member-badges .mini-actions button{padding:4px 9px}.mini-actions button.active{background:color-mix(in srgb,var(--accent) 22%,rgba(255,255,255,.05));border-color:color-mix(in srgb,var(--accent) 58%,rgba(255,255,255,.14))}.cctv-section{gap:10px}.cctv-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}.cctv-frame{width:100%;aspect-ratio:1/1;display:grid;place-items:center;justify-self:center;overflow:hidden;border-radius:12px;border:1px solid var(--line);background:rgba(6,10,16,.92)}.cctv-frame img{width:100%;height:100%;display:block;object-fit:contain;background:#04090f}
+.solo-party-main{grid-template-columns:minmax(180px,.5fr) minmax(360px,1.8fr)}.board-map-section>.mapframe,.board-map-section>canvas{width:100%;justify-self:center}.party-slot-card:not(.solo) .member-microstats{grid-template-columns:repeat(3,minmax(72px,102px));justify-content:start}.party-slot-card:not(.solo) .microstat{min-width:0}.member-badges .mini-actions{margin-left:auto}.member-badges .mini-actions button{padding:4px 8px}.mini-actions button.active{background:color-mix(in srgb,var(--accent) 22%,rgba(255,255,255,.05));border-color:color-mix(in srgb,var(--accent) 58%,rgba(255,255,255,.14))}.cctv-section{gap:6px}.cctv-top{display:flex;justify-content:space-between;gap:6px;align-items:flex-start;flex-wrap:wrap}.cctv-meta{display:flex;gap:8px;flex-wrap:wrap}.cctv-frame{width:100%;aspect-ratio:16/9;display:grid;place-items:center;justify-self:center;overflow:hidden;border-radius:8px;border:1px solid var(--line);background:rgba(6,10,16,.92);position:relative}.cctv-frame img{width:100%;height:100%;display:block;object-fit:contain;background:#04090f}.cctv-frame.stale img{opacity:.48;filter:saturate(.72)}.cctv-frame .hint{padding:10px;text-align:center}.cctv-overlay{position:absolute;inset:auto 8px 8px 8px;text-align:center;font-weight:800;letter-spacing:0;background:rgba(3,8,12,.72);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:5px 8px;color:#f0f6f8;pointer-events:none}.cctv-live-dot{width:7px;height:7px;border-radius:999px;background:var(--warn);display:inline-block}.cctv-live-dot.on{background:var(--ok)}
 @media (max-width:900px){.aggmeta,.meta.wide,.board-hub-stats,.member-microstats,.quickstats,.enmity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.aggname .membername{max-width:none}.board-hub-top,.hero-face,.compact-client-head,.party-slot-top{grid-template-columns:1fr}.matrixhead,.dense-head{display:none}.matrix-row,.dense-row{grid-template-columns:repeat(2,minmax(0,1fr))}.matrixcell::before,.densecell::before{content:attr(data-label);display:block;color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}}
-@media (max-width:720px){header{padding:10px 12px 8px}main,.layout-classic{grid-template-columns:1fr}.statusbar,.overviewgrid,.meta,.meta.wide,.aggmeta,.compactgrid,.board-hub-stats,.member-microstats,.quickstats,.enmity-grid{grid-template-columns:1fr}.factrow{grid-template-columns:1fr;gap:3px}}
+@media (max-width:720px){header{padding:10px 12px 8px}main,.layout-classic,.solo-party-main{grid-template-columns:1fr}.statusbar,.overviewgrid,.meta,.meta.wide,.aggmeta,.compactgrid,.board-hub-stats,.member-microstats,.quickstats,.enmity-grid{grid-template-columns:1fr}.factrow{grid-template-columns:1fr;gap:3px}}
 </style></head><body>
 <header><div class="masthead"><div><div class="eyebrow">Remote Monitor + Command Relay</div><h1>TTSL Remote HUD</h1></div><div class="modebar"><button class="modechip" type="button" data-mode="classic">Cla)TTSLHUD"
            + R"TTSLHUD(ssic</button><button class="modechip" type="button" data-mode="operator">Operator</button><button class="modechip" type="button" data-mode="command">Command</button><button class="modechip" type="button" data-mode="matrix">Matrix</button><button id="detailsToggle" class="modechip" type="button" aria-pressed="false">Show Details</button></div></div><div id="headerDetails" class="header-details hidden"><div class="headline-note">Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix.</div><div class="statusbar"><div id="summary" class="statuspill">Waiting for clients...</div><div id="stamp" class="statuspill">No updates yet.</div><div id="assetPlan" class="statuspill">Asset plan pending.</div><div id="extractStatus" class="statuspill">Extraction idle.</div></div><div class="toolbar"><button id="extractAssets" type="button">Extract Assets</button><label><input id="krangle" type="checkbox"> Krangle names/account IDs</label><label><input id="krangleEnemies" type="checkbox"> Krangle enemy names</label><label><input id="showStale" type="checkbox" checked> Show stale/disconnected</label><label><input id="aggregateParties" type="checkbox"> Aggregate parties</label><label><input id="icons" type="checkbox" checked> Icons</label><label><input id="enumerate" type="checkbox"> Enumerate</label><label>Box px <input id="mapBoxPx" type="number" min="96" max="320" step="4" value="160"></label><label>Combat W <input id="combatWidth" type="number" min="5" max="300" step="1" value="20"></label><label>Combat H <input id="combatHeight" type="number" min="5" max="300" step="1" value="20"></label><label>Travel W <input id="travelWidth" type="number" min="5" max="500" step="1" value="50"></label><label>Travel H <input id="travelHeight" type="number" min="5" max="500" step="1" value="50"></label></div></div></header>
@@ -5520,21 +6228,37 @@ function portraitUrlFor(entity,kind="face"){const visuals=entityVisuals(entity),
 function renderPortraitFrame(entity,{kind="face",className="faceframe",label="",title=""}={}){const frame=document.createElement("div");frame.className=className;const altLabel=label||entityDisplayCharacter(entity);const sourceUrl=portraitUrlFor(entity,kind);if(sourceUrl){const img=document.createElement("img");img.src=sourceUrl;img.alt=altLabel;img.loading="lazy";frame.appendChild(img)}else{frame.classList.add("placeholder");frame.textContent=entityInitials(entity)}const lodestone=entityLodestone(entity),visuals=entityVisuals(entity);const stateText=lodestone?.status&&lodestone.status!=="ready"?` | Lodestone ${lodestone.status}`:"";const fallbackText=visuals?.pluginFallback?.status==="ready"?" | Plugin fallback ready":"";frame.title=title||`${altLabel}${stateText}${fallbackText}`;return frame}
 const lodestoneStatus=entity=>String(entityLodestone(entity)?.status||"unavailable");
 const visualSourceLabel=entity=>{const visuals=entityVisuals(entity);if(visuals?.preferredSource==="pluginFallback")return"Fallback";if(visuals?.preferredSource==="lodestone")return"Lodestone";const status=lodestoneStatus(entity);return status==="pending"||status==="refreshing"?"Pending":status==="error"||status==="not_found"?"Error":"No visual"};
-const CCTV_QUALITY_PRESETS={low:{label:"Low",intervalMs:2600},medium:{label:"Medium",intervalMs:1400},high:{label:"High",intervalMs:800}};
+const CCTV_QUALITY_PRESETS={low:{label:"Low",fps:3},medium:{label:"Medium",fps:6},high:{label:"High",fps:10}};
 const cctvSessions=new Map();
-function buildRemoteTarget(target){if(!target)return null;const accountId=String(target.accountId||target.sourceAccountId)TTSLHUD"
-           + R"TTSLHUD(||"").trim(),characterName=String(target.characterName||target.name||target.sourceCharacterName||"").trim(),worldName=String(target.worldName||target.sourceWorldName||"").trim();if(!accountId||!characterName||!worldName)return null;return{accountId,characterName,worldName,policy:target.policy||target.sourcePolicy||{},lastScreenshot:target.lastScreenshot||target.sourceLastScreenshot||null,lastCctvFrame:target.lastCctvFrame||target.sourceLastCctvFrame||null}}
+const cctvDecoder=new TextDecoder();
+function buildRemoteTarget(target){if(!target)return null;const accountId=String(target.accountId||target.sourceAccountId||"").trim(),characterName=String(target.characterName||target.name||target.sourceCharacterName||"").trim(),worldName=String(target.worldName||target.sourceWorldName||"").trim();if(!accountId||!characterName||!worldName)return null;return{accountId,characterName,worldName,policy:target.policy||target.sourcePolicy||{},lastScreenshot:target.lastScreenshot||target.sourceLastScreenshot||null,lastCctvFrame:target.lastCctvFrame||target.sourceLastCctvFrame||null}}
 function buildCctvSurfaceRegistry(clients,aggregate){const registry=new Map();for(const client of clients)registry.set(clientKey(client),[client]);for(const party of aggregate)registry.set(partyKey(party),(party.members||[]).filter(member=>!!buildRemoteTarget(member)));return registry}
-function cctvPreset(key){return CCTV_QUALITY_PRESETS[key]||CCTV_QUALITY_PRESETS.medium}
+function cctvPreset(key){return CCTV_QUALITY_PRESETS[key]||CCTV_QUALITY_PRESETS.high}
 function stopEvent(event){event.preventDefault();event.stopPropagation()}
-function stopCctvSession(surfaceKey,refreshAfter=false){const key=String(surfaceKey||"").trim();if(!key)return;const session=cctvSessions.get(key);if(!session)return;if(session.timerId)window.clearTimeout(session.timerId);cctvSessions.delete(key);if(refreshAfter)void refresh()}
+function cctvSocketUrl(){return`${location.protocol==="https:"?"wss":"ws"}://${location.host}/ws/cctv/view`}
+function cctvLatestUrl(remote){return`/api/cctv/latest?accountId=${encodeURIComponent(remote.accountId)}&characterName=${encodeURIComponent(remote.characterName)}&worldName=${encodeURIComponent(remote.worldName)}`}
+function cctvCaptureStatus(session){return session?.frameMeta?.captureStatus||{}}
+function cctvIsStale(session){const status=cctvCaptureStatus(session);return !!status?.isStale}
+function cctvOverlayText(session){const status=cctvCaptureStatus(session);if(String(status?.windowState||"")==="minimized")return"(MINIMIZED)";return status?.isStale?"(STALE)":""}
+function cctvStatusText(session){const status=cctvCaptureStatus(session),stale=!!status?.isStale,bits=[session.label||"Tracked client",cctvPreset(session.quality).label,session.status||"connecting"];if(status?.backend)bits.push(String(status.backend).toUpperCase());if(status?.windowState)bits.push(String(status.windowState));if(stale)bits.push("stale");if(!stale&&session.fps>0)bits.push(`${session.fps.toFixed(1)} fps`);if(!stale&&Number.isFinite(session.latencyMs))bits.push(`${Math.max(0,Math.round(session.latencyMs))} ms`);if(status?.message)bits.push(String(status.message));return bits.join(" | ")}
+)TTSLHUD"
+           + R"TTSLHUD(
+function updateCctvDom(surfaceKey){const key=String(surfaceKey||"").trim(),session=cctvSessions.get(key);if(!session)return;for(const section of document.querySelectorAll("[data-cctv-surface]")){if(section.dataset.cctvSurface!==key)continue;const stale=cctvIsStale(session),overlayText=cctvOverlayText(session);section.classList.toggle("stale",stale);const meta=section.querySelector("[data-cctv-meta]");if(meta)meta.textContent=cctvStatusText(session);const dot=section.querySelector("[data-cctv-dot]");if(dot)dot.classList.toggle("on",!stale&&Date.now()-(session.lastFrameMs||0)<2200);const frame=section.querySelector("[data-cctv-frame]");if(frame)frame.classList.toggle("stale",stale);const overlay=section.querySelector("[data-cctv-overlay]");if(overlay){overlay.textContent=overlayText;overlay.hidden=!overlayText}const img=section.querySelector("[data-cctv-img]"),empty=section.querySelector("[data-cctv-empty]"),src=session.frameUrl||session.fallbackUrl||"";if(img&&src){img.src=src;img.hidden=false;img.classList.toggle("stale",stale);if(empty)empty.hidden=true}else{if(img)img.hidden=true;if(empty){empty.hidden=false;empty.textContent=overlayText||session.status||"connecting"}}}}
+function sendCctvWatch(session,type="watch"){const socket=session.socket;if(!socket||socket.readyState!==WebSocket.OPEN)return;socket.send(JSON.stringify({type,accountId:session.remote.accountId,characterName:session.remote.characterName,worldName:session.remote.worldName,quality:session.quality}))}
+async function loadCctvLatest(surfaceKey){const key=String(surfaceKey||"").trim(),session=cctvSessions.get(key);if(!session)return;try{const res=await fetch(cctvLatestUrl(session.remote),{cache:"no-store"}),data=await res.json();if(!res.ok||!data?.frame?.url||!cctvSessions.has(key))return;const current=cctvSessions.get(key);if(current.frameUrl)return;current.fallbackUrl=`${data.frame.url}${data.frame.url.includes("?")?"&":"?"}t=${encodeURIComponent(data.frame.capturedAtUtc||Date.now())}`;current.frameMeta=data.frame;if(cctvIsStale(current))current.status="stale";updateCctvDom(key)}catch{}}
+function connectCctvSession(surfaceKey){const key=String(surfaceKey||"").trim(),session=cctvSessions.get(key);if(!session)return;if(session.socket&&session.socket.readyState<=WebSocket.OPEN)try{session.socket.close()}catch{};const socket=new WebSocket(cctvSocketUrl());socket.binaryType="arraybuffer";session.socket=socket;session.status="connecting";updateCctvDom(key);socket.addEventListener("open",()=>{const current=cctvSessions.get(key);if(current!==session)return;session.status="waiting";sendCctvWatch(session);updateCctvDom(key)});socket.addEventListener("message",event=>{const current=cctvSessions.get(key);if(current!==session)return;if(typeof event.data==="string")handleCctvText(key,event.data);else void handleCctvBinary(key,event.data)});socket.addEventListener("error",()=>{const current=cctvSessions.get(key);if(current!==session)return;session.status="error";updateCctvDom(key)});socket.addEventListener("close",()=>{const current=cctvSessions.get(key);if(current!==session)return;session.socket=null;session.status="reconnecting";updateCctvDom(key);session.reconnectTimer=window.setTimeout(()=>connectCctvSession(key),1500)})}
+function handleCctvText(surfaceKey,text){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;try{const data=JSON.parse(text);if(data.type==="error"||data.ok===false){session.status="error";extractStatus.textContent=data.message||data.error||"CCTV socket error"}else if(data.status){session.status=data.status;if(data.activeQuality)session.activeQuality=data.activeQuality}}catch{}updateCctvDom(surfaceKey)}
+)TTSLHUD"
+           + R"TTSLHUD(
+async function handleCctvBinary(surfaceKey,data){const key=String(surfaceKey||"").trim(),session=cctvSessions.get(key);if(!session)return;const buffer=data instanceof ArrayBuffer?data:await data.arrayBuffer();if(buffer.byteLength<4)return;const view=new DataView(buffer),jsonLength=view.getUint32(0,false);if(jsonLength<=0||jsonLength>buffer.byteLength-4)return;let meta={};try{meta=JSON.parse(cctvDecoder.decode(new Uint8Array(buffer,4,jsonLength)))}catch{}const jpeg=buffer.slice(4+jsonLength);const url=URL.createObjectURL(new Blob([jpeg],{type:meta.contentType||"image/jpeg"}));if(session.frameUrl)URL.revokeObjectURL(session.frameUrl);session.frameUrl=url;session.fallbackUrl="";session.frameMeta=meta;const stale=cctvIsStale(session);session.status=stale?"stale":"live";session.lastFrameMs=Date.now();const captured=Date.parse(meta.capturedAtUtc||"");session.latencyMs=Number.isFinite(captured)?Date.now()-captured:null;if(!stale){session.fpsCounter=(session.fpsCounter||0)+1;const fpsStarted=session.fpsStarted||performance.now(),elapsed=performance.now()-fpsStarted;if(elapsed>=1000){session.fps=session.fpsCounter*1000/elapsed;session.fpsCounter=0;session.fpsStarted=performance.now()}else session.fpsStarted=fpsStarted}else{session.fps=0;session.latencyMs=null}updateCctvDom(key)}
+function stopCctvSession(surfaceKey,refreshAfter=false){const key=String(surfaceKey||"").trim();if(!key)return;const session=cctvSessions.get(key);if(!session)return;if(session.reconnectTimer)window.clearTimeout(session.reconnectTimer);if(session.socket)try{session.socket.close()}catch{}if(session.frameUrl)URL.revokeObjectURL(session.frameUrl);cctvSessions.delete(key);if(refreshAfter)void refresh()}
 function syncCctvSessions(surfaceRegistry){for(const [surfaceKey,session] of [...cctvSessions.entries()]){const candidates=surfaceRegistry.get(surfaceKey);if(!candidates||candidates.length===0){stopCctvSession(surfaceKey,false);continue}const match=candidates.find(candidate=>{const remote=buildRemoteTarget(candidate);return remote&&remoteControlKey(remote)===session.targetKey});if(!match){stopCctvSession(surfaceKey,false);continue}const remote=buildRemoteTarget(match);if(!remote?.policy?.allowCctvStreaming){stopCctvSession(surfaceKey,false);continue}session.remote=remote;session.label=entityDisplayCharacter(match)}}
 function isCctvActiveForSurfaceTarget(surfaceKey,target){const session=cctvSessions.get(String(surfaceKey||"").trim());const remote=buildRemoteTarget(target);return !!session&&!!remote&&session.targetKey===remoteControlKey(remote)}
-function scheduleCctvTick(surfaceKey,delayMs){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;if(session.timerId)window.clearTimeout(session.timerId);session.timerId=window.setTimeout(()=>{void runCctvTick(surfaceKey)},Math.max(0,Number(delayMs)||0))}
-async function runCctvTick(surfaceKey){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;const remote=buildRemoteTarget(session.remote);if(!remote?.policy?.allowCctvStreaming){stopCctvSession(surfaceKey,true);return}session.requestInFlight=true;await queueRemoteAction(remote,"requestScreenshot","",{silent:true,refreshDelayMs:420,extra:{captureMode:"cctv",captureQuality:session.quality}});session.requestInFlight=false;if(!cctvSessions.has(String(surfaceKey||"").trim()))return;scheduleCctvTick(surfaceKey,cctvPreset(session.quality).intervalMs)}
-function openCctvSession(surfaceKey,target,label){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowCctvStreaming){extractStatus.textContent="CCTV is not allowed for this client.";return}const key=String(surfaceKey||"").trim();if(!key)return;const existing=cctvSessions.get(key),targetKey=remoteControlKey(remote),quality=existing?.targetKey===targetKey?existing.quality:(existing?.quality||"medium");if(existing&&existing.timerId)window.clearTimeout(existing.timerId);cctvSessions.set(key,{targetKey,remote,label:label||entityDisplayCharacter(target),quality,timerId:0,requestInFlight:false});scheduleCctvTick(key,0);void refresh()}
-function setCctvQuality(surfaceKey,quality){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;session.quality=CCTV_QUALITY_PRESETS[quality]?quality:"medium";scheduleCctvTick(surfaceKey,0);void refresh()}
-function renderCctvSection(surfaceKey,title="CCTV"){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return null;const section=document.createElement("div");section.className="section board-map-section cctv-section";section.innerHTML=`<div class="sectionhead">${title}</div>`;const top=document.createElement("div");top.className="cctv-top";const meta=document.createElement("div");meta.className="hint";const frame=session.remote?.lastCctvFrame||null;meta.textContent=`${session.label||"Tracked client"} | ${cctvPreset(session.quality).label}${frame?.capturedAtUtc?` | ${frame.capturedAtUtc}`:" | waiting for first frame"}`;const actions=document.createElement("div");actions.className="mini-actions";for(const [quality,preset] of Object.entries(CCTV_QUALITY_PRESETS)){const button=document.createElement("button");button.type="button";button.textContent=preset.label;button.classList.toggle("active",quality===session.quality);button.addEventListener("click",event=>{stopEvent(event);setCctvQuality(surfaceKey,quality)});actions.appendChild(button)}const close=document.createElement("button");close.type="button";close.textContent="Close";close.addEventListener("click",event=>{stopEvent(event);stopCctvSession(surfaceKey,true)});actions.appendChild(close);top.append(meta,actions);const frameWrap=document.createElement("div");frameWrap.className="cctv-frame";frameWrap.style.maxWidth=`${currentViewportSettings(false).boxPx}px`;if(frame?.url){const img=document.createElement("img");img.src=`${frame.url}${frame.url.includes("?")?"&":"?"}t=${encodeURIComponent(frame.capturedAtUtc||Date.now())}`;img.alt=`Live CCTV for ${session.label||"tracked client"}`;img.loading="eager";frameWrap.appendChild(img)}else{frameWrap.appendChild(Object.assign(document.createElement("div"),{className:"hint",textContent:"Awaiting the first CCTV frame from the client."}))}section.append(top,frameWrap,Object.assign(document.createElement("div"),{className:"controlnote",textContent:"CCTV uses rolling game-window captures and replaces the map pane until closed."}));return section}
+function openCctvSession(surfaceKey,target,label){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowCctvStreaming){extractStatus.textContent="CCTV is not allowed for this client.";return}const key=String(surfaceKey||"").trim();if(!key)return;const existing=cctvSessions.get(key),targetKey=remoteControlKey(remote),quality=existing?.targetKey===targetKey?existing.quality:(existing?.quality||"high");if(existing)stopCctvSession(key,false);const session={targetKey,remote,label:label||entityDisplayCharacter(target),quality,status:"connecting",socket:null,reconnectTimer:0,frameUrl:"",fallbackUrl:"",frameMeta:null,fps:0,latencyMs:null,lastFrameMs:0,fpsCounter:0,fpsStarted:0};cctvSessions.set(key,session);connectCctvSession(key);void loadCctvLatest(key);void refresh()}
+function setCctvQuality(surfaceKey,quality){const session=cctvSessions.get(String(surfaceKey||"").trim());if(!session)return;session.quality=CCTV_QUALITY_PRESETS[quality]?quality:"high";sendCctvWatch(session,"quality");void refresh()}
+function renderCctvSection(surfaceKey,title="CCTV"){const key=String(surfaceKey||"").trim(),session=cctvSessions.get(key);if(!session)return null;const section=document.createElement("div");section.className="section board-map-section cctv-section";section.dataset.cctvSurface=key;section.innerHTML=`<div class="sectionhead">${title}</div>`;const top=document.createElement("div");top.className="cctv-top";const meta=document.createElement("div");meta.className="hint cctv-meta";meta.dataset.cctvMeta="1";meta.textContent=cctvStatusText(session);const actions=document.createElement("div");actions.className="mini-actions";for(const [quality,preset] of Object.entries(CCTV_QUALITY_PRESETS)){const button=document.createElement("button");button.type="button";button.textContent=preset.label;button.classList.toggle("active",quality===session.quality);button.title=`${preset.label} ${preset.fps} fps`;button.addEventListener("click",event=>{stopEvent(event);setCctvQuality(surfaceKey,quality)});actions.appendChild(button)}const close=document.createElement("button");close.type="button";close.textContent="Close";close.addEventListener("click",event=>{stopEvent(event);stopCctvSession(surfaceKey,true)});actions.appendChild(close);top.append(meta,actions);const frameWrap=document.createElement("div");frameWrap.className=`cctv-frame ${cctvIsStale(session)?"stale":""}`.trim();frameWrap.dataset.cctvFrame="1";frameWrap.style.maxWidth=`${Math.max(240,currentViewportSettings(false).boxPx)}px`;const img=document.createElement("img");img.alt=`Live CCTV for ${session.label||"tracked client"}`;img.loading="eager";img.dataset.cctvImg="1";const src=session.frameUrl||session.fallbackUrl||"";if(src)img.src=src;else img.hidden=true;const empty=document.createElement("div");empty.className="hint";empty.dataset.cctvEmpty="1";empty.hidden=!!src;empty.innerHTML=`<span class="cctv-live-dot ${!cctvIsStale(session)&&Date.now()-(session.lastFrameMs||0)<2200?"on":""}" data-cctv-dot="1"></span> ${session.status||"connecting"}`;const overlay=document.createElement("div");overlay.className="cctv-overlay";overlay.dataset.cctvOverlay="1";overlay.textContent=cctvOverlayText(session);overlay.hidden=!overlay.textContent;frameWrap.append(img,empty,overlay);section.append(top,frameWrap);return section}
+)TTSLHUD"
+           + R"TTSLHUD(
 function mapOrCctvSection(surfaceKey,mapSection,title){const cctv=renderCctvSection(surfaceKey,title);return cctv||mapSection}
 async function requestShortcutScreenshot(target,options={}){const remote=buildRemoteTarget(target);if(!remote?.policy?.allowScreenshotRequests)return false;return queueRemoteAction(remote,"requestScreenshot","",options)}
 async function requestPluginFallback(target,options={}){const remote=buildRemoteTarget(options.sourceTarget||target);if(!remote?.policy?.allowPluginFullBodyFallback)return false;return queueRemoteAction(remote,"requestCharacterVisual","",{...options,extra:{...(options.extra||{}),targetCharacterName:target?.characterName||target?.name||target?.sourceCharacterName,targetWorldName:target?.worldName||target?.sourceWorldName,targetContentId:target?.contentId||"",targetEntityId:target?.entityId||target?.targetEntityId||null}})}
@@ -5590,7 +6314,7 @@ function renderClientTelemetry(client){if(!showDetails)return null;return factSe
 function renderThreats(combat){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Threat</div>`;const list=document.createElement("div");list.className="party";const hostiles=collectHostiles(combat);if(hostiles.length===0){const row=document.createElement("div");row.className="member";row.innerHTML=`<div class="slot">-</div><div class="membername">No combat telemetry captured.</div><div class="job">--</div><div class="dist">--</div>`;list.appendChild(row);section.appendChild(list);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="member";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const label=hostile.isCurrentTarget?"T":hostile.isTargetingTrackedParty?"A":"E";const hp=hpText(hostile.currentHp,hostile.maxHp);row.innerHTML=`<div class="slot">${label}</div><div class="membername">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div class="job">${dist}</div><div class="dist">${hp}</div>`;row.title=`${hostile.isCurrentTarget?"Current target":hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} | ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;list.appendChild(row)}section.appendChild(list);return section}
 function renderEnmityBoard(combat,title="Enmity"){con)TTSLHUD"
            + R"TTSLHUD(st section=document.createElement("div");section.className="section board-enmity";section.innerHTML=`<div class="sectionhead">${title}</div>`;const grid=document.createElement("div");grid.className="enmity-grid";const hostiles=collectHostiles(combat);if(hostiles.length===0){const row=document.createElement("div");row.className="enmity-row";row.innerHTML=`<div class="enmity-name">No combat telemetry captured.</div><div class="enmity-note">The tracked client does not currently expose target or hostile data.</div>`;grid.appendChild(row);section.appendChild(grid);return section}for(const hostile of hostiles){const row=document.createElement("div");row.className="enmity-row";const dist=typeof hostile.distance==="number"?`${hostile.distance.toFixed(1)}y`:"--";const top=document.createElement("div");top.className="enmity-top";top.innerHTML=`<div class="enmity-name">${displayEnemyName(hostile.name,hostile.krangledName)}</div><div>${""}</div>`;top.querySelector("div:last-child").replaceWith(chip(hostile.isCurrentTarget?"TARGET":hostile.isTargetingTrackedParty?"ALLY":"HOSTILE",hostile.isCurrentTarget?"bad":hostile.isTargetingTrackedParty?"warn":""));const note=document.createElement("div");note.className="enmity-note";note.textContent=`${hostile.isTargetingLocalPlayer?"Targeting you":hostile.isTargetingTrackedParty?`Targeting ${displayName(hostile.targetName||"party",hostile.krangledTargetName||"")}`:hostile.targetName?`Targeting ${displayName(hostile.targetName,hostile.krangledTargetName)}`:"No tracked target"} | ${hostile.isCasting?`Cast ${hostile.castActionId??"?"} in ${hostile.castTimeRemaining?.toFixed(1)??"?"}s`:"Not casting"}`;const stats=document.createElement("div");stats.className="member-microstats";stats.append(microStat("HP",hpText(hostile.currentHp,hostile.maxHp),hostile.currentHp==null),microStat("Dist",dist,dist==="--"),microStat("Label",hostile.isCurrentTarget?"TGT":hostile.isTargetingTrackedParty?"ALLY":"HOST"));row.append(top,note,stats);grid.appendChild(row)}section.appendChild(grid);return section}
-function renderClientSummary(client){const wrap=document.createElement("div");wrap.className="board-summary";const board=document.createElement("div");board.className="party-board solo-party-board";const main=document.createElement("div");main.className="party-board-main solo-party-main";const surfaceKey=clientKey(client);const left=document.createElement("div");left.className="party-column";left.appendChild(renderPartyMemberCard(buildSoloSurfaceMember(client),{surfaceKey}));const portraitSection=document.createElement("div");portraitSection.className="board-hub";portraitSection.innerHTML=`<div class="sectionhead">Character</div>`;const portrait=renderPortraitFrame(client,{kind:"portrait",className:"portrait-frame solo-portrait-frame",label:entityDisplayCharacter(client),title:`Lodestone body image for ${entityDisplayCharacter(client)}`});portraitSection.appendChild(portrait);left.appendChild(portraitSection);const right=document.createElement("div");right.className="party-column";const mapSection=renderMinimapSection(client.map,client.position,"Field Map",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU");mapSection.classList.add("board-map-section");right.appendChild(mapOrCctvSection(surfaceKey,mapSection,"CCTV"));main.append(left,right);board.appendChild(main);wrap.append(board,renderEnmityBoard(client.combat));return wrap}
+function renderClientSummary(client){const wrap=document.createElement("div");wrap.className="board-summary";const board=document.createElement("div");board.className="party-board solo-party-board";const main=document.createElement("div");main.className="party-board-main solo-party-main";const surfaceKey=clientKey(client);const left=document.createElement("div");left.className="party-column";left.appendChild(renderPartyMemberCard(buildSoloSurfaceMember(client),{surfaceKey}));const right=document.createElement("div");right.className="party-column";const mapSection=renderMinimapSection(client.map,client.position,"Field Map",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU");mapSection.classList.add("board-map-section");right.appendChild(mapOrCctvSection(surfaceKey,mapSection,"CCTV"));main.append(left,right);board.appendChild(main);wrap.append(board,renderEnmityBoard(client.combat));return wrap}
 function renderClientPartyModule(client){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">Party</div>`;section.appendChild(renderParty(client));return section}
 function renderClientModule(client,allowActions){switch(getInspectorModule("client",allowActions)){case"map":{const mapSection=renderMinimapSection(client.map,client.position,"Minimap",!!client?.conditions?.inCombat,buildClientMinimapPoints(client),"YOU");return mapOrCctvSection(clientKey(client),mapSection,"CCTV")}case"party":return renderClientPartyModule(client);case"threat":return renderThreats(client.combat);case"actions":return renderRemoteControlSection(client,"Remote Control");default:return renderClientSummary(client)}}
 function renderMinimapSection(map,position,title="Minimap",inCombat=false,points=[],sourceLabel=""){
@@ -5796,7 +6520,7 @@ async function queueRemoteAction(target,actionType,text="",options={}){try{const
 function renderRemoteControlSection(target,title,noteText=""){const section=document.createElement("div");section.className="section";section.innerHTML=`<div class="sectionhead">${title}</div>`;const controls=document.createElement("div");controls.className="controls";const policy=target?.policy||target?.sourcePolicy||{};const lastScreenshot=target?.lastScreenshot||target?.sourceLastScreenshot||null;const lastCctvFrame=target?.lastCctvFrame||target?.sourceLastCctvFrame||null;if(policy.allowEchoCommands){const row=document.createElement("div");row.className="controlrow";const draftKey=remoteControlKey(target);const input=document.createElement("input");input.type="text";input.maxLength=220;input.placeholder="Plain text goes to /echo. Slash commands like /sit run verbatim";input.dataset.remoteDraftKey=draftKey;input.value=remoteControlDrafts.get(draftKey)||"";input.addEventListener("input",()=>remoteControlDrafts.set(draftKey,input.value));input.addEventListener("blur",()=>{const value=String(input.value||"");if(value)remoteControlDrafts.set(draftKey,value);else remoteControlDrafts.delete(draftKey)});const button=document.createElement("button");button.type="but)TTSLHUD"
            + R"TTSLHUD(ton";button.textContent="Send Text";button.addEventListener("click",()=>{const text=String(input.value||"").trim();if(!text)return;button.disabled=true;queueRemoteAction(target,"echoCommand",text).then(ok=>{button.disabled=false;if(ok){input.value="";remoteControlDrafts.delete(draftKey)}})});input.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();button.click()}});row.append(input,button);controls.appendChild(row)}if(policy.allowScreenshotRequests||lastScreenshot){const row=document.createElement("div");row.className="controlrow";if(policy.allowScreenshotRequests){const button=document.createElement("button");button.type="button";button.textContent="Request Screenshot";button.addEventListener("click",()=>{button.disabled=true;queueRemoteAction(target,"requestScreenshot").finally(()=>{button.disabled=false})});row.appendChild(button)}if(lastScreenshot?.url){const link=document.createElement("a");link.href=lastScreenshot.url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="Last Screenshot Sent";row.appendChild(link);const stamp=document.createElement("span");stamp.className="controlnote";stamp.textContent=`${lastScreenshot.capturedAtUtc||"Unknown time"}`;row.appendChild(stamp)}controls.appendChild(row)}if(policy.allowCctvStreaming||lastCctvFrame){const row=document.createElement("div");row.className="controlrow";if(lastCctvFrame?.url){const link=document.createElement("a");link.href=`${lastCctvFrame.url}${lastCctvFrame.url.includes("?")?"&":"?"}t=${encodeURIComponent(lastCctvFrame.capturedAtUtc||Date.now())}`;link.target="_blank";link.rel="noopener noreferrer";link.textContent=`Last CCTV Frame${lastCctvFrame.quality?` (${String(lastCctvFrame.quality).toUpperCase()})`:""}`;row.appendChild(link);const stamp=document.createElement("span");stamp.className="controlnote";stamp.textContent=`${lastCctvFrame.capturedAtUtc||"Unknown time"}`;row.appendChild(stamp)}else if(policy.allowCctvStreaming){row.appendChild(Object.assign(document.createElement("span"),{className:"controlnote",textContent:"CCTV frames appear here after the first live capture."}))}controls.appendChild(row)}const note=document.createElement("div");note.className="controlnote";if(noteText){note.textContent=noteText}else if(policy.allowEchoCommands||policy.allowScreenshotRequests||policy.allowCctvStreaming){note.textContent="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane."}else{note.textContent="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV."}controls.appendChild(note);section.appendChild(controls);return section}
 async function refresh(){try{const editingRemoteDraftKey=activeRemoteDraftKey();const res=await fetch("/api/state",{cache:"no-store"});if(!res.ok)throw new Error(`HTTP ${res.status}`);const state=await res.json();currentAssetCatalog=state.assetCatalog||{jobIcons:{},maps:{},raceIcons:{},tribeIcons:{},warnings:[]};const clients=flattenGroups(state.accountGroups).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const live=clients.filter(c=>!c.stale&&!c.isDisconnected).length;const aggregate=Array.isArray(state.aggregateParties)?state.aggregateParties:[];const looseFromServer=Array.isArray(state.looseClients)?state.looseClients:clients;const visibleClients=showStale.checked?clients:clients.filter(c=>!c.stale&&!c.isDisconnected);const visibleLoose=(showStale.checked?looseFromServer:looseFromServer.filter(c=>!c.stale&&!c.isDisconnected)).sort((a,b)=>Number(a.stale||a.isDisconnected)-Number(b.stale||b.isDisconnected)||String(a.characterName).localeCompare(String(b.characterName))||String(a.worldName).localeCompare(String(b.worldName)));const visibleAggregate=aggregateParties.checked?(showStale.checked?aggregate:aggregate.filter(p=>p.liveCount>0)):[];syncCctvSessions(buildCctvSurfaceRegistry(visibleClients,visibleAggregate));summary.textContent=`${clients.length} client(s) tracked | ${live} live | ${clients.length-live} stale/disconnected${aggregateParties.checked?` | ${aggregate.length} party group(s)`:""}`;stamp.textContent=`Generated ${state.generatedAtUtc} | stale after ${state.staleSeconds}s | ${pathSummary(state.gamePathInfo)}`;assetPlan.textContent=assetSummary(state.assetPlan,currentAssetCatalog);extractStatus.textContent=extractionSummary(state.assetExtraction);extractAssets.textContent=state.assetExtraction?.running?"Extracting...":"Extract Assets";extractAssets.disabled=!!state.assetExtraction?.running||!state.gamePathInfo?.captured;if(editingRemoteDraftKey)return;app.className=`layout-${currentLayoutMode}`;app.replaceChildren();app.appendChild(renderSurface(state,visibleClients,visibleAggregate,visibleLoose,clients.length,live))}catch(err){summary.textContent="Refresh failed";stamp.textContent=String(err);assetPlan.textContent="Asset plan unavailable.";extractStatus.textContent="Extraction status unavailable.";extractAssets.disabled=false}}
-wireNumericPreference(mapBoxPxInput,"mapBoxPx",DEFAULT_MAP_BOX_PX,96,320);wireNumericPreference(combatWidthInput,"combatWidth",DEFAULT_COMBAT_WIDTH_YALMS,5,300);wireNumericPreference(combatHeightInput,"combatHeight",DEFAULT_COMBAT_HEIGHT_YALMS,5,300);wireNumericPreference(travelWidthInput,"travelWidth",DEFAULT_TRAVEL_WIDTH_YALMS,5,500);wireNumericPreference(travelHeightInput,"travelHeight",DEFAULT_TRAVEL_HEIGHT_YALMS,5,500);currentLayoutMode=loadStringPreference("layoutMode",DEFAULT_LAYOUT_MODE,LAYOUT_MODES);selectedEntityKey=loadStringPreference("selectedEntity","",null);clientInspectorModule=loadStringPreference("clientInspectorModule",INSPECTOR_DEFAULTS.client,new Set(INSPECTOR_MODULES.client));partyInspectorModule=loadStringPreference("partyInspectorModule",INSPECTOR_DEFAULTS.party,new Set(INSPECTOR_MODULES.party));showDetails=loadBooleanPreference("showDetails",DEFAULT_SHOW_DETAILS);applyLayoutMode(currentLayoutMode);applyDetailsVisibility(showDetails);extractAssets.addEventListener("click",triggerExtract);detailsToggle.addEventListener("click",()=>applyDetailsVisibility(!showDetails));krangle.addEventListener("change",refresh);krangleEnemies.addEventListener("change",refresh);showStale.addEventListener("change",refresh);aggregateParties.addEventListener("change",refresh);icons.addEventListener("change",refresh);enumerate.addEventListener("change",refresh);for(const button of layoutButtons)button.addEventListener("click",()=>{applyLayoutMode(button.dataset.mode);refresh()});refresh();setInterval(refresh,1000);
+wireNumericPreference(mapBoxPxInput,"mapBoxPx",DEFAULT_MAP_BOX_PX,96,320);wireNumericPreference(combatWidthInput,"combatWidth",DEFAULT_COMBAT_WIDTH_YALMS,5,300);wireNumericPreference(combatHeightInput,"combatHeight",DEFAULT_COMBAT_HEIGHT_YALMS,5,300);wireNumericPreference(travelWidthInput,"travelWidth",DEFAULT_TRAVEL_WIDTH_YALMS,5,500);wireNumericPreference(travelHeightInput,"travelHeight",DEFAULT_TRAVEL_HEIGHT_YALMS,5,500);currentLayoutMode=loadStringPreference("layoutMode",DEFAULT_LAYOUT_MODE,LAYOUT_MODES);selectedEntityKey=loadStringPreference("selectedEntity","",null);clientInspectorModule=loadStringPreference("clientInspectorModule",INSPECTOR_DEFAULTS.client,new Set(INSPECTOR_MODULES.client));partyInspectorModule=loadStringPreference("partyInspectorModule",INSPECTOR_DEFAULTS.party,new Set(INSPECTOR_MODULES.party));showDetails=loadBooleanPreference("showDetails",DEFAULT_SHOW_DETAILS);applyLayoutMode(currentLayoutMode);applyDetailsVisibility(showDetails);extractAssets.addEventListener("click",triggerExtract);detailsToggle.addEventListener("click",()=>applyDetailsVisibility(!showDetails));krangle.addEventListener("change",refresh);krangleEnemies.addEventListener("change",refresh);showStale.addEventListener("change",refresh);aggregateParties.addEventListener("change",refresh);icons.addEventListener("change",refresh);enumerate.addEventListener("change",refresh);for(const button of layoutButtons)button.addEventListener("click",()=>{applyLayoutMode(button.dataset.mode);refresh()});window.addEventListener("beforeunload",()=>{for(const key of [...cctvSessions.keys()])stopCctvSession(key,false)});refresh();setInterval(refresh,1000);
 </script></body></html>)TTSLHUD";
 }
 
@@ -5804,6 +6528,7 @@ wireNumericPreference(mapBoxPxInput,"mapBoxPx",DEFAULT_MAP_BOX_PX,96,320);wireNu
 struct HttpRequest {
     std::string method;
     std::string path;
+    std::string query;
     std::string body;
     std::map<std::string, std::string> headers;
 };
@@ -6024,6 +6749,7 @@ private:
 
         const auto query = request.path.find('?');
         if (query != std::string::npos) {
+            request.query = request.path.substr(query + 1);
             request.path = request.path.substr(0, query);
         }
         return true;
@@ -6051,6 +6777,175 @@ private:
         return body.str();
     }
 
+    static std::string HeaderValue(const HttpRequest& request, const std::string& key) {
+        const auto found = request.headers.find(ToLower(key));
+        return found == request.headers.end() ? std::string{} : found->second;
+    }
+
+    static bool HeaderContainsToken(const HttpRequest& request, const std::string& key, const std::string& token) {
+        auto value = ToLower(HeaderValue(request, key));
+        auto expected = ToLower(token);
+        size_t index = 0;
+        while (index < value.size()) {
+            const auto next = value.find(',', index);
+            auto part = Trim(value.substr(index, next == std::string::npos ? std::string::npos : next - index));
+            if (part == expected) {
+                return true;
+            }
+            if (next == std::string::npos) {
+                break;
+            }
+            index = next + 1;
+        }
+        return false;
+    }
+
+    bool TryUpgradeWebSocket(SOCKET client, const HttpRequest& request) {
+        if (!HeaderContainsToken(request, "connection", "upgrade") ||
+            ToLower(HeaderValue(request, "upgrade")) != "websocket") {
+            SendResponse(client, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"WebSocket upgrade required\"}");
+            return false;
+        }
+
+        const auto key = HeaderValue(request, "sec-websocket-key");
+        const auto accept = WebSocketAcceptKey(key);
+        if (key.empty() || accept.empty()) {
+            SendResponse(client, 400, "application/json; charset=utf-8", "{\"ok\":false,\"error\":\"Invalid WebSocket key\"}");
+            return false;
+        }
+
+        std::ostringstream response;
+        response << "HTTP/1.1 101 Switching Protocols\r\n"
+                 << "Upgrade: websocket\r\n"
+                 << "Connection: Upgrade\r\n"
+                 << "Sec-WebSocket-Accept: " << accept << "\r\n"
+                 << "Cache-Control: no-store\r\n\r\n";
+        return SocketSendAll(client, response.str());
+    }
+
+    void HandleCctvPluginSocket(SOCKET client, const HttpRequest& request) {
+        if (!TryUpgradeWebSocket(client, request)) {
+            shutdown(client, SD_BOTH);
+            closesocket(client);
+            return;
+        }
+
+        auto peer = std::make_shared<WebSocketPeer>(client);
+        const auto params = ParseQueryString(request.query);
+        const auto account = params.contains("accountId") ? params.at("accountId") : std::string{};
+        const auto character = params.contains("characterName") ? params.at("characterName") : std::string{};
+        const auto world = params.contains("worldName") ? params.at("worldName") : std::string{};
+        std::string error;
+        if (!state_.RegisterCctvPlugin(peer, account, character, world, error)) {
+            WebSocketSendText(peer, "{\"type\":\"error\",\"message\":" + JsonQuote(error) + "}");
+            WebSocketSendClose(peer);
+            shutdown(client, SD_BOTH);
+            closesocket(client);
+            return;
+        }
+
+        const auto key = RemoteClientKey(account, character, world);
+        WebSocketMessage message;
+        while (running_ && WebSocketReceiveMessage(peer, message)) {
+            if (message.type == WebSocketMessageType::Close) {
+                break;
+            }
+            if (message.type != WebSocketMessageType::Binary) {
+                continue;
+            }
+
+            std::string metadata_json;
+            std::vector<uint8_t> jpeg_bytes;
+            if (!DecodeCctvEnvelope(message.payload, metadata_json, jpeg_bytes, error)) {
+                state_.Log("Ignored invalid CCTV frame: " + error);
+                continue;
+            }
+            if (!state_.PublishCctvFrame(peer, account, character, world, message.payload, metadata_json, jpeg_bytes, error)) {
+                state_.Log("Ignored CCTV frame: " + error);
+            }
+        }
+
+        state_.UnregisterCctvPlugin(key, peer);
+        peer->open = false;
+        shutdown(client, SD_BOTH);
+        closesocket(client);
+    }
+
+    void HandleCctvViewerSocket(SOCKET client, const HttpRequest& request) {
+        if (!TryUpgradeWebSocket(client, request)) {
+            shutdown(client, SD_BOTH);
+            closesocket(client);
+            return;
+        }
+
+        auto peer = std::make_shared<WebSocketPeer>(client);
+        std::string active_key;
+        WebSocketSendText(peer, "{\"type\":\"status\",\"status\":\"connected\",\"message\":\"CCTV viewer socket ready\"}");
+
+        WebSocketMessage message;
+        while (running_ && WebSocketReceiveMessage(peer, message)) {
+            if (message.type == WebSocketMessageType::Close) {
+                break;
+            }
+            if (message.type != WebSocketMessageType::Text) {
+                continue;
+            }
+
+            const std::string text(message.payload.begin(), message.payload.end());
+            std::map<std::string, std::string> fields;
+            if (!ParseTopLevelObject(text, fields)) {
+                WebSocketSendText(peer, "{\"type\":\"error\",\"message\":\"JSON text message required\"}");
+                continue;
+            }
+
+            const auto type = ToLower(JsonStringFieldOrEmpty(fields, "type"));
+            if (type == "close" || type == "unwatch" || type == "stop") {
+                if (!active_key.empty()) {
+                    state_.UnwatchCctvStream(active_key, peer);
+                    active_key.clear();
+                }
+                WebSocketSendText(peer, "{\"type\":\"status\",\"status\":\"idle\"}");
+                continue;
+            }
+            if (type != "watch" && type != "quality") {
+                WebSocketSendText(peer, "{\"type\":\"error\",\"message\":\"Unsupported CCTV viewer message\"}");
+                continue;
+            }
+
+            const auto account = JsonStringFieldOrEmpty(fields, "accountId");
+            const auto character = JsonStringFieldOrEmpty(fields, "characterName");
+            const auto world = JsonStringFieldOrEmpty(fields, "worldName");
+            const auto quality = JsonStringFieldOrEmpty(fields, "quality");
+            if (account.empty() || character.empty() || world.empty()) {
+                WebSocketSendText(peer, "{\"type\":\"error\",\"message\":\"accountId, characterName, and worldName are required\"}");
+                continue;
+            }
+
+            const auto next_key = RemoteClientKey(account, character, world);
+            if (!active_key.empty() && active_key != next_key) {
+                state_.UnwatchCctvStream(active_key, peer);
+            }
+
+            std::vector<uint8_t> latest_frame;
+            int status = 200;
+            const auto response = state_.WatchCctvStream(peer, account, character, world, quality, latest_frame, status);
+            WebSocketSendText(peer, response);
+            if (status == 200) {
+                active_key = next_key;
+                if (!latest_frame.empty()) {
+                    WebSocketSendBinary(peer, latest_frame);
+                }
+            }
+        }
+
+        if (!active_key.empty()) {
+            state_.UnwatchCctvStream(active_key, peer);
+        }
+        peer->open = false;
+        shutdown(client, SD_BOTH);
+        closesocket(client);
+    }
+
     void HandleClient(SOCKET client) {
         HttpRequest request;
         if (!ReceiveRequest(client, request)) {
@@ -6059,10 +6954,20 @@ private:
         }
 
         try {
-            if (request.method == "GET" && request.path == "/") {
+            if (request.method == "GET" && request.path == "/ws/cctv/plugin") {
+                HandleCctvPluginSocket(client, request);
+                return;
+            } else if (request.method == "GET" && request.path == "/ws/cctv/view") {
+                HandleCctvViewerSocket(client, request);
+                return;
+            } else if (request.method == "GET" && request.path == "/") {
                 SendResponse(client, 200, "text/html; charset=utf-8", WebPageHtml());
             } else if (request.method == "GET" && request.path == "/api/state") {
                 SendResponse(client, 200, "application/json; charset=utf-8", state_.SnapshotJson());
+            } else if (request.method == "GET" && request.path == "/api/cctv/latest") {
+                int status = 200;
+                const auto body = state_.CctvLatest(request.query, status);
+                SendResponse(client, status, "application/json; charset=utf-8", body);
             } else if (request.method == "GET" && request.path.rfind("/assets/", 0) == 0) {
                 std::string content_type;
                 auto body = ReadAsset(request.path, content_type);

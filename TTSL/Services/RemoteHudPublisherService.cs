@@ -7,6 +7,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.WebSockets;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -50,6 +51,9 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private readonly CancellationTokenSource shutdownCts = new();
     private readonly ConcurrentQueue<string> pendingWebChatInputs = new();
     private readonly ConcurrentQueue<PendingCharacterVisualCapture> pendingCharacterVisualCaptures = new();
+    private readonly object cctvLock = new();
+    private readonly object cctvFrameCacheLock = new();
+    private readonly WindowsGraphicsWindowCapture windowsGraphicsCapture = new();
 
     private int sendInFlight;
     private bool isDisposing;
@@ -66,6 +70,19 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private string? lastLoggedCaptureSelectionSignature;
     private PendingCharacterVisualCapture? activeCharacterVisualCapture;
     private bool goodbyeSent;
+    private ClientWebSocket? cctvWebSocket;
+    private CancellationTokenSource? cctvConnectionCts;
+    private Task? cctvConnectionTask;
+    private string? cctvConnectionKey;
+    private bool cctvCaptureActive;
+    private CctvCapturePreset cctvActivePreset = ResolveCctvPreset("high");
+    private DateTime nextCctvConnectAttemptUtc = DateTime.MinValue;
+    private string? lastCctvSocketError;
+    private DateTime lastCctvCaptureErrorLogUtc = DateTime.MinValue;
+    private DateTime lastWgcCaptureErrorLogUtc = DateTime.MinValue;
+    private long cctvFrameSequence;
+    private Bitmap? lastGoodCctvBitmap;
+    private CctvCaptureStatus? lastGoodCctvStatus;
 
     public RemoteHudPublisherService(Plugin plugin)
     {
@@ -83,6 +100,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         var cfg = plugin.Configuration;
         if (!cfg.RemoteServerEnabled)
         {
+            StopCctvWebSocket();
             statusText = "Disabled";
             ResetCadence();
             ResetFailureState();
@@ -93,6 +111,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         var identity = GetCurrentIdentity();
         if (identity == null)
         {
+            StopCctvWebSocket();
             statusText = "Waiting for local player";
             ResetCadence();
             ResetFailureState();
@@ -102,6 +121,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
         if (lastIdentity != null && !IdentityMatches(lastIdentity, identity))
         {
+            StopCctvWebSocket();
             TrySendGoodbyeIfNeeded();
             ResetCadence();
             ResetFailureState();
@@ -109,6 +129,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
         goodbyeSent = false;
         lastIdentity = identity;
+        MaintainCctvWebSocket(identity);
         ProcessQueuedWebChatInputs();
         ProcessCharacterVisualCaptures();
 
@@ -138,6 +159,9 @@ internal sealed class RemoteHudPublisherService : IDisposable
     public void Dispose()
     {
         isDisposing = true;
+        StopCctvWebSocket();
+        windowsGraphicsCapture.Dispose();
+        ClearCctvFrameCache();
         TrySendGoodbyeIfNeeded();
         SpinWait.SpinUntil(() => Volatile.Read(ref sendInFlight) == 0, TimeSpan.FromMilliseconds(150));
         shutdownCts.Cancel();
@@ -178,6 +202,309 @@ internal sealed class RemoteHudPublisherService : IDisposable
             return false;
 
         return Interlocked.CompareExchange(ref sendInFlight, 1, 0) == 0;
+    }
+
+    private void MaintainCctvWebSocket(ClientIdentity identity)
+    {
+        if (!plugin.Configuration.AllowWebCctvStreaming)
+        {
+            StopCctvWebSocket();
+            return;
+        }
+
+        var baseUrl = NormalizeBaseUrl(plugin.Configuration.RemoteServerUrl);
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            StopCctvWebSocket();
+            return;
+        }
+
+        var connectionKey = $"{baseUrl}|{identity.AccountId}|{identity.CharacterName}|{identity.WorldName}";
+        lock (cctvLock)
+        {
+            if (string.Equals(cctvConnectionKey, connectionKey, StringComparison.Ordinal) &&
+                cctvConnectionTask is { IsCompleted: false })
+            {
+                return;
+            }
+        }
+
+        if (DateTime.UtcNow < nextCctvConnectAttemptUtc)
+            return;
+
+        StopCctvWebSocket();
+        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(shutdownCts.Token);
+        lock (cctvLock)
+        {
+            cctvConnectionKey = connectionKey;
+            cctvConnectionCts = linkedCts;
+            cctvCaptureActive = false;
+            cctvActivePreset = ResolveCctvPreset("high");
+            cctvConnectionTask = RunCctvWebSocketAsync(baseUrl, identity, connectionKey, linkedCts);
+        }
+    }
+
+    private void StopCctvWebSocket()
+    {
+        CancellationTokenSource? cts;
+        ClientWebSocket? socket;
+        lock (cctvLock)
+        {
+            cts = cctvConnectionCts;
+            socket = cctvWebSocket;
+            cctvConnectionKey = null;
+            cctvConnectionTask = null;
+            cctvConnectionCts = null;
+            cctvWebSocket = null;
+            cctvCaptureActive = false;
+        }
+
+        try
+        {
+            cts?.Cancel();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            socket?.Abort();
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task RunCctvWebSocketAsync(string baseUrl, ClientIdentity identity, string connectionKey, CancellationTokenSource connectionCts)
+    {
+        var token = connectionCts.Token;
+        try
+        {
+            using var socket = new ClientWebSocket();
+            socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+            lock (cctvLock)
+            {
+                if (!ReferenceEquals(cctvConnectionCts, connectionCts))
+                    return;
+
+                cctvWebSocket = socket;
+            }
+
+            await socket.ConnectAsync(BuildCctvPluginUri(baseUrl, identity), token).ConfigureAwait(false);
+            lastCctvSocketError = null;
+
+            var receiveTask = ReceiveCctvControlsAsync(socket, token);
+            var captureTask = CaptureCctvFramesAsync(socket, identity, token);
+            await Task.WhenAny(receiveTask, captureTask).ConfigureAwait(false);
+            connectionCts.Cancel();
+            try
+            {
+                await Task.WhenAll(receiveTask, captureTask).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested || shutdownCts.IsCancellationRequested || isDisposing)
+            {
+            }
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested || shutdownCts.IsCancellationRequested || isDisposing)
+        {
+        }
+        catch (ObjectDisposedException) when (token.IsCancellationRequested || shutdownCts.IsCancellationRequested || isDisposing)
+        {
+        }
+        catch (Exception ex)
+        {
+            nextCctvConnectAttemptUtc = DateTime.UtcNow + TimeSpan.FromSeconds(5);
+            if (!string.Equals(lastCctvSocketError, ex.Message, StringComparison.Ordinal))
+            {
+                lastCctvSocketError = ex.Message;
+                Plugin.Log.Warning("[TTSL] CCTV socket failed: {Error}", ex.Message);
+            }
+        }
+        finally
+        {
+            lock (cctvLock)
+            {
+                if (ReferenceEquals(cctvConnectionCts, connectionCts))
+                {
+                    cctvConnectionKey = null;
+                    cctvConnectionTask = null;
+                    cctvConnectionCts = null;
+                    cctvWebSocket = null;
+                    cctvCaptureActive = false;
+                }
+            }
+
+            connectionCts.Dispose();
+        }
+    }
+
+    private async Task ReceiveCctvControlsAsync(ClientWebSocket socket, CancellationToken token)
+    {
+        var buffer = new byte[4096];
+        while (!token.IsCancellationRequested && socket.State == WebSocketState.Open)
+        {
+            using var message = new MemoryStream();
+            WebSocketReceiveResult result;
+            do
+            {
+                result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), token).ConfigureAwait(false);
+                if (result.MessageType == WebSocketMessageType.Close)
+                    return;
+
+                if (message.Length + result.Count > 64 * 1024)
+                    throw new InvalidOperationException("CCTV control message was too large.");
+
+                message.Write(buffer, 0, result.Count);
+            } while (!result.EndOfMessage);
+
+            if (result.MessageType != WebSocketMessageType.Text)
+                continue;
+
+            var json = Encoding.UTF8.GetString(message.ToArray());
+            HandleCctvControl(json);
+        }
+    }
+
+    private void HandleCctvControl(string json)
+    {
+        CctvControlMessage? control;
+        try
+        {
+            control = JsonSerializer.Deserialize<CctvControlMessage>(json, JsonOptions);
+        }
+        catch (Exception ex)
+        {
+            Plugin.Log.Debug(ex, "[TTSL] Ignoring invalid CCTV control payload.");
+            return;
+        }
+
+        var type = control?.Type?.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(type))
+            return;
+
+        lock (cctvLock)
+        {
+            switch (type)
+            {
+                case "start":
+                    cctvActivePreset = ResolveCctvPreset(control?.Quality);
+                    cctvCaptureActive = true;
+                    break;
+
+                case "quality":
+                    cctvActivePreset = ResolveCctvPreset(control?.Quality);
+                    cctvCaptureActive = true;
+                    break;
+
+                case "stop":
+                    cctvCaptureActive = false;
+                    break;
+            }
+        }
+    }
+
+    private async Task CaptureCctvFramesAsync(ClientWebSocket socket, ClientIdentity identity, CancellationToken token)
+    {
+        var nextFrameUtc = DateTime.MinValue;
+        while (!token.IsCancellationRequested && socket.State == WebSocketState.Open)
+        {
+            CctvCapturePreset preset;
+            bool active;
+            lock (cctvLock)
+            {
+                active = cctvCaptureActive;
+                preset = cctvActivePreset;
+            }
+
+            if (!active || !plugin.Configuration.AllowWebCctvStreaming)
+            {
+                await Task.Delay(100, token).ConfigureAwait(false);
+                continue;
+            }
+
+            var now = DateTime.UtcNow;
+            if (now < nextFrameUtc)
+            {
+                await Task.Delay(nextFrameUtc - now, token).ConfigureAwait(false);
+                continue;
+            }
+
+            try
+            {
+                byte[] imageBytes;
+                int width;
+                int height;
+                CctvCaptureStatus captureStatus;
+                using (var frame = await CaptureGameWindowFrameAsync(true, token).ConfigureAwait(false))
+                using (var scaledBitmap = ResizeBitmap(frame.Bitmap, preset.Scale))
+                {
+                    width = scaledBitmap.Width;
+                    height = scaledBitmap.Height;
+                    imageBytes = EncodeBitmapAsJpeg(scaledBitmap, preset.JpegQuality);
+                    captureStatus = frame.CaptureStatus;
+                }
+
+                var envelope = BuildCctvFrameEnvelope(identity, preset, imageBytes, width, height, captureStatus);
+                await socket.SendAsync(new ArraySegment<byte>(envelope), WebSocketMessageType.Binary, true, token).ConfigureAwait(false);
+                var frameIntervalMs = 1000d / Math.Max(1, preset.MaxFramesPerSecond);
+                nextFrameUtc = DateTime.UtcNow + TimeSpan.FromMilliseconds(frameIntervalMs);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested || shutdownCts.IsCancellationRequested || isDisposing)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if ((DateTime.UtcNow - lastCctvCaptureErrorLogUtc).TotalSeconds >= 5)
+                {
+                    lastCctvCaptureErrorLogUtc = DateTime.UtcNow;
+                    Plugin.Log.Warning(ex, "[TTSL] CCTV capture failed.");
+                }
+
+                await Task.Delay(1000, token).ConfigureAwait(false);
+            }
+        }
+    }
+
+    private static Uri BuildCctvPluginUri(string baseUrl, ClientIdentity identity)
+    {
+        var builder = new UriBuilder(baseUrl)
+        {
+            Scheme = baseUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? "wss" : "ws",
+            Path = "/ws/cctv/plugin",
+            Query =
+                $"accountId={Uri.EscapeDataString(identity.AccountId)}" +
+                $"&characterName={Uri.EscapeDataString(identity.CharacterName)}" +
+                $"&worldName={Uri.EscapeDataString(identity.WorldName)}",
+        };
+        return builder.Uri;
+    }
+
+    private byte[] BuildCctvFrameEnvelope(ClientIdentity identity, CctvCapturePreset preset, byte[] jpegBytes, int width, int height, CctvCaptureStatus captureStatus)
+    {
+        var metadata = new CctvFrameMetadata
+        {
+            AccountId = identity.AccountId,
+            CharacterName = identity.CharacterName,
+            WorldName = identity.WorldName,
+            CapturedAtUtc = DateTime.UtcNow,
+            Quality = preset.Name,
+            ContentType = "image/jpeg",
+            Width = width,
+            Height = height,
+            Sequence = Interlocked.Increment(ref cctvFrameSequence),
+            CaptureStatus = captureStatus,
+        };
+        var metadataBytes = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(metadata, JsonOptions));
+        var envelope = new byte[4 + metadataBytes.Length + jpegBytes.Length];
+        envelope[0] = (byte)((metadataBytes.Length >> 24) & 0xFF);
+        envelope[1] = (byte)((metadataBytes.Length >> 16) & 0xFF);
+        envelope[2] = (byte)((metadataBytes.Length >> 8) & 0xFF);
+        envelope[3] = (byte)(metadataBytes.Length & 0xFF);
+        Buffer.BlockCopy(metadataBytes, 0, envelope, 4, metadataBytes.Length);
+        Buffer.BlockCopy(jpegBytes, 0, envelope, 4 + metadataBytes.Length, jpegBytes.Length);
+        return envelope;
     }
 
     private ClientIdentity? GetCurrentIdentity()
@@ -1411,19 +1738,21 @@ internal sealed class RemoteHudPublisherService : IDisposable
         string contentType;
         byte[] imageBytes;
         string? resolvedQuality = null;
-        using (var bitmap = CaptureGameWindowBitmap(isCctv))
+        CctvCaptureStatus? captureStatus = null;
+        using (var frame = await CaptureGameWindowFrameAsync(isCctv, shutdownCts.Token).ConfigureAwait(false))
         {
             if (isCctv)
             {
                 var preset = ResolveCctvPreset(captureQuality);
                 resolvedQuality = preset.Name;
-                using var scaledBitmap = ResizeBitmap(bitmap, preset.Scale);
+                captureStatus = frame.CaptureStatus;
+                using var scaledBitmap = ResizeBitmap(frame.Bitmap, preset.Scale);
                 imageBytes = EncodeBitmapAsJpeg(scaledBitmap, preset.JpegQuality);
                 contentType = "image/jpeg";
             }
             else
             {
-                imageBytes = EncodeBitmapAsPng(bitmap);
+                imageBytes = EncodeBitmapAsPng(frame.Bitmap);
                 contentType = "image/png";
             }
         }
@@ -1442,6 +1771,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
             ContentType = contentType,
             CaptureMode = isCctv ? "cctv" : "screenshot",
             CaptureQuality = resolvedQuality,
+            CaptureStatus = captureStatus,
             FileName = isCctv
                 ? $"ttsl_cctv_{DateTime.UtcNow:yyyyMMdd_HHmmss}.jpg"
                 : $"ttsl_{DateTime.UtcNow:yyyyMMdd_HHmmss}.png",
@@ -1475,10 +1805,16 @@ internal sealed class RemoteHudPublisherService : IDisposable
         return normalized;
     }
 
-    private Bitmap CaptureGameWindowBitmap(bool isCctv)
+    private async Task<GameCaptureFrame> CaptureGameWindowFrameAsync(bool isCctv, CancellationToken token)
     {
         if (!TryResolveBestCaptureSelection(out var selection, out var failureReason))
+        {
+            var windowHandle = ResolveGameWindowHandleForCapture();
+            if (isCctv && windowHandle != nint.Zero && IsIconic(windowHandle))
+                return CreateMinimizedCctvFrame(Rectangle.Empty);
+
             throw new InvalidOperationException($"FFXIV game-window capture selection is invalid. {failureReason}");
+        }
 
         var selectionSignature =
             $"{selection.Source}|0x{selection.WindowHandle.ToInt64():X}|{selection.BoundsKind}|{selection.Bounds.Width}x{selection.Bounds.Height}";
@@ -1498,6 +1834,53 @@ internal sealed class RemoteHudPublisherService : IDisposable
             lastLoggedCaptureSelectionSignature = selectionSignature;
         }
 
+        var windowState = GetCaptureWindowState(selection.WindowHandle);
+        if (isCctv && string.Equals(windowState, "minimized", StringComparison.Ordinal))
+            return CreateMinimizedCctvFrame(selection.Bounds);
+
+        if (isCctv)
+        {
+            try
+            {
+                var wgcBitmap = await windowsGraphicsCapture
+                    .CaptureAsync(selection.WindowHandle, TimeSpan.FromMilliseconds(500), token)
+                    .ConfigureAwait(false);
+                var captureStatus = new CctvCaptureStatus
+                {
+                    Backend = "wgc",
+                    WindowState = windowState,
+                    IsStale = false,
+                    Message = "Live window capture.",
+                };
+                RememberLiveCctvFrame(wgcBitmap, captureStatus);
+                return new GameCaptureFrame(wgcBitmap, captureStatus);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                if ((DateTime.UtcNow - lastWgcCaptureErrorLogUtc).TotalSeconds >= 10)
+                {
+                    lastWgcCaptureErrorLogUtc = DateTime.UtcNow;
+                    Plugin.Log.Warning(ex, "[TTSL] WGC CCTV capture failed; falling back to GDI.");
+                }
+            }
+        }
+
+        var bitmap = CaptureGdiBitmap(selection);
+        var status = new CctvCaptureStatus
+        {
+            Backend = "gdi",
+            WindowState = windowState,
+            IsStale = false,
+            Message = isCctv ? "GDI fallback capture." : "Desktop capture.",
+        };
+        if (isCctv)
+            RememberLiveCctvFrame(bitmap, status);
+
+        return new GameCaptureFrame(bitmap, status);
+    }
+
+    private static Bitmap CaptureGdiBitmap(CaptureSelection selection)
+    {
         var bitmap = new Bitmap(selection.Bounds.Width, selection.Bounds.Height, PixelFormat.Format32bppArgb);
         using (var graphics = Graphics.FromImage(bitmap))
         {
@@ -1505,6 +1888,82 @@ internal sealed class RemoteHudPublisherService : IDisposable
         }
 
         return bitmap;
+    }
+
+    private GameCaptureFrame CreateMinimizedCctvFrame(Rectangle fallbackBounds)
+    {
+        lock (cctvFrameCacheLock)
+        {
+            if (lastGoodCctvBitmap != null)
+            {
+                var reusedStatus = new CctvCaptureStatus
+                {
+                    Backend = lastGoodCctvStatus?.Backend ?? "wgc",
+                    WindowState = "minimized",
+                    IsStale = true,
+                    Message = "FFXIV minimized; showing last frame.",
+                };
+                return new GameCaptureFrame((Bitmap)lastGoodCctvBitmap.Clone(), reusedStatus);
+            }
+        }
+
+        var width = fallbackBounds.Width >= MinimumReasonableCaptureWidth ? fallbackBounds.Width : 1280;
+        var height = fallbackBounds.Height >= MinimumReasonableCaptureHeight ? fallbackBounds.Height : 720;
+        var status = new CctvCaptureStatus
+        {
+            Backend = "wgc",
+            WindowState = "minimized",
+            IsStale = true,
+            Message = "FFXIV minimized; waiting for first live frame.",
+        };
+        return new GameCaptureFrame(CreateMinimizedPlaceholderBitmap(width, height), status);
+    }
+
+    private void RememberLiveCctvFrame(Bitmap bitmap, CctvCaptureStatus status)
+    {
+        lock (cctvFrameCacheLock)
+        {
+            lastGoodCctvBitmap?.Dispose();
+            lastGoodCctvBitmap = (Bitmap)bitmap.Clone();
+            lastGoodCctvStatus = status;
+        }
+    }
+
+    private void ClearCctvFrameCache()
+    {
+        lock (cctvFrameCacheLock)
+        {
+            lastGoodCctvBitmap?.Dispose();
+            lastGoodCctvBitmap = null;
+            lastGoodCctvStatus = null;
+        }
+    }
+
+    private static Bitmap CreateMinimizedPlaceholderBitmap(int width, int height)
+    {
+        var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.Clear(Color.FromArgb(7, 12, 18));
+        using var borderPen = new Pen(Color.FromArgb(70, 110, 132));
+        graphics.DrawRectangle(borderPen, 0, 0, width - 1, height - 1);
+        var baseFont = SystemFonts.MessageBoxFont ?? SystemFonts.DefaultFont;
+        using var font = new Font(baseFont.FontFamily, Math.Max(18f, Math.Min(width, height) / 18f), FontStyle.Bold);
+        using var brush = new SolidBrush(Color.FromArgb(216, 226, 232));
+        const string text = "(MINIMIZED)";
+        var size = graphics.MeasureString(text, font);
+        graphics.DrawString(text, font, brush, (width - size.Width) / 2f, (height - size.Height) / 2f);
+        return bitmap;
+    }
+
+    private static string GetCaptureWindowState(nint windowHandle)
+    {
+        if (windowHandle == nint.Zero)
+            return "unknown";
+
+        if (IsIconic(windowHandle))
+            return "minimized";
+
+        return IsWindowVisible(windowHandle) ? "visible" : "unknown";
     }
 
     private static byte[] EncodeBitmapAsPng(Image image)
@@ -1548,10 +2007,10 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private static CctvCapturePreset ResolveCctvPreset(string? quality)
     {
         return string.Equals(quality, "low", StringComparison.OrdinalIgnoreCase)
-            ? new CctvCapturePreset("low", 0.4f, 42L)
+            ? new CctvCapturePreset("low", 0.5f, 60L, 3)
             : string.Equals(quality, "high", StringComparison.OrdinalIgnoreCase)
-                ? new CctvCapturePreset("high", 0.8f, 80L)
-                : new CctvCapturePreset("medium", 0.6f, 62L);
+                ? new CctvCapturePreset("high", 1f, 90L, 10)
+                : new CctvCapturePreset("medium", 0.75f, 78L, 6);
     }
 
     private static bool TryResolveBestCaptureSelection(out CaptureSelection selection, out string failureReason)
@@ -1745,6 +2204,9 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private static extern bool IsWindowVisible(nint windowHandle);
 
     [DllImport("user32.dll")]
+    private static extern bool IsIconic(nint windowHandle);
+
+    [DllImport("user32.dll")]
     private static extern bool GetWindowRect(nint windowHandle, out Win32Rect rect);
 
     [DllImport("user32.dll")]
@@ -1814,6 +2276,49 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public uint? TargetEntityId { get; init; }
     }
 
+    private sealed class CctvControlMessage
+    {
+        public string Type { get; init; } = string.Empty;
+        public string? Quality { get; init; }
+    }
+
+    private sealed class CctvFrameMetadata
+    {
+        public string AccountId { get; init; } = string.Empty;
+        public string CharacterName { get; init; } = string.Empty;
+        public string WorldName { get; init; } = string.Empty;
+        public DateTime CapturedAtUtc { get; init; }
+        public string Quality { get; init; } = "high";
+        public string ContentType { get; init; } = "image/jpeg";
+        public int Width { get; init; }
+        public int Height { get; init; }
+        public long Sequence { get; init; }
+        public CctvCaptureStatus CaptureStatus { get; init; } = new();
+    }
+
+    private sealed class CctvCaptureStatus
+    {
+        public string Backend { get; init; } = "gdi";
+        public string WindowState { get; init; } = "unknown";
+        public bool IsStale { get; init; }
+        public string Message { get; init; } = string.Empty;
+    }
+
+    private sealed class GameCaptureFrame : IDisposable
+    {
+        public GameCaptureFrame(Bitmap bitmap, CctvCaptureStatus captureStatus)
+        {
+            Bitmap = bitmap;
+            CaptureStatus = captureStatus;
+        }
+
+        public Bitmap Bitmap { get; }
+        public CctvCaptureStatus CaptureStatus { get; }
+
+        public void Dispose()
+            => Bitmap.Dispose();
+    }
+
     private sealed class ScreenshotUploadRequest
     {
         public string AccountId { get; init; } = string.Empty;
@@ -1824,6 +2329,7 @@ internal sealed class RemoteHudPublisherService : IDisposable
         public string ContentType { get; init; } = "image/png";
         public string CaptureMode { get; init; } = "screenshot";
         public string? CaptureQuality { get; init; }
+        public CctvCaptureStatus? CaptureStatus { get; init; }
         public string FileName { get; init; } = "ttsl.png";
         public string ImageBase64 { get; init; } = string.Empty;
     }
@@ -1898,16 +2404,18 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
     private sealed class CctvCapturePreset
     {
-        public CctvCapturePreset(string name, float scale, long jpegQuality)
+        public CctvCapturePreset(string name, float scale, long jpegQuality, int maxFramesPerSecond)
         {
             Name = name;
             Scale = scale;
             JpegQuality = jpegQuality;
+            MaxFramesPerSecond = maxFramesPerSecond;
         }
 
         public string Name { get; }
         public float Scale { get; }
         public long JpegQuality { get; }
+        public int MaxFramesPerSecond { get; }
     }
 
     private sealed class Vector3Snapshot

@@ -38,4 +38,5 @@ target_link_libraries(ttsl-native-server PRIVATE
     ole32
     windowscodecs
     winhttp
+    bcrypt
 )
