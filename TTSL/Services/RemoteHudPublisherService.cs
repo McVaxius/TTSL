@@ -32,8 +32,9 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private const float CombatTelemetryRangeYalms = 55f;
     private const int CustomizeRaceIndex = 0;
     private const int CustomizeTribeIndex = 4;
-    private static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan HttpTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan MaxRetryBackoff = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan RepeatedFailureLogInterval = TimeSpan.FromMinutes(1);
     private const int MinimumReasonableCaptureWidth = 480;
     private const int MinimumReasonableCaptureHeight = 270;
     private const int CharacterVisualCaptureTimeoutMs = 12000;
@@ -61,8 +62,10 @@ internal sealed class RemoteHudPublisherService : IDisposable
     private DateTime lastPositionUpdateUtc = DateTime.MinValue;
     private DateTime lastFullSnapshotUtc = DateTime.MinValue;
     private DateTime nextAttemptUtc = DateTime.MinValue;
+    private DateTime lastFailureLogUtc = DateTime.MinValue;
     private DateTime? lastSuccessUtc;
     private bool lastAttemptFailed;
+    private int suppressedFailureLogCount;
     private string? lastError;
     private string statusText = "Disabled";
     private ClientIdentity? lastIdentity;
@@ -816,7 +819,9 @@ internal sealed class RemoteHudPublisherService : IDisposable
     {
         consecutiveFailureCount = 0;
         nextAttemptUtc = DateTime.MinValue;
+        lastFailureLogUtc = DateTime.MinValue;
         lastAttemptFailed = false;
+        suppressedFailureLogCount = 0;
         lastError = null;
     }
 
@@ -1196,6 +1201,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
     private async Task SendAsync<T>(string path, T payload)
     {
+        var requestUrl = string.Empty;
+
         try
         {
             if (shutdownCts.IsCancellationRequested || isDisposing)
@@ -1210,7 +1217,8 @@ internal sealed class RemoteHudPublisherService : IDisposable
 
             var json = JsonSerializer.Serialize(payload, JsonOptions);
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
-            using var response = await httpClient.PostAsync($"{baseUrl}{path}", content, shutdownCts.Token).ConfigureAwait(false);
+            requestUrl = $"{baseUrl}{path}";
+            using var response = await httpClient.PostAsync(requestUrl, content, shutdownCts.Token).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync(shutdownCts.Token).ConfigureAwait(false);
@@ -1232,6 +1240,14 @@ internal sealed class RemoteHudPublisherService : IDisposable
         {
             // Shutdown raced the request; safe to ignore during plugin unload.
         }
+        catch (TaskCanceledException ex)
+        {
+            RecordFailure(BuildTimeoutFailureMessage(requestUrl, ex));
+        }
+        catch (HttpRequestException ex)
+        {
+            RecordFailure(BuildRequestFailureMessage(requestUrl, ex));
+        }
         catch (Exception ex)
         {
             RecordFailure(ex.Message);
@@ -1252,25 +1268,62 @@ internal sealed class RemoteHudPublisherService : IDisposable
         consecutiveFailureCount = 0;
         nextAttemptUtc = DateTime.MinValue;
         lastAttemptFailed = false;
+        lastFailureLogUtc = DateTime.MinValue;
+        suppressedFailureLogCount = 0;
         lastError = null;
     }
 
     private void RecordFailure(string error)
     {
+        var now = DateTime.UtcNow;
         consecutiveFailureCount = Math.Min(consecutiveFailureCount + 1, 5);
         var backoff = CalculateBackoff(consecutiveFailureCount);
-        nextAttemptUtc = DateTime.UtcNow + backoff;
+        nextAttemptUtc = now + backoff;
         statusText = $"Retrying in {Math.Max(1, (int)Math.Ceiling(backoff.TotalSeconds))}s";
 
-        if (!lastAttemptFailed || !string.Equals(lastError, error, StringComparison.Ordinal))
+        var errorChanged = !string.Equals(lastError, error, StringComparison.Ordinal);
+        var logRepeatedFailure = lastFailureLogUtc == DateTime.MinValue || now - lastFailureLogUtc >= RepeatedFailureLogInterval;
+        if (!lastAttemptFailed || errorChanged || logRepeatedFailure)
         {
-            Plugin.Log.Warning("[TTSL] Remote HUD publishing failed: {Error}. Backing off for {Seconds}s.",
-                error,
-                Math.Max(1, (int)Math.Ceiling(backoff.TotalSeconds)));
+            var suppressedCount = errorChanged ? 0 : suppressedFailureLogCount;
+            if (suppressedCount > 0)
+            {
+                Plugin.Log.Warning("[TTSL] Remote HUD publishing failed: {Error}. Backing off for {Seconds}s. Suppressed {SuppressedCount} repeated failures.",
+                    error,
+                    Math.Max(1, (int)Math.Ceiling(backoff.TotalSeconds)),
+                    suppressedCount);
+            }
+            else
+            {
+                Plugin.Log.Warning("[TTSL] Remote HUD publishing failed: {Error}. Backing off for {Seconds}s.",
+                    error,
+                    Math.Max(1, (int)Math.Ceiling(backoff.TotalSeconds)));
+            }
+
+            lastFailureLogUtc = now;
+            suppressedFailureLogCount = 0;
+        }
+        else
+        {
+            suppressedFailureLogCount++;
         }
 
         lastAttemptFailed = true;
         lastError = error;
+    }
+
+    private static string BuildTimeoutFailureMessage(string requestUrl, Exception ex)
+    {
+        var target = string.IsNullOrWhiteSpace(requestUrl) ? "remote HUD server" : requestUrl;
+        return $"Timed out after {HttpTimeout.TotalSeconds:F0}s while contacting {target}. Server may be slow or offline. {ex.Message}";
+    }
+
+    private static string BuildRequestFailureMessage(string requestUrl, HttpRequestException ex)
+    {
+        if (string.IsNullOrWhiteSpace(requestUrl))
+            return ex.Message;
+
+        return $"Could not reach {requestUrl}: {ex.Message}";
     }
 
     private string BuildBackoffStatus(DateTime now)
