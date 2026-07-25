@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>0.0.1.11</Version>
-    <FileVersion>0.0.1.11</FileVersion>
-    <AssemblyVersion>0.0.1.11</AssemblyVersion>
+    <Version>0.0.1.12</Version>
+    <FileVersion>0.0.1.12</FileVersion>
+    <AssemblyVersion>0.0.1.12</AssemblyVersion>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <RootNamespace>TTSL</RootNamespace>
@@ -17,6 +17,12 @@
   <PropertyGroup>
     <DalamudLibPath Condition="$(DALAMUD_HOME) != ''">$(DALAMUD_HOME)/</DalamudLibPath>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="backups\**" />
+    <Compile Remove="**\backups\**" />
+    <None Remove="backups\**" />
+    <None Remove="**\backups\**" />
+  </ItemGroup>
   <Target Name="MirrorLegacyDebugOutput" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' and '$(PlatformTarget)' == 'x64'">
     <PropertyGroup>
       <LegacyDebugOutputDir>$(MSBuildProjectDirectory)\bin\Debug\</LegacyDebugOutputDir>

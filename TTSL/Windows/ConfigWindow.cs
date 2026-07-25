@@ -32,6 +32,12 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         var cfg = plugin.Configuration;
         var changed = false;
 
+        if (ImGui.Button("Setup Wizard"))
+            plugin.OpenSetupWizard();
+        ImGui.SameLine();
+        ImGui.TextDisabled("Guided local HUD and web publisher setup");
+        ImGui.Separator();
+
         ImGui.TextColored(new Vector4(0.95f, 0.75f, 0.35f, 1f), "Overlay");
         var overlayEnabled = cfg.OverlayEnabled;
         if (ImGui.Checkbox("Enable Thick Thighs Save Lives HUD", ref overlayEnabled))

@@ -37,27 +37,32 @@ public sealed class Plugin : IDalamudPlugin
     public readonly WindowSystem WindowSystem = new(PluginInfo.InternalName);
     public MainWindow MainWindow { get; }
     public ConfigWindow ConfigWindow { get; }
+    public SetupWizardWindow SetupWizardWindow { get; }
     internal RemoteHudPublisherService RemoteHudPublisher { get; }
 
     private const string DefaultLocalServerHost = "127.0.0.1";
     private const int DefaultLocalServerPort = 6942;
+    private const string DefaultRemoteServerUrl = "http://127.0.0.1:6942";
     private IDtrBarEntry? dtrEntry;
+    private string setupWizardPromptedAccountId = string.Empty;
 
     public Plugin()
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         MigrateConfiguration();
-        SyncActiveAccountConfiguration();
         RemoteHudPublisher = new RemoteHudPublisherService(this);
 
         MainWindow = new MainWindow(this);
         ConfigWindow = new ConfigWindow(this);
+        SetupWizardWindow = new SetupWizardWindow(this);
         WindowSystem.AddWindow(MainWindow);
         WindowSystem.AddWindow(ConfigWindow);
+        WindowSystem.AddWindow(SetupWizardWindow);
+        SyncActiveAccountConfiguration();
 
         CommandManager.AddHandler(PluginInfo.Command, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Thick Thighs Save Lives: /ttsl [config|toggle|ws|j]"
+            HelpMessage = "Thick Thighs Save Lives: /ttsl [config|setup|wizard|guide|toggle|ws|j]"
         });
 
         PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
@@ -82,6 +87,7 @@ public sealed class Plugin : IDalamudPlugin
         RemoteHudPublisher.Dispose();
         MainWindow.Dispose();
         ConfigWindow.Dispose();
+        SetupWizardWindow.Dispose();
         dtrEntry?.Remove();
 
         CommandManager.RemoveHandler(PluginInfo.Command);
@@ -99,6 +105,84 @@ public sealed class Plugin : IDalamudPlugin
 
     public void ToggleConfigUi()
         => ConfigWindow.Toggle();
+
+    public void OpenSetupWizard()
+    {
+        SyncActiveAccountConfiguration();
+        var accountId = TryGetResolvedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            ChatGui.Print("[TTSL] Log into a character before opening the setup wizard.");
+            return;
+        }
+
+        SetupWizardWindow.OpenWithFreshDraft(accountId, !Configuration.HasSeenSetupWizard);
+    }
+
+    public void DismissSetupWizard(string accountId)
+    {
+        var currentAccountId = TryGetResolvedAccountId();
+        if (string.Equals(currentAccountId, accountId, StringComparison.Ordinal) &&
+            string.Equals(Configuration.LastAccountId, accountId, StringComparison.Ordinal))
+        {
+            if (Configuration.HasSeenSetupWizard)
+                return;
+
+            Configuration.HasSeenSetupWizard = true;
+            SaveConfiguration();
+            Log.Information("[TTSL] Setup wizard dismissed for account {AccountId}.", accountId);
+            return;
+        }
+
+        if (!Configuration.Accounts.TryGetValue(accountId, out var accountConfiguration) ||
+            accountConfiguration.HasSeenSetupWizard)
+        {
+            return;
+        }
+
+        accountConfiguration.HasSeenSetupWizard = true;
+        PluginInterface.SavePluginConfig(Configuration);
+        Log.Information("[TTSL] Setup wizard dismissed for inactive account {AccountId}.", accountId);
+    }
+
+    public bool ApplySetupWizardSettings(
+        string accountId,
+        bool overlayEnabled,
+        bool remoteServerEnabled,
+        string remoteServerUrl,
+        bool showConditionPanel,
+        bool showRepairSummary,
+        bool showPartyStatus,
+        bool showPartyRadar,
+        bool krangleEnabled,
+        bool dtrBarEnabled)
+    {
+        var currentAccountId = TryGetResolvedAccountId();
+        if (!string.Equals(currentAccountId, accountId, StringComparison.Ordinal) ||
+            !string.Equals(Configuration.LastAccountId, accountId, StringComparison.Ordinal))
+            return false;
+
+        var krangleChanged = Configuration.KrangleEnabled != krangleEnabled;
+        Configuration.OverlayEnabled = overlayEnabled;
+        Configuration.RemoteServerEnabled = remoteServerEnabled;
+        Configuration.RemoteServerUrl = string.IsNullOrWhiteSpace(remoteServerUrl)
+            ? DefaultRemoteServerUrl
+            : remoteServerUrl.Trim();
+        Configuration.ShowConditionPanel = showConditionPanel;
+        Configuration.ShowRepairSummary = showRepairSummary;
+        Configuration.ShowPartyStatus = showPartyStatus;
+        Configuration.ShowPartyRadar = showPartyRadar;
+        Configuration.KrangleEnabled = krangleEnabled;
+        Configuration.DtrBarEnabled = dtrBarEnabled;
+        Configuration.HasSeenSetupWizard = true;
+
+        if (krangleChanged)
+            KrangleService.ClearCache();
+
+        SaveConfiguration();
+        Log.Information("[TTSL] Setup wizard applied for account {AccountId}.", accountId);
+        return true;
+    }
 
     public void SetOverlayEnabled(bool enabled, string source)
     {
@@ -309,6 +393,12 @@ public sealed class Plugin : IDalamudPlugin
             changed = true;
         }
 
+        if (Configuration.Version < 7)
+        {
+            Configuration.Version = 7;
+            changed = true;
+        }
+
         if (changed)
             Configuration.Save();
     }
@@ -325,11 +415,20 @@ public sealed class Plugin : IDalamudPlugin
         if (string.IsNullOrWhiteSpace(accountId))
             return;
 
-        if (!Configuration.EnsureActiveAccount(accountId))
-            return;
+        if (Configuration.EnsureActiveAccount(accountId))
+        {
+            Log.Information("[TTSL] Activated account-scoped configuration for {AccountId}.", accountId);
+            SaveConfiguration();
+        }
 
-        Log.Information("[TTSL] Activated account-scoped configuration for {AccountId}.", accountId);
-        SaveConfiguration();
+        if (Configuration.HasSeenSetupWizard ||
+            string.Equals(setupWizardPromptedAccountId, accountId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        setupWizardPromptedAccountId = accountId;
+        SetupWizardWindow.OpenWithFreshDraft(accountId, firstRun: true);
     }
 
     private string? TryGetResolvedAccountId()
@@ -403,6 +502,12 @@ public sealed class Plugin : IDalamudPlugin
             case "config":
             case "settings":
                 ConfigWindow.Toggle();
+                break;
+
+            case "setup":
+            case "wizard":
+            case "guide":
+                OpenSetupWizard();
                 break;
 
             case "toggle":

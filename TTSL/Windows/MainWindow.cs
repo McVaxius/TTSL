@@ -135,6 +135,12 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             ImGui.SetTooltip("Use party slot numbers on the radar.");
 
         ImGui.SameLine();
+        if (ImGui.SmallButton("Setup"))
+            plugin.OpenSetupWizard();
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Open the guided local/web HUD setup.");
+
+        ImGui.SameLine();
         if (ImGui.SmallButton("Settings"))
             plugin.ToggleConfigUi();
 

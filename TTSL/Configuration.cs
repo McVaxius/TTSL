@@ -7,9 +7,10 @@ namespace TTSL;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 6;
+    public int Version { get; set; } = 7;
     public string LastAccountId { get; set; } = string.Empty;
     public Dictionary<string, AccountScopedConfiguration> Accounts { get; set; } = new();
+    public bool HasSeenSetupWizard { get; set; } = false;
     public bool OverlayEnabled { get; set; } = true;
     public bool DtrBarEnabled { get; set; } = true;
     public int DtrBarMode { get; set; } = 0;
@@ -93,6 +94,7 @@ public sealed class Configuration : IPluginConfiguration
 [Serializable]
 public sealed class AccountScopedConfiguration
 {
+    public bool HasSeenSetupWizard { get; set; } = false;
     public bool OverlayEnabled { get; set; } = true;
     public bool DtrBarEnabled { get; set; } = true;
     public int DtrBarMode { get; set; } = 0;
@@ -123,6 +125,7 @@ public sealed class AccountScopedConfiguration
     {
         return new AccountScopedConfiguration
         {
+            HasSeenSetupWizard = source.HasSeenSetupWizard,
             OverlayEnabled = source.OverlayEnabled,
             DtrBarEnabled = source.DtrBarEnabled,
             DtrBarMode = source.DtrBarMode,
@@ -153,6 +156,7 @@ public sealed class AccountScopedConfiguration
 
     public void ApplyTo(Configuration target)
     {
+        target.HasSeenSetupWizard = HasSeenSetupWizard;
         target.OverlayEnabled = OverlayEnabled;
         target.DtrBarEnabled = DtrBarEnabled;
         target.DtrBarMode = DtrBarMode;

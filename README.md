@@ -19,6 +19,7 @@ https://aethertek.io/x.json
 Current surface:
 
 - `/ttsl` main window
+- `/ttsl setup`, `/ttsl wizard`, or `/ttsl guide` guided setup
 - `/ttsl ws` window reset
 - `/ttsl j` visible window jump
 - zone and position snapshot
@@ -30,6 +31,14 @@ Current surface:
 - optional krangled display names
 
 This repo is still under active development.
+
+## Setup Wizard
+
+TTSL opens a three-step setup wizard once for each account after a character is available. You can reopen it from the main window, the settings window, or any setup command above.
+
+The first step chooses **Local HUD**, **Local + Web**, or **Web only**. The second step selects the condition, repair, party, radar, Krangle, and DTR surfaces. The final step reviews the choices and, for web modes, shows the current server URL and copyable launch command.
+
+The wizard keeps its choices in a draft until **Finish**. Canceling or closing a first-run wizard dismisses it for that account without changing the draft settings. Advanced web permissions, intervals, radar sizing, icon choices, and party-label settings remain under the full settings window.
 
 ## Python Server
 
