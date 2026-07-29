@@ -17,6 +17,15 @@ http://127.0.0.1:6942/
 - [X] Codex verified in the local smoke test
 - [R] Known issue outside the C++ server scope
 
+## Release Packaging
+
+- [X] Run `cpp\build.bat Release`.
+- [X] Create `TTSL\bin\x64\Release\TTSL\latestServer.zip` with the workflow's `Compress-Archive` command.
+- [X] Confirm the archive contains exactly one root entry named `ttsl-native-server.exe`.
+- [X] Confirm the parsed release workflow is configured to upload and attach `latestServer.zip` beside the unchanged `latest.zip` and `TTSL.json` assets.
+- [ ] Publish a release and confirm GitHub exposes all three configured assets.
+- [ ] In plugin settings, click **Download Native Server** and confirm the latest release page opens and lists `latestServer.zip`.
+
 ## Test Order For Your Live Pass
 
 - [ ] Launch `cpp\build\Debug\ttsl-native-server.exe` and confirm no command terminal opens.

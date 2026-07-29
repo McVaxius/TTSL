@@ -40,6 +40,12 @@ The first step chooses **Local HUD**, **Local + Web**, or **Web only**. The seco
 
 The wizard keeps its choices in a draft until **Finish**. Canceling or closing a first-run wizard dismisses it for that account without changing the draft settings. Advanced web permissions, intervals, radar sizing, icon choices, and party-label settings remain under the full settings window.
 
+## Native Server
+
+The standalone Windows server is published as `latestServer.zip` on the [latest GitHub release](https://github.com/McVaxius/TTSL/releases/latest). Extract the archive and run `ttsl-native-server.exe`; no Python installation is required.
+
+The **Remote HUD Server** settings section includes a **Download Native Server** button that opens the release page and identifies the `latestServer.zip` asset. The existing Python command remains available for users who prefer the script server.
+
 ## Python Server
 
 The web HUD server lives under [server](Z:\TTSL\server).

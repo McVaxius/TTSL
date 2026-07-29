@@ -39,12 +39,20 @@ jobs:
         env:
           DOTNET_CLI_TELEMETRY_OPTOUT: true
 
+      - name: Build and Package Native Server
+        shell: pwsh
+        run: |
+          & .\cpp\build.bat Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Compress-Archive -LiteralPath "cpp\build\Release\ttsl-native-server.exe" -DestinationPath "${{ env.RELEASE_DIR }}\latestServer.zip" -Force
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.PLUGIN_NAME }}-artifact
           path: |
             ${{ env.RELEASE_DIR }}\latest.zip
+            ${{ env.RELEASE_DIR }}\latestServer.zip
             ${{ env.RELEASE_DIR }}\${{ env.INTERNAL_NAME }}.json
           if-no-files-found: error
 
@@ -85,6 +93,7 @@ jobs:
           prerelease: false
           files: |
             artifact/latest.zip
+            artifact/latestServer.zip
             artifact/${{ env.INTERNAL_NAME }}.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

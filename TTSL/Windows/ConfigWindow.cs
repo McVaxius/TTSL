@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
@@ -9,6 +10,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
 {
     private static readonly string[] DtrModes = { "Text Only", "Icon+Text", "Icon Only" };
     private const string IconGuideUrl = "https://na.finalfantasyxiv.com/lodestone/character/22423564/blog/4393835";
+    private const string NativeServerReleaseUrl = "https://github.com/McVaxius/TTSL/releases/latest";
 
     private readonly Plugin plugin;
 
@@ -154,6 +156,17 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         ImGui.SameLine();
         if (ImGui.SmallButton("Open Web HUD"))
             plugin.OpenRemoteViewer();
+
+        if (ImGui.Button("Download Native Server"))
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = NativeServerReleaseUrl,
+                UseShellExecute = true,
+            });
+        }
+        ImGui.SameLine();
+        ImGui.TextDisabled("Release asset: latestServer.zip");
 
         var launchCommand = plugin.GetSuggestedServerLaunchCommand();
         ImGui.SetNextItemWidth(-115f);
