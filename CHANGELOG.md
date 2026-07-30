@@ -13,3 +13,5 @@ All notable changes to Thick Thighs Save Lives will be documented in this file.
 ### Changed
 - Configuration schema v7 now persists setup-wizard dismissal per account while preserving all existing advanced settings.
 - The release workflow now builds the native server through `cpp\build.bat Release` while leaving `latest.zip`, its manifest, and release-version behavior unchanged.
+- The release workflow now pins its native build to the Visual Studio 2022-compatible `windows-2022` runner.
+- GitHub releases now expose exactly two public ZIP assets, `latest.zip` and `latestServer.zip`; `TTSL.json` remains inside `latest.zip` and in the private build artifact used for version detection.

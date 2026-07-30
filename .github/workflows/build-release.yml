@@ -15,7 +15,7 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -94,6 +94,5 @@ jobs:
           files: |
             artifact/latest.zip
             artifact/latestServer.zip
-            artifact/${{ env.INTERNAL_NAME }}.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

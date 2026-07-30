@@ -22,8 +22,8 @@ http://127.0.0.1:6942/
 - [X] Run `cpp\build.bat Release`.
 - [X] Create `TTSL\bin\x64\Release\TTSL\latestServer.zip` with the workflow's `Compress-Archive` command.
 - [X] Confirm the archive contains exactly one root entry named `ttsl-native-server.exe`.
-- [X] Confirm the parsed release workflow is configured to upload and attach `latestServer.zip` beside the unchanged `latest.zip` and `TTSL.json` assets.
-- [ ] Publish a release and confirm GitHub exposes all three configured assets.
+- [X] Confirm the parsed release workflow keeps `TTSL.json` in the private build artifact and publicly attaches exactly `latest.zip` and `latestServer.zip`.
+- [ ] Publish `v0.0.1.13`, confirm GitHub exposes exactly `latest.zip` and `latestServer.zip`, download both, confirm `latest.zip` contains `TTSL.json`, and confirm `latestServer.zip` contains only one root `ttsl-native-server.exe`.
 - [ ] In plugin settings, click **Download Native Server** and confirm the latest release page opens and lists `latestServer.zip`.
 
 ## Test Order For Your Live Pass
