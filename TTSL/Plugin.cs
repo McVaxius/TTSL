@@ -44,7 +44,6 @@ public sealed class Plugin : IDalamudPlugin
     private const int DefaultLocalServerPort = 6942;
     private const string DefaultRemoteServerUrl = "http://127.0.0.1:6942";
     private IDtrBarEntry? dtrEntry;
-    private string setupWizardPromptedAccountId = string.Empty;
 
     public Plugin()
     {
@@ -399,6 +398,13 @@ public sealed class Plugin : IDalamudPlugin
             changed = true;
         }
 
+        if (Configuration.Version < 8)
+        {
+            Configuration.HasAutoOpenedSetupWizard = true;
+            Configuration.Version = 8;
+            changed = true;
+        }
+
         if (changed)
             Configuration.Save();
     }
@@ -421,14 +427,12 @@ public sealed class Plugin : IDalamudPlugin
             SaveConfiguration();
         }
 
-        if (Configuration.HasSeenSetupWizard ||
-            string.Equals(setupWizardPromptedAccountId, accountId, StringComparison.Ordinal))
-        {
+        if (Configuration.HasAutoOpenedSetupWizard)
             return;
-        }
 
-        setupWizardPromptedAccountId = accountId;
-        SetupWizardWindow.OpenWithFreshDraft(accountId, firstRun: true);
+        Configuration.HasAutoOpenedSetupWizard = true;
+        SaveConfiguration();
+        SetupWizardWindow.OpenWithFreshDraft(accountId, firstRun: !Configuration.HasSeenSetupWizard);
     }
 
     private string? TryGetResolvedAccountId()

@@ -34,7 +34,7 @@ This repo is still under active development.
 
 ## Setup Wizard
 
-TTSL opens a three-step setup wizard once for each account after a character is available. You can reopen it from the main window, the settings window, or any setup command above.
+TTSL automatically opens a three-step setup wizard once for each fresh installation after a character is available. After that, you can reopen it from the main window, the settings window, or any setup command above.
 
 The first step chooses **Local HUD**, **Local + Web**, or **Web only**. The second step selects the condition, repair, party, radar, Krangle, and DTR surfaces. The final step reviews the choices and, for web modes, shows the current server URL and copyable launch command.
 

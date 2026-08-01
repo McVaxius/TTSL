@@ -7,9 +7,10 @@ namespace TTSL;
 [Serializable]
 public sealed class Configuration : IPluginConfiguration
 {
-    public int Version { get; set; } = 7;
+    public int Version { get; set; } = 8;
     public string LastAccountId { get; set; } = string.Empty;
     public Dictionary<string, AccountScopedConfiguration> Accounts { get; set; } = new();
+    public bool HasAutoOpenedSetupWizard { get; set; } = false;
     public bool HasSeenSetupWizard { get; set; } = false;
     public bool OverlayEnabled { get; set; } = true;
     public bool DtrBarEnabled { get; set; } = true;
