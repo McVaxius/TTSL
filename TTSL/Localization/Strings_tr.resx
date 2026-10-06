@@ -1,0 +1,1377 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Blue" xml:space="preserve">
+    <value>Mavi</value>
+  </data>
+  <data name="Character" xml:space="preserve">
+    <value>Karakter</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Renk</value>
+  </data>
+  <data name="Compact mode" xml:space="preserve">
+    <value>Kompakt mod</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Kopyala</value>
+  </data>
+  <data name="Copy Icon Guide Link" xml:space="preserve">
+    <value>Simge kılavuzu bağlantısını kopyala</value>
+  </data>
+  <data name="Custom RGB" xml:space="preserve">
+    <value>Özel RGB</value>
+  </data>
+  <data name="Discord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Etkin</value>
+  </data>
+  <data name="Job" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Ko-fi" xml:space="preserve">
+    <value>Ko-fi</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Dil</value>
+  </data>
+  <data name="Loading UI fonts..." xml:space="preserve">
+    <value>Arayüz yazı tipleri yükleniyor...</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Yok</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Kapalı</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Açık</value>
+  </data>
+  <data name="Pink" xml:space="preserve">
+    <value>Pembe</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Ayarlar</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>Durum</value>
+  </data>
+  <data name="Teal" xml:space="preserve">
+    <value>Deniz mavisi</value>
+  </data>
+  <data name="UI fonts failed to load. See the plugin log." xml:space="preserve">
+    <value>Arayüz yazı tipleri yüklenemedi. Eklenti günlüğüne bakın.</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Hesap</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>Alan</value>
+  </data>
+  <data name="Avg" xml:space="preserve">
+    <value>Ortalama</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Geri</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Cast" xml:space="preserve">
+    <value>Büyü</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>İstemci</value>
+  </data>
+  <data name="Combat" xml:space="preserve">
+    <value>savaş</value>
+  </data>
+  <data name="Condition panel" xml:space="preserve">
+    <value>Koşul paneli</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>Koşullar</value>
+  </data>
+  <data name="Copy Command" xml:space="preserve">
+    <value>Komutu kopyala</value>
+  </data>
+  <data name="Copy DLL Path" xml:space="preserve">
+    <value>DLL yolunu kopyala</value>
+  </data>
+  <data name="DTR Bar Enabled" xml:space="preserve">
+    <value>DTR çubuğu etkin</value>
+  </data>
+  <data name="DTR Bar Mode" xml:space="preserve">
+    <value>DTR çubuğu modu</value>
+  </data>
+  <data name="DTR Icons (max 3 characters)" xml:space="preserve">
+    <value>DTR simgeleri (en fazla 3 karakter)</value>
+  </data>
+  <data name="DTR status entry" xml:space="preserve">
+    <value>DTR durum öğesi</value>
+  </data>
+  <data name="Dead" xml:space="preserve">
+    <value>Ölü</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Devre dışı</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>Mesafe</value>
+  </data>
+  <data name="Download Native Server" xml:space="preserve">
+    <value>Yerel sunucuyu indir</value>
+  </data>
+  <data name="Durability unavailable." xml:space="preserve">
+    <value>Dayanıklılık bilgisi yok.</value>
+  </data>
+  <data name="Duty" xml:space="preserve">
+    <value>Görev</value>
+  </data>
+  <data name="Enable Thick Thighs Save Lives HUD" xml:space="preserve">
+    <value>Thick Thighs Save Lives HUD&apos;unu etkinleştir</value>
+  </data>
+  <data name="Enable plugin full-body fallback" xml:space="preserve">
+    <value>Eklenti tam beden yedeğini etkinleştir</value>
+  </data>
+  <data name="Enumerate" xml:space="preserve">
+    <value>Numaralandır</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>Ekipman</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Bitir</value>
+  </data>
+  <data name="Icon Only" xml:space="preserve">
+    <value>Yalnız simge</value>
+  </data>
+  <data name="Icon+Text" xml:space="preserve">
+    <value>Simge + metin</value>
+  </data>
+  <data name="Krangle displayed names" xml:space="preserve">
+    <value>Görünen adları Krangle ile gizle</value>
+  </data>
+  <data name="Krangle displayed player names" xml:space="preserve">
+    <value>Görünen oyuncu adlarını Krangle ile gizle</value>
+  </data>
+  <data name="Last OK" xml:space="preserve">
+    <value>Son başarılı</value>
+  </data>
+  <data name="Launch command" xml:space="preserve">
+    <value>Başlatma komutu</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Canlı</value>
+  </data>
+  <data name="Loaded DLL" xml:space="preserve">
+    <value>Yüklü DLL</value>
+  </data>
+  <data name="Local + Web" xml:space="preserve">
+    <value>Yerel + Web</value>
+  </data>
+  <data name="Local HUD" xml:space="preserve">
+    <value>Yerel HUD</value>
+  </data>
+  <data name="Local player is not available yet." xml:space="preserve">
+    <value>Yerel oyuncu henüz yok.</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>En az</value>
+  </data>
+  <data name="Mount" xml:space="preserve">
+    <value>Binek</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Ad</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>İleri</value>
+  </data>
+  <data name="No party members detected." xml:space="preserve">
+    <value>Grup üyesi tespit edilmedi.</value>
+  </data>
+  <data name="Open Web HUD" xml:space="preserve">
+    <value>Web HUD&apos;unu aç</value>
+  </data>
+  <data name="Overlay" xml:space="preserve">
+    <value>Yer paylaşımı</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>Grup</value>
+  </data>
+  <data name="Party Radar" xml:space="preserve">
+    <value>Grup radarı</value>
+  </data>
+  <data name="Party Size" xml:space="preserve">
+    <value>Grup boyutu</value>
+  </data>
+  <data name="Party status list" xml:space="preserve">
+    <value>Grup durum listesi</value>
+  </data>
+  <data name="Position (X, Y, Z)" xml:space="preserve">
+    <value>Konum (X, Y, Z)</value>
+  </data>
+  <data name="Publish failed" xml:space="preserve">
+    <value>Yayın başarısız</value>
+  </data>
+  <data name="Queue" xml:space="preserve">
+    <value>Kuyruk</value>
+  </data>
+  <data name="Remote HUD" xml:space="preserve">
+    <value>Uzak HUD</value>
+  </data>
+  <data name="Remote HUD Server" xml:space="preserve">
+    <value>Uzak HUD sunucusu</value>
+  </data>
+  <data name="Remote server and review" xml:space="preserve">
+    <value>Uzak sunucu ve inceleme</value>
+  </data>
+  <data name="Repair summary" xml:space="preserve">
+    <value>Onarım özeti</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>İncele</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Sunucu</value>
+  </data>
+  <data name="Server URL" xml:space="preserve">
+    <value>Sunucu URL&apos;si</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>Kurulum</value>
+  </data>
+  <data name="Setup Wizard" xml:space="preserve">
+    <value>Kurulum sihirbazı</value>
+  </data>
+  <data name="Show condition panel" xml:space="preserve">
+    <value>Koşul panelini göster</value>
+  </data>
+  <data name="Show party radar" xml:space="preserve">
+    <value>Grup radarını göster</value>
+  </data>
+  <data name="Show party status list" xml:space="preserve">
+    <value>Grup durum listesini göster</value>
+  </data>
+  <data name="Show repair summary" xml:space="preserve">
+    <value>Onarım özetini göster</value>
+  </data>
+  <data name="Slots" xml:space="preserve">
+    <value>Yuvalar</value>
+  </data>
+  <data name="Snapshot" xml:space="preserve">
+    <value>Anlık görüntü</value>
+  </data>
+  <data name="Text Only" xml:space="preserve">
+    <value>Yalnız metin</value>
+  </data>
+  <data name="Update Cadence" xml:space="preserve">
+    <value>Güncelleme sıklığı</value>
+  </data>
+  <data name="Use Local Default" xml:space="preserve">
+    <value>Yerel varsayılanı kullan</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>Bekliyor</value>
+  </data>
+  <data name="Web Text" xml:space="preserve">
+    <value>Web metni</value>
+  </data>
+  <data name="Web Viewer Policy" xml:space="preserve">
+    <value>Web görüntüleyici ilkesi</value>
+  </data>
+  <data name="Web only" xml:space="preserve">
+    <value>Yalnız Web</value>
+  </data>
+  <data name="Bind host" xml:space="preserve">
+    <value>Dinleme adresi</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Bağlantı noktası</value>
+  </data>
+  <data name="Stale seconds" xml:space="preserve">
+    <value>Eskime süresi</value>
+  </data>
+  <data name="Start Server" xml:space="preserve">
+    <value>Sunucuyu başlat</value>
+  </data>
+  <data name="Stop Server" xml:space="preserve">
+    <value>Sunucuyu durdur</value>
+  </data>
+  <data name="Open HUD" xml:space="preserve">
+    <value>HUD&apos;u aç</value>
+  </data>
+  <data name="Screenshots" xml:space="preserve">
+    <value>Ekran görüntüleri</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>Önbellek</value>
+  </data>
+  <data name="Extracted" xml:space="preserve">
+    <value>Çıkarıldı</value>
+  </data>
+  <data name="Copy URL" xml:space="preserve">
+    <value>URL&apos;yi kopyala</value>
+  </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>Tanılama</value>
+  </data>
+  <data name="Clear Stale" xml:space="preserve">
+    <value>Eski kayıtları temizle</value>
+  </data>
+  <data name="Clear Cache" xml:space="preserve">
+    <value>Önbelleği temizle</value>
+  </data>
+  <data name="Extract Assets" xml:space="preserve">
+    <value>Varlıkları çıkar</value>
+  </data>
+  <data name="Data folder" xml:space="preserve">
+    <value>Veri klasörü</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Göz at</value>
+  </data>
+  <data name="Open Data" xml:space="preserve">
+    <value>Veriyi aç</value>
+  </data>
+  <data name="Reset Default" xml:space="preserve">
+    <value>Varsayılanı sıfırla</value>
+  </data>
+  <data name="Server running" xml:space="preserve">
+    <value>Sunucu çalışıyor</value>
+  </data>
+  <data name="Server stopped" xml:space="preserve">
+    <value>Sunucu durdu</value>
+  </data>
+  <data name="Active clients" xml:space="preserve">
+    <value>Etkin istemciler</value>
+  </data>
+  <data name="Runtime log" xml:space="preserve">
+    <value>Çalışma günlüğü</value>
+  </data>
+  <data name="Server configuration" xml:space="preserve">
+    <value>Sunucu yapılandırması</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Eylemler</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Özet</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>Harita</value>
+  </data>
+  <data name="Threat" xml:space="preserve">
+    <value>Tehdit</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>Operatör</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Komut</value>
+  </data>
+  <data name="Matrix" xml:space="preserve">
+    <value>Matris</value>
+  </data>
+  <data name="Classic" xml:space="preserve">
+    <value>Klasik</value>
+  </data>
+  <data name="Show Details" xml:space="preserve">
+    <value>Ayrıntıları göster</value>
+  </data>
+  <data name="Hide Details" xml:space="preserve">
+    <value>Ayrıntıları gizle</value>
+  </data>
+  <data name="Remote Monitor + Command Relay" xml:space="preserve">
+    <value>Uzak izleme + komut aktarımı</value>
+  </data>
+  <data name="Remote HUD and command relay" xml:space="preserve">
+    <value>Uzak HUD ve komut aktarımı</value>
+  </data>
+  <data name="Send Text" xml:space="preserve">
+    <value>Metin gönder</value>
+  </data>
+  <data name="Request Screenshot" xml:space="preserve">
+    <value>Ekran görüntüsü iste</value>
+  </data>
+  <data name="Last Screenshot" xml:space="preserve">
+    <value>Son ekran görüntüsü</value>
+  </data>
+  <data name="Last update" xml:space="preserve">
+    <value>Son güncelleme</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>Eski</value>
+  </data>
+  <data name="Disconnected" xml:space="preserve">
+    <value>Bağlantısı kesildi</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>Çevrimiçi</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>Çevrimdışı</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>Boşta</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Bilinmiyor</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Hazır</value>
+  </data>
+  <data name="Allow web viewer CCTV mode" xml:space="preserve">
+    <value>Web görüntüleyici CCTV moduna izin ver</value>
+  </data>
+  <data name="Allow web viewer screenshot requests" xml:space="preserve">
+    <value>Web görüntüleyici ekran görüntüsü isteğine izin ver</value>
+  </data>
+  <data name="Allow web viewer text and slash commands" xml:space="preserve">
+    <value>Web görüntüleyici metin ve slash komutlarına izin ver</value>
+  </data>
+  <data name="Combat radar height (yalms)" xml:space="preserve">
+    <value>Savaş radarı yüksekliği (yalm)</value>
+  </data>
+  <data name="Combat radar width (yalms)" xml:space="preserve">
+    <value>Savaş radarı genişliği (yalm)</value>
+  </data>
+  <data name="Travel radar height (yalms)" xml:space="preserve">
+    <value>Seyahat radarı yüksekliği (yalm)</value>
+  </data>
+  <data name="Travel radar width (yalms)" xml:space="preserve">
+    <value>Seyahat radarı genişliği (yalm)</value>
+  </data>
+  <data name="Radar box size (px)" xml:space="preserve">
+    <value>Radar kutusu boyutu (px)</value>
+  </data>
+  <data name="Fast position interval (ms)" xml:space="preserve">
+    <value>Hızlı konum aralığı (ms)</value>
+  </data>
+  <data name="Full snapshot interval (ms)" xml:space="preserve">
+    <value>Tam görüntü aralığı (ms)</value>
+  </data>
+  <data name="Python launch command" xml:space="preserve">
+    <value>Python başlatma komutu</value>
+  </data>
+  <data name="Publish HUD snapshots to remote server" xml:space="preserve">
+    <value>HUD görüntülerini uzak sunucuya yayınla</value>
+  </data>
+  <data name="Enumerate party members for radar labels" xml:space="preserve">
+    <value>Radar etiketlerinde grup üyelerini numaralandır</value>
+  </data>
+  <data name="Display size of the local HUD radar box." xml:space="preserve">
+    <value>Yerel HUD radar kutusunun görüntü boyutu.</value>
+  </data>
+  <data name="Show TTSL status in the server info bar." xml:space="preserve">
+    <value>Sunucu bilgi çubuğunda TTSL durumunu göster.</value>
+  </data>
+  <data name="Show or hide the server-info bar entry for TTSL." xml:space="preserve">
+    <value>Sunucu bilgi çubuğundaki TTSL öğesini göster veya gizle.</value>
+  </data>
+  <data name="Obfuscate displayed player names for screenshots." xml:space="preserve">
+    <value>Ekran görüntüleri için görünen oyuncu adlarını gizle.</value>
+  </data>
+  <data name="Use party slot numbers on the radar." xml:space="preserve">
+    <value>Radarda grup yuvası numaralarını kullan.</value>
+  </data>
+  <data name="Open the guided local/web HUD setup." xml:space="preserve">
+    <value>Yerel/Web HUD kurulum sihirbazını aç.</value>
+  </data>
+  <data name="Open the Python remote HUD in your default browser." xml:space="preserve">
+    <value>Python uzak HUD&apos;unu varsayılan tarayıcıda aç.</value>
+  </data>
+  <data name="Guided local HUD and web publisher setup" xml:space="preserve">
+    <value>Yerel HUD ve Web yayıncısı kurulum sihirbazı</value>
+  </data>
+  <data name="Copies the best local server-launch command TTSL could resolve from this install." xml:space="preserve">
+    <value>TTSL&apos;nin bu kurulumda bulabildiği en uygun yerel sunucu başlatma komutunu kopyalar.</value>
+  </data>
+  <data name="Copies the Lodestone blog link with suggested glyphs." xml:space="preserve">
+    <value>Önerilen gliflerin bulunduğu Lodestone blog bağlantısını kopyalar.</value>
+  </data>
+  <data name="Customize the glyphs used when TTSL is on or off." xml:space="preserve">
+    <value>TTSL açık veya kapalıyken kullanılan glifleri özelleştir.</value>
+  </data>
+  <data name="Where should TTSL show your HUD?" xml:space="preserve">
+    <value>TTSL HUD&apos;unuzu nerede göstermeli?</value>
+  </data>
+  <data name="Choose the local HUD details you want ready" xml:space="preserve">
+    <value>Hazır olacak yerel HUD ayrıntılarını seçin</value>
+  </data>
+  <data name="These choices also control which sections are included when local HUD data is published." xml:space="preserve">
+    <value>Bu seçimler yerel HUD verisi yayınlandığında dahil edilen bölümleri de belirler.</value>
+  </data>
+  <data name="Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are." xml:space="preserve">
+    <value>Başlangıç modu seçin. Sihirbaz yalnız buradaki ayarları değiştirir; gelişmiş Web izinleri, yenileme aralıkları, radar boyutu, simgeler ve etiketler korunur.</value>
+  </data>
+  <data name="Show the in-game TTSL window without publishing to the web server." xml:space="preserve">
+    <value>Web sunucuya yayınlamadan oyun içi TTSL penceresini göster.</value>
+  </data>
+  <data name="Show the in-game TTSL window and publish snapshots to the configured web server." xml:space="preserve">
+    <value>Oyun içi TTSL penceresini göster ve görüntüleri ayarlanan Web sunucusuna yayınla.</value>
+  </data>
+  <data name="Publish snapshots to the web server while keeping the in-game HUD hidden." xml:space="preserve">
+    <value>Oyun içi HUD gizliyken görüntüleri Web sunucusuna yayınla.</value>
+  </data>
+  <data name="Confirm the web server address and copy the existing launch command if you need to start the local server." xml:space="preserve">
+    <value>Web sunucu adresini doğrulayın ve yerel sunucuyu başlatmanız gerekiyorsa mevcut başlatma komutunu kopyalayın.</value>
+  </data>
+  <data name="Local HUD mode does not publish snapshots. The existing remote URL is preserved for later." xml:space="preserve">
+    <value>Yerel HUD modu görüntü yayınlamaz. Mevcut uzak URL daha sonra için korunur.</value>
+  </data>
+  <data name="The active account changed. Reopen the wizard and review that account&apos;s settings." xml:space="preserve">
+    <value>Etkin hesap değişti. Sihirbazı yeniden açıp o hesabın ayarlarını inceleyin.</value>
+  </data>
+  <data name="Step {0} of 3" xml:space="preserve">
+    <value>Adım {0} / 3</value>
+  </data>
+  <data name="Preview: {0}" xml:space="preserve">
+    <value>Önizleme: {0}</value>
+  </data>
+  <data name="Current account ID: {0}" xml:space="preserve">
+    <value>Mevcut hesap kimliği: {0}</value>
+  </data>
+  <data name="Publisher: {0}" xml:space="preserve">
+    <value>Yayıncı: {0}</value>
+  </data>
+  <data name="Last error: {0}" xml:space="preserve">
+    <value>Son hata: {0}</value>
+  </data>
+  <data name="Enabled Icon" xml:space="preserve">
+    <value>Etkin simge</value>
+  </data>
+  <data name="Disabled Icon" xml:space="preserve">
+    <value>Devre dışı simge</value>
+  </data>
+  <data name="Age" xml:space="preserve">
+    <value>Yaş</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="Command View" xml:space="preserve">
+    <value>Komut görünümü</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>Bağlı</value>
+  </data>
+  <data name="Dist" xml:space="preserve">
+    <value>Mes.</value>
+  </data>
+  <data name="Enmity" xml:space="preserve">
+    <value>Düşmanlık</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Akış</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>Odak</value>
+  </data>
+  <data name="Game path" xml:space="preserve">
+    <value>Oyun yolu</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>Yüksek</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Ana makine</value>
+  </data>
+  <data name="Inspector" xml:space="preserve">
+    <value>İnceleyici</value>
+  </data>
+  <data name="Last Screenshot Sent" xml:space="preserve">
+    <value>Son gönderilen ekran görüntüsü</value>
+  </data>
+  <data name="Loose Clients" xml:space="preserve">
+    <value>Grup dışı istemciler</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Düşük</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Orta</value>
+  </data>
+  <data name="Minimap" xml:space="preserve">
+    <value>Küçük harita</value>
+  </data>
+  <data name="No combat telemetry captured." xml:space="preserve">
+    <value>Savaş telemetrisi yakalanmadı.</value>
+  </data>
+  <data name="No party data captured yet." xml:space="preserve">
+    <value>Henüz grup verisi yakalanmadı.</value>
+  </data>
+  <data name="Party Surface" xml:space="preserve">
+    <value>Grup paneli</value>
+  </data>
+  <data name="Refresh failed" xml:space="preserve">
+    <value>Yenileme başarısız</value>
+  </data>
+  <data name="Situation" xml:space="preserve">
+    <value>Durum</value>
+  </data>
+  <data name="Slot" xml:space="preserve">
+    <value>Yuva</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Durum</value>
+  </data>
+  <data name="Surface Matrix" xml:space="preserve">
+    <value>Panel matrisi</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Tür</value>
+  </data>
+  <data name="Vitals" xml:space="preserve">
+    <value>Yaşam bilgileri</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>Bölge</value>
+  </data>
+  <data name="Asset plan unavailable." xml:space="preserve">
+    <value>Varlık planı yok.</value>
+  </data>
+  <data name="Extraction status unavailable." xml:space="preserve">
+    <value>Çıkarma durumu yok.</value>
+  </data>
+  <data name="Awaiting the first CCTV frame from the client." xml:space="preserve">
+    <value>İstemcinin ilk CCTV karesi bekleniyor.</value>
+  </data>
+  <data name="CCTV frames appear here after the first live capture." xml:space="preserve">
+    <value>CCTV kareleri ilk canlı yakalamadan sonra burada görünür.</value>
+  </data>
+  <data name="CCTV is not allowed for this client." xml:space="preserve">
+    <value>Bu istemci CCTV&apos;ye izin vermiyor.</value>
+  </data>
+  <data name="CCTV uses rolling game-window captures and replaces the map pane until closed." xml:space="preserve">
+    <value>CCTV sürekli oyun penceresi yakalamalarıyla kapanana kadar harita panelini değiştirir.</value>
+  </data>
+  <data name="Clients not currently represented inside an aggregate party surface." xml:space="preserve">
+    <value>Şu anda birleşik grup panelinde bulunmayan istemciler.</value>
+  </data>
+  <data name="Open the screenshot folder on the TTSL server host." xml:space="preserve">
+    <value>TTSL sunucu makinesinde ekran görüntüsü klasörünü aç.</value>
+  </data>
+  <data name="Plain text goes to /echo. Slash commands like /sit run verbatim" xml:space="preserve">
+    <value>Düz metin /echo&apos;ya gider. /sit gibi slash komutları aynen çalışır</value>
+  </data>
+  <data name="Select a client or aggregate party surface to inspect the detail pane." xml:space="preserve">
+    <value>Ayrıntı paneli için istemci veya birleşik grup paneli seçin.</value>
+  </data>
+  <data name="The tracked client does not currently expose target or hostile data." xml:space="preserve">
+    <value>İzlenen istemci şu anda hedef veya düşman verisi sunmuyor.</value>
+  </data>
+  <data name="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV." xml:space="preserve">
+    <value>Bu istemci şu anda Web üzerinden metin, slash komutları, ekran görüntüsü veya CCTV&apos;ye izin vermiyor.</value>
+  </data>
+  <data name="DTR" xml:space="preserve">
+    <value>DTR</value>
+  </data>
+  <data name="Krangle" xml:space="preserve">
+    <value>Krangle</value>
+  </data>
+  <data name="CCTV" xml:space="preserve">
+    <value>CCTV</value>
+  </data>
+  <data name="HUD" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="HP" xml:space="preserve">
+    <value>HP</value>
+  </data>
+  <data name="MP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="FB" xml:space="preserve">
+    <value>FB</value>
+  </data>
+  <data name="CMD" xml:space="preserve">
+    <value>CMD</value>
+  </data>
+  <data name="SS" xml:space="preserve">
+    <value>SS</value>
+  </data>
+  <data name="SSF" xml:space="preserve">
+    <value>SSF</value>
+  </data>
+  <data name="Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets." xml:space="preserve">
+    <value>Tarayıcı HUD&apos;unun harita panelini düşük, orta veya yüksek yakalama ayarıyla sürekli canlı akışa çevirmesine izin verir.</value>
+  </data>
+  <data name="Captures the current FFXIV game-window client area and uploads it to the Python server." xml:space="preserve">
+    <value>Mevcut FFXIV oyun penceresinin istemci alanını yakalar ve Python sunucusuna yükler.</value>
+  </data>
+  <data name="Clients are grouped by incoming account ID and character on the server page." xml:space="preserve">
+    <value>Sunucu sayfasında istemciler gelen hesap kimliği ve karaktere göre gruplanır.</value>
+  </data>
+  <data name="Default view is 20y x 20y in combat and 50y x 50y out of combat." xml:space="preserve">
+    <value>Varsayılan görünüm savaşta 20y x 20y, dışında 50y x 50y&apos;dir.</value>
+  </data>
+  <data name="Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0." xml:space="preserve">
+    <value>LAN görüntüleyicileri için kopyalanan komutta --host 127.0.0.1&apos;i --host 0.0.0.0 yapın.</value>
+  </data>
+  <data name="For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first." xml:space="preserve">
+    <value>Gelecekteki sheet/simge çıkarımı için önce Python izleyicisiyle aynı PC&apos;de en az bir istemci bağlanmalıdır.</value>
+  </data>
+  <data name="Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable." xml:space="preserve">
+    <value>Varsayılan kapalı. Açılınca Web HUD, Lodestone beden resmi yokken bu istemciden yalnız yedek olarak CharacterInspect önizleme yakalaması isteyebilir.</value>
+  </data>
+  <data name="Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim." xml:space="preserve">
+    <value>Düz metin [TTSL Web] önekiyle /echo&apos;ya gönderilir. Slash ile başlayan giriş aynen gönderilir.</value>
+  </data>
+  <data name="Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache." xml:space="preserve">
+    <value>Düz Web metni [TTSL Web] önekiyle yankılanır. Slash girişi aynen gönderilir; birleşik grup yabancı verisi için ekran görüntüsü düğmeleri yükleyen/kaynak istemciyi, CCTV aynı istemcinin sürekli kare önbelleğini kullanır.</value>
+  </data>
+  <data name="Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser." xml:space="preserve">
+    <value>Bir tarayıcıda birden çok istemciyi görmek için yerel HUD görüntülerini Python mini sunucusuna gönderir.</value>
+  </data>
+  <data name="TTSL settings are now stored per account ID once a live account is detected." xml:space="preserve">
+    <value>Canlı hesap tespit edilince TTSL ayarları hesap kimliğine göre saklanır.</value>
+  </data>
+  <data name="The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar." xml:space="preserve">
+    <value>Tarayıcı HUD&apos;unun üst çubuğunda canlı kutu boyutu ve savaş/seyahat yalm denetimleri var.</value>
+  </data>
+  <data name="The server will cache the first same-PC game path it sees for the rest of that monitoring session." xml:space="preserve">
+    <value>Sunucu, izleme oturumunun kalanında gördüğü ilk aynı PC oyun yolunu önbelleğe alır.</value>
+  </data>
+  <data name="Showing {0:F0}y x {1:F0}y ({2})." xml:space="preserve">
+    <value>Görünüm {0:F0}y x {1:F0}y ({2}).</value>
+  </data>
+  <data name="Travel" xml:space="preserve">
+    <value>Seyahat</value>
+  </data>
+  <data name="Shot" xml:space="preserve">
+    <value>Görüntü</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Mod</value>
+  </data>
+  <data name="Krangle names" xml:space="preserve">
+    <value>Adları Krangle ile gizle</value>
+  </data>
+  <data name="DTR entry" xml:space="preserve">
+    <value>DTR öğesi</value>
+  </data>
+  <data name="Mode: {0}" xml:space="preserve">
+    <value>Mod: {0}</value>
+  </data>
+  <data name="Condition panel: {0}" xml:space="preserve">
+    <value>Koşul paneli: {0}</value>
+  </data>
+  <data name="Repair summary: {0}" xml:space="preserve">
+    <value>Onarım özeti: {0}</value>
+  </data>
+  <data name="Party status: {0}" xml:space="preserve">
+    <value>Grup durum listesi: {0}</value>
+  </data>
+  <data name="Party radar: {0}" xml:space="preserve">
+    <value>Grup radarı: {0}</value>
+  </data>
+  <data name="Krangle names: {0}" xml:space="preserve">
+    <value>Ad Krangle: {0}</value>
+  </data>
+  <data name="DTR entry: {0}" xml:space="preserve">
+    <value>DTR öğesi: {0}</value>
+  </data>
+  <data name="Server: {0}" xml:space="preserve">
+    <value>Sunucu: {0}</value>
+  </data>
+  <data name="Release asset: latestServer.zip" xml:space="preserve">
+    <value>Sürüm varlığı: latestServer.zip</value>
+  </data>
+  <data name="(?)" xml:space="preserve">
+    <value>(?)</value>
+  </data>
+  <data name="TTSL " xml:space="preserve">
+    <value>TTSL </value>
+  </data>
+  <data name="In duty" xml:space="preserve">
+    <value>Görevde</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>Kuyrukta</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Kullanılamıyor</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>Kilitli</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Metin</value>
+  </data>
+  <data name="Screens" xml:space="preserve">
+    <value>Görüntüler</value>
+  </data>
+  <data name="Telemetry" xml:space="preserve">
+    <value>Telemetri</value>
+  </data>
+  <data name="Unknown race" xml:space="preserve">
+    <value>Bilinmeyen ırk</value>
+  </data>
+  <data name="Party Leader" xml:space="preserve">
+    <value>Grup lideri</value>
+  </data>
+  <data name="Party Role" xml:space="preserve">
+    <value>Grup rolü</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>İstemciler</value>
+  </data>
+  <data name="Asset plan pending." xml:space="preserve">
+    <value>Varlık planı bekliyor.</value>
+  </data>
+  <data name="Extraction idle." xml:space="preserve">
+    <value>Çıkarma boşta.</value>
+  </data>
+  <data name="Extracting..." xml:space="preserve">
+    <value>Çıkarılıyor...</value>
+  </data>
+  <data name="Waiting for clients..." xml:space="preserve">
+    <value>İstemciler bekleniyor...</value>
+  </data>
+  <data name="No updates yet." xml:space="preserve">
+    <value>Henüz güncelleme yok.</value>
+  </data>
+  <data name="All tracked clients are stale or disconnected." xml:space="preserve">
+    <value>İzlenen tüm istemciler eski veya bağlantısı kesilmiş.</value>
+  </data>
+  <data name="No aggregate party surfaces are available right now, so command view is showing compact client cards." xml:space="preserve">
+    <value>Şu anda birleşik grup paneli yok; komut görünümü kompakt istemci kartları gösteriyor.</value>
+  </data>
+  <data name="Aggregate parties are disabled. Enable the toggle above to unlock the full party command board." xml:space="preserve">
+    <value>Birleşik gruplar kapalı. Tam grup komut paneli için üstteki seçeneği açın.</value>
+  </data>
+  <data name="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane." xml:space="preserve">
+    <value>Düz metin [TTSL Web] önekiyle yankılanır. Slash girişi aynen gönderilir. SS tek önbellek görüntüsü gönderir, CCTV harita panelinde sürekli canlı akış gösterir.</value>
+  </data>
+  <data name="SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client." xml:space="preserve">
+    <value>SS ve CMD izlenen üyeleri doğrudan hedefler. CCTV kapanana kadar harita panelini değiştirir. Yabancı düğmeleri, o yuva izlenen istemciyle temsil edilene kadar görünür ama devre dışıdır.</value>
+  </data>
+  <data name="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback." xml:space="preserve">
+    <value>Yabancılar grup HP, MP, konum, seviye ve job verisini taşır. Lodestone portreleri arka planda yabancının dünyasıyla, yedek olarak kaynak istemcinin dünyasıyla bulunur.</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor." xml:space="preserve">
+    <value>Henüz istemci bağlı değil. Sunucuyu başlatın, TTSL&apos;yi ona yönlendirin ve uzak yayını açın. Gelecekteki sheet/simge çıkarımı bu yerel izleyiciyle aynı PC&apos;de en az bir istemci gerektirir.</value>
+  </data>
+  <data name="Data folder is already active:" xml:space="preserve">
+    <value>Veri klasörü zaten etkin:</value>
+  </data>
+  <data name="Data folder saved for next launch:" xml:space="preserve">
+    <value>Veri klasörü sonraki başlatma için kaydedildi:</value>
+  </data>
+  <data name="Restart TTSL Native Server to use it. Current session keeps using:" xml:space="preserve">
+    <value>Kullanmak için TTSL Native Server&apos;ı yeniden başlatın. Mevcut oturum şunu kullanır:</value>
+  </data>
+  <data name="Failed to register TTSL native server window class." xml:space="preserve">
+    <value>TTSL yerel sunucu pencere sınıfı kaydedilemedi.</value>
+  </data>
+  <data name="Failed to create TTSL native server window." xml:space="preserve">
+    <value>TTSL yerel sunucu penceresi oluşturulamadı.</value>
+  </data>
+  <data name="Click to toggle the HUD." xml:space="preserve">
+    <value>HUD&apos;u aç/kapatmak için tıklayın.</value>
+  </data>
+  <data name="Text Only: &apos;TTSL: On/Off&apos;&#10;Icon+Text: &apos;&lt;icon&gt; TTSL&apos;&#10;Icon Only: &apos;&lt;icon&gt;&apos;" xml:space="preserve">
+    <value>Yalnız metin: &apos;TTSL: Açık/Kapalı&apos;
+Simge + metin: &apos;&lt;icon&gt; TTSL&apos;
+Yalnız simge: &apos;&lt;icon&gt;&apos;</value>
+  </data>
+  <data name="Busy" xml:space="preserve">
+    <value>Meşgul</value>
+  </data>
+  <data name="Current target" xml:space="preserve">
+    <value>Mevcut hedef</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>Kesik</value>
+  </data>
+  <data name="Extra" xml:space="preserve">
+    <value>Ek</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>Çıkar</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>Etiket</value>
+  </data>
+  <data name="Lookup" xml:space="preserve">
+    <value>Arama</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>Eksik</value>
+  </data>
+  <data name="Monitored" xml:space="preserve">
+    <value>İzleniyor</value>
+  </data>
+  <data name="No current target" xml:space="preserve">
+    <value>Mevcut hedef yok</value>
+  </data>
+  <data name="No radar data" xml:space="preserve">
+    <value>Radar verisi yok</value>
+  </data>
+  <data name="No repair data" xml:space="preserve">
+    <value>Onarım verisi yok</value>
+  </data>
+  <data name="No tracked target" xml:space="preserve">
+    <value>İzlenen hedef yok</value>
+  </data>
+  <data name="Not casting" xml:space="preserve">
+    <value>Büyü yapılmıyor</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>Yol</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>Duraklatıldı</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>İlke</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Konum</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>Onarım</value>
+  </data>
+  <data name="Solo" xml:space="preserve">
+    <value>Solo</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Kaynak</value>
+  </data>
+  <data name="Source host" xml:space="preserve">
+    <value>Kaynak makine</value>
+  </data>
+  <data name="Stranger" xml:space="preserve">
+    <value>Yabancı</value>
+  </data>
+  <data name="Strangers" xml:space="preserve">
+    <value>Yabancılar</value>
+  </data>
+  <data name="Submitting" xml:space="preserve">
+    <value>Gönderiliyor</value>
+  </data>
+  <data name="Targeting you" xml:space="preserve">
+    <value>Sizi hedefliyor</value>
+  </data>
+  <data name="Texture" xml:space="preserve">
+    <value>Doku</value>
+  </data>
+  <data name="Tracked" xml:space="preserve">
+    <value>Takip ediliyor</value>
+  </data>
+  <data name="Tracked client" xml:space="preserve">
+    <value>İzlenen istemci</value>
+  </data>
+  <data name="Unknown host" xml:space="preserve">
+    <value>Bilinmeyen makine</value>
+  </data>
+  <data name="Unknown time" xml:space="preserve">
+    <value>Bilinmeyen zaman</value>
+  </data>
+  <data name="Unknown zone" xml:space="preserve">
+    <value>Bilinmeyen bölge</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>Görünüm</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>Görünür</value>
+  </data>
+  <data name="Remote Control" xml:space="preserve">
+    <value>Uzak denetim</value>
+  </data>
+  <data name="Field Map" xml:space="preserve">
+    <value>Alan haritası</value>
+  </data>
+  <data name="Source Minimap" xml:space="preserve">
+    <value>Kaynak küçük harita</value>
+  </data>
+  <data name="Aggregate parties" xml:space="preserve">
+    <value>Birleşik gruplar</value>
+  </data>
+  <data name="Krangle names/account IDs" xml:space="preserve">
+    <value>Adları/hesap kimliklerini Krangle ile gizle</value>
+  </data>
+  <data name="Krangle enemy names" xml:space="preserve">
+    <value>Düşman adlarını Krangle ile gizle</value>
+  </data>
+  <data name="Show stale/disconnected" xml:space="preserve">
+    <value>Eski/bağlantısı kesilenleri göster</value>
+  </data>
+  <data name="Icons" xml:space="preserve">
+    <value>Simgeler</value>
+  </data>
+  <data name="Total HP" xml:space="preserve">
+    <value>Toplam HP</value>
+  </data>
+  <data name="Total MP" xml:space="preserve">
+    <value>Toplam MP</value>
+  </data>
+  <data name="Party Members" xml:space="preserve">
+    <value>Grup üyeleri</value>
+  </data>
+  <data name="Waiting for local player" xml:space="preserve">
+    <value>Yerel oyuncu bekleniyor</value>
+  </data>
+  <data name="Connected to {0}" xml:space="preserve">
+    <value>{0} adresine bağlı</value>
+  </data>
+  <data name="Retrying in {0}s" xml:space="preserve">
+    <value>{0}s sonra yeniden deneniyor</value>
+  </data>
+  <data name="Box px" xml:space="preserve">
+    <value>Radar kutusu boyutu (px)</value>
+  </data>
+  <data name="Combat W" xml:space="preserve">
+    <value>Savaş radarı genişliği (yalm)</value>
+  </data>
+  <data name="Combat H" xml:space="preserve">
+    <value>Savaş radarı yüksekliği (yalm)</value>
+  </data>
+  <data name="Travel W" xml:space="preserve">
+    <value>Seyahat radarı genişliği (yalm)</value>
+  </data>
+  <data name="Travel H" xml:space="preserve">
+    <value>Seyahat radarı yüksekliği (yalm)</value>
+  </data>
+  <data name="Aggregate-party stranger actions route through the source client." xml:space="preserve">
+    <value>Birleşik grup yabancı eylemleri kaynak istemci üzerinden yönlendirilir.</value>
+  </data>
+  <data name="Extraction started." xml:space="preserve">
+    <value>Çıkarma başladı.</value>
+  </data>
+  <data name="Map texture not extracted yet." xml:space="preserve">
+    <value>Harita dokusu henüz çıkarılmadı.</value>
+  </data>
+  <data name="No map data captured yet." xml:space="preserve">
+    <value>Henüz harita verisi yakalanmadı.</value>
+  </data>
+  <data name="Opened screenshot folder on the server host." xml:space="preserve">
+    <value>Sunucu makinesinde ekran görüntüsü klasörü açıldı.</value>
+  </data>
+  <data name="Party telemetry + Lodestone lookup" xml:space="preserve">
+    <value>Grup telemetrisi + Lodestone araması</value>
+  </data>
+  <data name="Queued remote action." xml:space="preserve">
+    <value>Uzak eylem kuyruğa alındı.</value>
+  </data>
+  <data name="Screenshot requests are not allowed for this client." xml:space="preserve">
+    <value>Bu istemci ekran görüntüsü isteklerine izin vermiyor.</value>
+  </data>
+  <data name="Source Remote Control" xml:space="preserve">
+    <value>Kaynak uzak denetimi</value>
+  </data>
+  <data name="Web text or slash commands are not allowed for this client." xml:space="preserve">
+    <value>Bu istemci Web metni veya slash komutlarına izin vermiyor.</value>
+  </data>
+  <data name="same-PC game path not captured yet" xml:space="preserve">
+    <value>aynı PC oyun yolu henüz yakalanmadı</value>
+  </data>
+  <data name="see server log" xml:space="preserve">
+    <value>sunucu günlüğüne bakın</value>
+  </data>
+  <data name="Scroll down to &quot;The Dumpster Fire&quot; channel to discuss issues / suggestions for specific plugins." xml:space="preserve">
+    <value>Belirli eklenti sorunları / önerileri için &quot;The Dumpster Fire&quot; kanalına kaydırın.</value>
+  </data>
+  <data name="Failed to open screenshot folder: {0}" xml:space="preserve">
+    <value>Ekran görüntüsü klasörü açılamadı: {0}</value>
+  </data>
+  <data name="Extraction request failed: {0}" xml:space="preserve">
+    <value>Çıkarma isteği başarısız: {0}</value>
+  </data>
+  <data name="Remote action failed: {0}" xml:space="preserve">
+    <value>Uzak eylem başarısız: {0}</value>
+  </data>
+  <data name="Last update {0} · {1}" xml:space="preserve">
+    <value>Son güncelleme {0} · {1}</value>
+  </data>
+  <data name="Stranger source locked to first monitored client: {0} · Connected {1}" xml:space="preserve">
+    <value>Yabancı kaynağı ilk izlenen istemciye kilitli: {0} · Bağlandı {1}</value>
+  </data>
+  <data name="{0} clients · {1} live · {2} stale/disconnected" xml:space="preserve">
+    <value>{0} istemci · {1} canlı · {2} eski/bağlantısı kesilmiş</value>
+  </data>
+  <data name="Generated {0} · stale after {1}s · {2}" xml:space="preserve">
+    <value>Oluşturuldu {0} · {1}s sonra eski · {2}</value>
+  </data>
+  <data name="Last CCTV Frame" xml:space="preserve">
+    <value>Son CCTV karesi</value>
+  </data>
+  <data name="Close CCTV for {0}" xml:space="preserve">
+    <value>{0} için CCTV&apos;yi kapat</value>
+  </data>
+  <data name="Replace the map pane with live CCTV for {0}" xml:space="preserve">
+    <value>Harita panelini {0} için canlı CCTV ile değiştir</value>
+  </data>
+  <data name="Request a screenshot from {0}" xml:space="preserve">
+    <value>{0} için ekran görüntüsü iste</value>
+  </data>
+  <data name="Open a command prompt for {0}" xml:space="preserve">
+    <value>{0} için komut istemini aç</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor." xml:space="preserve">
+    <value>Henüz istemci bağlı değil. Sunucuyu başlatın, TTSL&apos;yi ona yönlendirin ve uzak yayını açın. Gelecekteki sheet/simge çıkarımı bu Python izleyicisiyle aynı PC&apos;de en az bir istemci gerektirir.</value>
+  </data>
+  <data name="Select TTSL Native Server data folder" xml:space="preserve">
+    <value>TTSL Native Server veri klasörünü seç</value>
+  </data>
+  <data name="Invalid data folder: {0}" xml:space="preserve">
+    <value>Geçersiz veri klasörü: {0}</value>
+  </data>
+  <data name="Party groups" xml:space="preserve">
+    <value>Gruplar</value>
+  </data>
+  <data name="Clan" xml:space="preserve">
+    <value>Klan</value>
+  </data>
+  <data name="Race" xml:space="preserve">
+    <value>Irk</value>
+  </data>
+  <data name="Working..." xml:space="preserve">
+    <value>Çalışıyor...</value>
+  </data>
+  <data name="Targeting party member {0}" xml:space="preserve">
+    <value>Grup üyesi {0} hedefleniyor</value>
+  </data>
+  <data name="Live CCTV for {0}" xml:space="preserve">
+    <value>{0} için canlı CCTV</value>
+  </data>
+  <data name="Send text or slash command to {0}" xml:space="preserve">
+    <value>{0} için metin veya slash komutu gönder</value>
+  </data>
+  <data name="Targeting {0}" xml:space="preserve">
+    <value>{0} hedefleniyor</value>
+  </data>
+  <data name="Lodestone body image for {0}" xml:space="preserve">
+    <value>{0} için Lodestone beden resmi</value>
+  </data>
+  <data name="Party telemetry available · Lodestone {0} · Direct actions disabled." xml:space="preserve">
+    <value>Grup telemetrisi mevcut · Lodestone {0} · Doğrudan eylemler kapalı.</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Başarısız</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Bekliyor</value>
+  </data>
+  <data name="Refreshing" xml:space="preserve">
+    <value>Yenileniyor</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>Kısmi</value>
+  </data>
+  <data name="Unresolved" xml:space="preserve">
+    <value>Çözülmedi</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>Tam</value>
+  </data>
+  <data name="Ally" xml:space="preserve">
+    <value>Dost</value>
+  </data>
+  <data name="Hostile" xml:space="preserve">
+    <value>Düşman</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>Çatışmada</value>
+  </data>
+  <data name="{0} live" xml:space="preserve">
+    <value>{0} canlı</value>
+  </data>
+  <data name="Plugin fallback ready" xml:space="preserve">
+    <value>Eklenti yedeği hazır</value>
+  </data>
+  <data name="Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix." xml:space="preserve">
+    <value>4-12 istemci için dört düzen: klasik kartlar, operatör paneli, grup komut paneli ve yoğun matris.</value>
+  </data>
+  <data name="Native asset extraction started." xml:space="preserve">
+    <value>Yerel varlık çıkarımı başladı.</value>
+  </data>
+  <data name="Loading race names from native EXD data..." xml:space="preserve">
+    <value>Yerel EXD verisinden ırk adları yükleniyor...</value>
+  </data>
+  <data name="Loading tribe names from native EXD data..." xml:space="preserve">
+    <value>Yerel EXD verisinden kabile adları yükleniyor...</value>
+  </data>
+  <data name="Loaded {0} race name row(s) from native EXD data." xml:space="preserve">
+    <value>Yerel EXD verisinden {0} ırk adı satırı yüklendi.</value>
+  </data>
+  <data name="Loaded {0} tribe name row(s) from native EXD data." xml:space="preserve">
+    <value>Yerel EXD verisinden {0} kabile adı satırı yüklendi.</value>
+  </data>
+  <data name="Extracting job icon {0}/{1} ({2})..." xml:space="preserve">
+    <value>Job simgesi {0}/{1} ({2}) çıkarılıyor...</value>
+  </data>
+  <data name="Extracting map texture {0}/{1} ({2})..." xml:space="preserve">
+    <value>Harita dokusu {0}/{1} ({2}) çıkarılıyor...</value>
+  </data>
+  <data name="Generating race icon {0}/{1}..." xml:space="preserve">
+    <value>Irk simgesi {0}/{1} oluşturuluyor...</value>
+  </data>
+  <data name="Generating tribe icon {0}/{1}..." xml:space="preserve">
+    <value>Kabile simgesi {0}/{1} oluşturuluyor...</value>
+  </data>
+  <data name="Native asset extraction {0}: {1} extracted, {2} failed." xml:space="preserve">
+    <value>Yerel varlık çıkarımı {0}: {1} çıkarıldı, {2} başarısız.</value>
+  </data>
+  <data name="Writing native asset extraction summary..." xml:space="preserve">
+    <value>Yerel varlık çıkarımı özeti yazılıyor...</value>
+  </data>
+  <data name="Native asset extraction failed: {0}" xml:space="preserve">
+    <value>Yerel varlık çıkarımı başarısız: {0}</value>
+  </data>
+  <data name="Launching extractor with the current session plan." xml:space="preserve">
+    <value>Çıkarıcı mevcut oturum planıyla başlatılıyor.</value>
+  </data>
+  <data name="Asset extraction started." xml:space="preserve">
+    <value>Varlık çıkarımı başladı.</value>
+  </data>
+  <data name="Extractor finished." xml:space="preserve">
+    <value>Çıkarıcı tamamlandı.</value>
+  </data>
+  <data name="Extractor failed." xml:space="preserve">
+    <value>Çıkarıcı başarısız.</value>
+  </data>
+  <data name="Summary written to {0}" xml:space="preserve">
+    <value>Özet {0} konumuna yazıldı</value>
+  </data>
+  <data name="Failed {0} file(s). See {1}." xml:space="preserve">
+    <value>{0} dosya başarısız. {1} konumuna bakın.</value>
+  </data>
+  <data name="Extractor failed: {0}" xml:space="preserve">
+    <value>Çıkarıcı başarısız: {0}</value>
+  </data>
+  <data name="No extracted asset summary found yet." xml:space="preserve">
+    <value>Henüz çıkarılmış varlık özeti bulunamadı.</value>
+  </data>
+  <data name="Native asset extraction is already running." xml:space="preserve">
+    <value>Yerel varlık çıkarımı zaten çalışıyor.</value>
+  </data>
+  <data name="Asset extraction is already running." xml:space="preserve">
+    <value>Varlık çıkarımı zaten çalışıyor.</value>
+  </data>
+  <data name="Same-PC game path has not been captured yet." xml:space="preserve">
+    <value>Aynı PC oyun yolu henüz yakalanmadı.</value>
+  </data>
+  <data name="Extractor script not found: {0}" xml:space="preserve">
+    <value>Çıkarıcı betiği bulunamadı: {0}</value>
+  </data>
+  <data name="Last asset extraction status was {0}." xml:space="preserve">
+    <value>Son varlık çıkarımı durumu {0} idi.</value>
+  </data>
+  <data name="Target client is not currently tracked." xml:space="preserve">
+    <value>Hedef istemci şu anda izlenmiyor.</value>
+  </data>
+  <data name="That client does not allow web text or slash commands." xml:space="preserve">
+    <value>O istemci Web metni veya slash komutlarına izin vermiyor.</value>
+  </data>
+  <data name="That client does not allow web CCTV streaming." xml:space="preserve">
+    <value>O istemci Web CCTV akışına izin vermiyor.</value>
+  </data>
+  <data name="That client does not allow web screenshot requests." xml:space="preserve">
+    <value>O istemci Web ekran görüntüsü isteklerine izin vermiyor.</value>
+  </data>
+  <data name="Text is empty." xml:space="preserve">
+    <value>Metin boş.</value>
+  </data>
+  <data name="Queued web text/slash command." xml:space="preserve">
+    <value>Web metni/slash komutu kuyruğa alındı.</value>
+  </data>
+  <data name="Queued CCTV frame request." xml:space="preserve">
+    <value>CCTV kare isteği kuyruğa alındı.</value>
+  </data>
+  <data name="Queued screenshot request." xml:space="preserve">
+    <value>Ekran görüntüsü isteği kuyruğa alındı.</value>
+  </data>
+  <data name="Unsupported action type: {0}" xml:space="preserve">
+    <value>Desteklenmeyen eylem türü: {0}</value>
+  </data>
+  <data name="Auto-extracting {0} for the current session." xml:space="preserve">
+    <value>Mevcut oturum için {0} otomatik çıkarılıyor.</value>
+  </data>
+  <data name="Race name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Irk adı araması oluşturulan etiketlere döndü: {0}</value>
+  </data>
+  <data name="Tribe name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Kabile adı araması oluşturulan etiketlere döndü: {0}</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>Bulunamadı</value>
+  </data>
+  <data name="Server is already running." xml:space="preserve">
+    <value>Sunucu zaten çalışıyor.</value>
+  </data>
+  <data name="WSAStartup failed: {0}" xml:space="preserve">
+    <value>WSAStartup başarısız: {0}</value>
+  </data>
+  <data name="socket() failed: {0}" xml:space="preserve">
+    <value>socket() başarısız: {0}</value>
+  </data>
+  <data name="Bind host must be an IPv4 address such as 127.0.0.1 or 0.0.0.0." xml:space="preserve">
+    <value>Dinleme adresi 127.0.0.1 veya 0.0.0.0 gibi IPv4 adresi olmalıdır.</value>
+  </data>
+  <data name="bind() failed on {0} with {1}" xml:space="preserve">
+    <value>bind() {0} adresinde {1} ile başarısız</value>
+  </data>
+  <data name="listen() failed: {0}" xml:space="preserve">
+    <value>listen() başarısız: {0}</value>
+  </data>
+  <data name="Data folder path is empty." xml:space="preserve">
+    <value>Veri klasörü yolu boş.</value>
+  </data>
+  <data name="Failed to create {0}: {1}" xml:space="preserve">
+    <value>{0} oluşturulamadı: {1}</value>
+  </data>
+  <data name="{0} is not a folder." xml:space="preserve">
+    <value>{0} bir klasör değil.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Evet</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Hayır</value>
+  </data>
+  <data name="Operator View" xml:space="preserve">
+    <value>Operatör görünümü</value>
+  </data>
+  <data name="Select a client to monitor and interact" xml:space="preserve">
+    <value>İzlemek ve etkileşim kurmak için bir istemci seçin</value>
+  </data>
+  <data name="Command Center" xml:space="preserve">
+    <value>Komut merkezi</value>
+  </data>
+  <data name="Aggregated party command board" xml:space="preserve">
+    <value>Birleştirilmiş grupların komut panosu</value>
+  </data>
+  <data name="Party Overview" xml:space="preserve">
+    <value>Grup özeti</value>
+  </data>
+  <data name="Active Members" xml:space="preserve">
+    <value>Etkin üyeler</value>
+  </data>
+  <data name="In Zone" xml:space="preserve">
+    <value>Aynı bölgede</value>
+  </data>
+  <data name="Selected Entity" xml:space="preserve">
+    <value>Seçili varlık</value>
+  </data>
+  <data name="Compare clients across zones and status" xml:space="preserve">
+    <value>İstemcileri bölgeye ve duruma göre karşılaştırın</value>
+  </data>
+  <data name="Window appearance" xml:space="preserve"><value>Pencere görünümü</value></data>
+  <data name="Compact visible on main window" xml:space="preserve"><value>Ana pencerede kompakt modu göster</value></data>
+  <data name="Language visible on main window" xml:space="preserve"><value>Ana pencerede dil seçimini göster</value></data>
+  <data name="Transparency" xml:space="preserve"><value>Saydamlık</value></data>
+  <data name="Opacity (%)" xml:space="preserve"><value>Opaklık (%)</value></data>
+  <data name="Auto-fade when unfocused" xml:space="preserve"><value>Odak yokken otomatik soldur</value></data>
+  <data name="Unfocused opacity (%)" xml:space="preserve"><value>Odak yokken opaklık (%)</value></data>
+  <data name="Unfocused delay (seconds)" xml:space="preserve"><value>Odak kaybı gecikmesi (saniye)</value></data>
+</root>
+

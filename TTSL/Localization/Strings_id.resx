@@ -1,0 +1,1377 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Blue" xml:space="preserve">
+    <value>Biru</value>
+  </data>
+  <data name="Character" xml:space="preserve">
+    <value>Karakter</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Warna</value>
+  </data>
+  <data name="Compact mode" xml:space="preserve">
+    <value>Mode ringkas</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Salin</value>
+  </data>
+  <data name="Copy Icon Guide Link" xml:space="preserve">
+    <value>Salin tautan panduan ikon</value>
+  </data>
+  <data name="Custom RGB" xml:space="preserve">
+    <value>RGB khusus</value>
+  </data>
+  <data name="Discord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Aktif</value>
+  </data>
+  <data name="Job" xml:space="preserve">
+    <value>Job</value>
+  </data>
+  <data name="Ko-fi" xml:space="preserve">
+    <value>Ko-fi</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Bahasa</value>
+  </data>
+  <data name="Loading UI fonts..." xml:space="preserve">
+    <value>Memuat font antarmuka...</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Tidak ada</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Mati</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Nyala</value>
+  </data>
+  <data name="Pink" xml:space="preserve">
+    <value>Merah muda</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Pengaturan</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>Keadaan</value>
+  </data>
+  <data name="Teal" xml:space="preserve">
+    <value>Toska</value>
+  </data>
+  <data name="UI fonts failed to load. See the plugin log." xml:space="preserve">
+    <value>Gagal memuat font antarmuka. Lihat log plugin.</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Akun</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="Avg" xml:space="preserve">
+    <value>Rata-rata</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Kembali</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Batal</value>
+  </data>
+  <data name="Cast" xml:space="preserve">
+    <value>Perapalan</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Klien</value>
+  </data>
+  <data name="Combat" xml:space="preserve">
+    <value>pertempuran</value>
+  </data>
+  <data name="Condition panel" xml:space="preserve">
+    <value>Panel kondisi</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>Kondisi</value>
+  </data>
+  <data name="Copy Command" xml:space="preserve">
+    <value>Salin perintah</value>
+  </data>
+  <data name="Copy DLL Path" xml:space="preserve">
+    <value>Salin jalur DLL</value>
+  </data>
+  <data name="DTR Bar Enabled" xml:space="preserve">
+    <value>Aktifkan bilah DTR</value>
+  </data>
+  <data name="DTR Bar Mode" xml:space="preserve">
+    <value>Mode bilah DTR</value>
+  </data>
+  <data name="DTR Icons (max 3 characters)" xml:space="preserve">
+    <value>Ikon DTR (maks. 3 karakter)</value>
+  </data>
+  <data name="DTR status entry" xml:space="preserve">
+    <value>Entri status DTR</value>
+  </data>
+  <data name="Dead" xml:space="preserve">
+    <value>Mati</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Nonaktif</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>Jarak</value>
+  </data>
+  <data name="Download Native Server" xml:space="preserve">
+    <value>Unduh server native</value>
+  </data>
+  <data name="Durability unavailable." xml:space="preserve">
+    <value>Data daya tahan tidak tersedia.</value>
+  </data>
+  <data name="Duty" xml:space="preserve">
+    <value>Misi</value>
+  </data>
+  <data name="Enable Thick Thighs Save Lives HUD" xml:space="preserve">
+    <value>Aktifkan HUD Thick Thighs Save Lives</value>
+  </data>
+  <data name="Enable plugin full-body fallback" xml:space="preserve">
+    <value>Aktifkan gambar seluruh tubuh cadangan plugin</value>
+  </data>
+  <data name="Enumerate" xml:space="preserve">
+    <value>Nomori</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>Perlengkapan</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Selesai</value>
+  </data>
+  <data name="Icon Only" xml:space="preserve">
+    <value>Ikon saja</value>
+  </data>
+  <data name="Icon+Text" xml:space="preserve">
+    <value>Ikon + teks</value>
+  </data>
+  <data name="Krangle displayed names" xml:space="preserve">
+    <value>Krangle nama tampilan</value>
+  </data>
+  <data name="Krangle displayed player names" xml:space="preserve">
+    <value>Krangle nama pemain yang ditampilkan</value>
+  </data>
+  <data name="Last OK" xml:space="preserve">
+    <value>Terakhir berhasil</value>
+  </data>
+  <data name="Launch command" xml:space="preserve">
+    <value>Perintah peluncuran</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Langsung</value>
+  </data>
+  <data name="Loaded DLL" xml:space="preserve">
+    <value>DLL dimuat</value>
+  </data>
+  <data name="Local + Web" xml:space="preserve">
+    <value>Lokal + Web</value>
+  </data>
+  <data name="Local HUD" xml:space="preserve">
+    <value>HUD lokal</value>
+  </data>
+  <data name="Local player is not available yet." xml:space="preserve">
+    <value>Pemain lokal belum tersedia.</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>Min.</value>
+  </data>
+  <data name="Mount" xml:space="preserve">
+    <value>Tunggangan</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Nama</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Berikutnya</value>
+  </data>
+  <data name="No party members detected." xml:space="preserve">
+    <value>Tidak ada anggota grup terdeteksi.</value>
+  </data>
+  <data name="Open Web HUD" xml:space="preserve">
+    <value>Buka HUD Web</value>
+  </data>
+  <data name="Overlay" xml:space="preserve">
+    <value>Overlay</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>Grup</value>
+  </data>
+  <data name="Party Radar" xml:space="preserve">
+    <value>Radar grup</value>
+  </data>
+  <data name="Party Size" xml:space="preserve">
+    <value>Ukuran grup</value>
+  </data>
+  <data name="Party status list" xml:space="preserve">
+    <value>Daftar status grup</value>
+  </data>
+  <data name="Position (X, Y, Z)" xml:space="preserve">
+    <value>Posisi (X, Y, Z)</value>
+  </data>
+  <data name="Publish failed" xml:space="preserve">
+    <value>Publikasi gagal</value>
+  </data>
+  <data name="Queue" xml:space="preserve">
+    <value>Antrean</value>
+  </data>
+  <data name="Remote HUD" xml:space="preserve">
+    <value>HUD jarak jauh</value>
+  </data>
+  <data name="Remote HUD Server" xml:space="preserve">
+    <value>Server HUD jarak jauh</value>
+  </data>
+  <data name="Remote server and review" xml:space="preserve">
+    <value>Server jarak jauh dan tinjauan</value>
+  </data>
+  <data name="Repair summary" xml:space="preserve">
+    <value>Ringkasan perbaikan</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>Tinjau</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="Server URL" xml:space="preserve">
+    <value>URL server</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>Penyiapan</value>
+  </data>
+  <data name="Setup Wizard" xml:space="preserve">
+    <value>Panduan penyiapan</value>
+  </data>
+  <data name="Show condition panel" xml:space="preserve">
+    <value>Tampilkan panel kondisi</value>
+  </data>
+  <data name="Show party radar" xml:space="preserve">
+    <value>Tampilkan radar grup</value>
+  </data>
+  <data name="Show party status list" xml:space="preserve">
+    <value>Tampilkan daftar status grup</value>
+  </data>
+  <data name="Show repair summary" xml:space="preserve">
+    <value>Tampilkan ringkasan perbaikan</value>
+  </data>
+  <data name="Slots" xml:space="preserve">
+    <value>Slot</value>
+  </data>
+  <data name="Snapshot" xml:space="preserve">
+    <value>Snapshot</value>
+  </data>
+  <data name="Text Only" xml:space="preserve">
+    <value>Teks saja</value>
+  </data>
+  <data name="Update Cadence" xml:space="preserve">
+    <value>Frekuensi pembaruan</value>
+  </data>
+  <data name="Use Local Default" xml:space="preserve">
+    <value>Gunakan default lokal</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>Menunggu</value>
+  </data>
+  <data name="Web Text" xml:space="preserve">
+    <value>Teks Web</value>
+  </data>
+  <data name="Web Viewer Policy" xml:space="preserve">
+    <value>Kebijakan penonton Web</value>
+  </data>
+  <data name="Web only" xml:space="preserve">
+    <value>Web saja</value>
+  </data>
+  <data name="Bind host" xml:space="preserve">
+    <value>Host bind</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Stale seconds" xml:space="preserve">
+    <value>Detik sampai kedaluwarsa</value>
+  </data>
+  <data name="Start Server" xml:space="preserve">
+    <value>Mulai server</value>
+  </data>
+  <data name="Stop Server" xml:space="preserve">
+    <value>Hentikan server</value>
+  </data>
+  <data name="Open HUD" xml:space="preserve">
+    <value>Buka HUD</value>
+  </data>
+  <data name="Screenshots" xml:space="preserve">
+    <value>Tangkapan layar</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>Cache</value>
+  </data>
+  <data name="Extracted" xml:space="preserve">
+    <value>Diekstrak</value>
+  </data>
+  <data name="Copy URL" xml:space="preserve">
+    <value>Salin URL</value>
+  </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>Diagnostik</value>
+  </data>
+  <data name="Clear Stale" xml:space="preserve">
+    <value>Bersihkan kedaluwarsa</value>
+  </data>
+  <data name="Clear Cache" xml:space="preserve">
+    <value>Bersihkan cache</value>
+  </data>
+  <data name="Extract Assets" xml:space="preserve">
+    <value>Ekstrak aset</value>
+  </data>
+  <data name="Data folder" xml:space="preserve">
+    <value>Folder data</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Jelajahi</value>
+  </data>
+  <data name="Open Data" xml:space="preserve">
+    <value>Buka data</value>
+  </data>
+  <data name="Reset Default" xml:space="preserve">
+    <value>Pulihkan default</value>
+  </data>
+  <data name="Server running" xml:space="preserve">
+    <value>Server berjalan</value>
+  </data>
+  <data name="Server stopped" xml:space="preserve">
+    <value>Server berhenti</value>
+  </data>
+  <data name="Active clients" xml:space="preserve">
+    <value>Klien aktif</value>
+  </data>
+  <data name="Runtime log" xml:space="preserve">
+    <value>Log runtime</value>
+  </data>
+  <data name="Server configuration" xml:space="preserve">
+    <value>Konfigurasi server</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Tindakan</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Ringkasan</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>Peta</value>
+  </data>
+  <data name="Threat" xml:space="preserve">
+    <value>Ancaman</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>Operator</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Perintah</value>
+  </data>
+  <data name="Matrix" xml:space="preserve">
+    <value>Matriks</value>
+  </data>
+  <data name="Classic" xml:space="preserve">
+    <value>Klasik</value>
+  </data>
+  <data name="Show Details" xml:space="preserve">
+    <value>Tampilkan detail</value>
+  </data>
+  <data name="Hide Details" xml:space="preserve">
+    <value>Sembunyikan detail</value>
+  </data>
+  <data name="Remote Monitor + Command Relay" xml:space="preserve">
+    <value>Monitor jarak jauh + penerusan perintah</value>
+  </data>
+  <data name="Remote HUD and command relay" xml:space="preserve">
+    <value>HUD jarak jauh dan penerusan perintah</value>
+  </data>
+  <data name="Send Text" xml:space="preserve">
+    <value>Kirim teks</value>
+  </data>
+  <data name="Request Screenshot" xml:space="preserve">
+    <value>Minta tangkapan layar</value>
+  </data>
+  <data name="Last Screenshot" xml:space="preserve">
+    <value>Tangkapan terakhir</value>
+  </data>
+  <data name="Last update" xml:space="preserve">
+    <value>Pembaruan terakhir</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>Kedaluwarsa</value>
+  </data>
+  <data name="Disconnected" xml:space="preserve">
+    <value>Terputus</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>Online</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>Offline</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>Idle</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Tidak diketahui</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Siap</value>
+  </data>
+  <data name="Allow web viewer CCTV mode" xml:space="preserve">
+    <value>Izinkan CCTV penonton Web</value>
+  </data>
+  <data name="Allow web viewer screenshot requests" xml:space="preserve">
+    <value>Izinkan permintaan tangkapan penonton Web</value>
+  </data>
+  <data name="Allow web viewer text and slash commands" xml:space="preserve">
+    <value>Izinkan teks dan perintah slash penonton Web</value>
+  </data>
+  <data name="Combat radar height (yalms)" xml:space="preserve">
+    <value>Tinggi radar pertempuran (yalm)</value>
+  </data>
+  <data name="Combat radar width (yalms)" xml:space="preserve">
+    <value>Lebar radar pertempuran (yalm)</value>
+  </data>
+  <data name="Travel radar height (yalms)" xml:space="preserve">
+    <value>Tinggi radar perjalanan (yalm)</value>
+  </data>
+  <data name="Travel radar width (yalms)" xml:space="preserve">
+    <value>Lebar radar perjalanan (yalm)</value>
+  </data>
+  <data name="Radar box size (px)" xml:space="preserve">
+    <value>Ukuran kotak radar (px)</value>
+  </data>
+  <data name="Fast position interval (ms)" xml:space="preserve">
+    <value>Interval posisi cepat (ms)</value>
+  </data>
+  <data name="Full snapshot interval (ms)" xml:space="preserve">
+    <value>Interval snapshot lengkap (ms)</value>
+  </data>
+  <data name="Python launch command" xml:space="preserve">
+    <value>Perintah peluncuran Python</value>
+  </data>
+  <data name="Publish HUD snapshots to remote server" xml:space="preserve">
+    <value>Publikasikan snapshot HUD ke server jarak jauh</value>
+  </data>
+  <data name="Enumerate party members for radar labels" xml:space="preserve">
+    <value>Nomori anggota grup pada label radar</value>
+  </data>
+  <data name="Display size of the local HUD radar box." xml:space="preserve">
+    <value>Ukuran tampilan kotak radar HUD lokal.</value>
+  </data>
+  <data name="Show TTSL status in the server info bar." xml:space="preserve">
+    <value>Tampilkan status TTSL di bilah info server.</value>
+  </data>
+  <data name="Show or hide the server-info bar entry for TTSL." xml:space="preserve">
+    <value>Tampilkan atau sembunyikan entri TTSL di bilah info server.</value>
+  </data>
+  <data name="Obfuscate displayed player names for screenshots." xml:space="preserve">
+    <value>Samarkan nama pemain yang ditampilkan untuk tangkapan layar.</value>
+  </data>
+  <data name="Use party slot numbers on the radar." xml:space="preserve">
+    <value>Gunakan nomor slot grup di radar.</value>
+  </data>
+  <data name="Open the guided local/web HUD setup." xml:space="preserve">
+    <value>Buka panduan penyiapan HUD lokal/Web.</value>
+  </data>
+  <data name="Open the Python remote HUD in your default browser." xml:space="preserve">
+    <value>Buka HUD jarak jauh Python di browser default.</value>
+  </data>
+  <data name="Guided local HUD and web publisher setup" xml:space="preserve">
+    <value>Panduan penyiapan HUD lokal dan penerbit Web</value>
+  </data>
+  <data name="Copies the best local server-launch command TTSL could resolve from this install." xml:space="preserve">
+    <value>Menyalin perintah peluncuran server lokal terbaik yang ditemukan TTSL dari instalasi ini.</value>
+  </data>
+  <data name="Copies the Lodestone blog link with suggested glyphs." xml:space="preserve">
+    <value>Menyalin tautan blog Lodestone dengan glif yang disarankan.</value>
+  </data>
+  <data name="Customize the glyphs used when TTSL is on or off." xml:space="preserve">
+    <value>Sesuaikan glif saat TTSL nyala atau mati.</value>
+  </data>
+  <data name="Where should TTSL show your HUD?" xml:space="preserve">
+    <value>Di mana TTSL harus menampilkan HUD?</value>
+  </data>
+  <data name="Choose the local HUD details you want ready" xml:space="preserve">
+    <value>Pilih detail HUD lokal yang ingin disiapkan</value>
+  </data>
+  <data name="These choices also control which sections are included when local HUD data is published." xml:space="preserve">
+    <value>Pilihan ini juga menentukan bagian saat data HUD lokal dipublikasikan.</value>
+  </data>
+  <data name="Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are." xml:space="preserve">
+    <value>Pilih mode awal. Panduan hanya mengubah pengaturan di sini; izin Web lanjutan, interval, ukuran radar, ikon, dan label tetap sama.</value>
+  </data>
+  <data name="Show the in-game TTSL window without publishing to the web server." xml:space="preserve">
+    <value>Tampilkan jendela TTSL dalam game tanpa publikasi ke server Web.</value>
+  </data>
+  <data name="Show the in-game TTSL window and publish snapshots to the configured web server." xml:space="preserve">
+    <value>Tampilkan TTSL dalam game dan publikasikan snapshot ke server Web yang dikonfigurasi.</value>
+  </data>
+  <data name="Publish snapshots to the web server while keeping the in-game HUD hidden." xml:space="preserve">
+    <value>Publikasikan snapshot ke server Web sambil menyembunyikan HUD dalam game.</value>
+  </data>
+  <data name="Confirm the web server address and copy the existing launch command if you need to start the local server." xml:space="preserve">
+    <value>Konfirmasi alamat server Web dan salin perintah peluncuran yang ada jika perlu memulai server lokal.</value>
+  </data>
+  <data name="Local HUD mode does not publish snapshots. The existing remote URL is preserved for later." xml:space="preserve">
+    <value>Mode HUD lokal tidak mempublikasikan snapshot. URL jarak jauh yang ada disimpan untuk nanti.</value>
+  </data>
+  <data name="The active account changed. Reopen the wizard and review that account&apos;s settings." xml:space="preserve">
+    <value>Akun aktif berubah. Buka ulang panduan dan tinjau pengaturan akun itu.</value>
+  </data>
+  <data name="Step {0} of 3" xml:space="preserve">
+    <value>Langkah {0} dari 3</value>
+  </data>
+  <data name="Preview: {0}" xml:space="preserve">
+    <value>Pratinjau: {0}</value>
+  </data>
+  <data name="Current account ID: {0}" xml:space="preserve">
+    <value>ID akun saat ini: {0}</value>
+  </data>
+  <data name="Publisher: {0}" xml:space="preserve">
+    <value>Penerbit: {0}</value>
+  </data>
+  <data name="Last error: {0}" xml:space="preserve">
+    <value>Kesalahan terakhir: {0}</value>
+  </data>
+  <data name="Enabled Icon" xml:space="preserve">
+    <value>Ikon aktif</value>
+  </data>
+  <data name="Disabled Icon" xml:space="preserve">
+    <value>Ikon nonaktif</value>
+  </data>
+  <data name="Age" xml:space="preserve">
+    <value>Usia</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Tutup</value>
+  </data>
+  <data name="Command View" xml:space="preserve">
+    <value>Tampilan perintah</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>Terhubung</value>
+  </data>
+  <data name="Dist" xml:space="preserve">
+    <value>Jarak</value>
+  </data>
+  <data name="Enmity" xml:space="preserve">
+    <value>Enmity</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Alur</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>Fokus</value>
+  </data>
+  <data name="Game path" xml:space="preserve">
+    <value>Jalur game</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>Tinggi</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Inspector" xml:space="preserve">
+    <value>Inspektur</value>
+  </data>
+  <data name="Last Screenshot Sent" xml:space="preserve">
+    <value>Tangkapan terakhir dikirim</value>
+  </data>
+  <data name="Loose Clients" xml:space="preserve">
+    <value>Klien lepas</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Rendah</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Sedang</value>
+  </data>
+  <data name="Minimap" xml:space="preserve">
+    <value>Minimap</value>
+  </data>
+  <data name="No combat telemetry captured." xml:space="preserve">
+    <value>Belum ada telemetri pertempuran.</value>
+  </data>
+  <data name="No party data captured yet." xml:space="preserve">
+    <value>Belum ada data grup.</value>
+  </data>
+  <data name="Party Surface" xml:space="preserve">
+    <value>Panel grup</value>
+  </data>
+  <data name="Refresh failed" xml:space="preserve">
+    <value>Pembaruan gagal</value>
+  </data>
+  <data name="Situation" xml:space="preserve">
+    <value>Situasi</value>
+  </data>
+  <data name="Slot" xml:space="preserve">
+    <value>Slot</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Surface Matrix" xml:space="preserve">
+    <value>Matriks panel</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Jenis</value>
+  </data>
+  <data name="Vitals" xml:space="preserve">
+    <value>Vital</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>Zona</value>
+  </data>
+  <data name="Asset plan unavailable." xml:space="preserve">
+    <value>Rencana aset tidak tersedia.</value>
+  </data>
+  <data name="Extraction status unavailable." xml:space="preserve">
+    <value>Status ekstraksi tidak tersedia.</value>
+  </data>
+  <data name="Awaiting the first CCTV frame from the client." xml:space="preserve">
+    <value>Menunggu bingkai CCTV pertama dari klien.</value>
+  </data>
+  <data name="CCTV frames appear here after the first live capture." xml:space="preserve">
+    <value>Bingkai CCTV muncul setelah tangkapan langsung pertama.</value>
+  </data>
+  <data name="CCTV is not allowed for this client." xml:space="preserve">
+    <value>CCTV tidak diizinkan untuk klien ini.</value>
+  </data>
+  <data name="CCTV uses rolling game-window captures and replaces the map pane until closed." xml:space="preserve">
+    <value>CCTV memakai tangkapan jendela game berkelanjutan dan mengganti panel peta sampai ditutup.</value>
+  </data>
+  <data name="Clients not currently represented inside an aggregate party surface." xml:space="preserve">
+    <value>Klien yang belum ada dalam panel grup gabungan.</value>
+  </data>
+  <data name="Open the screenshot folder on the TTSL server host." xml:space="preserve">
+    <value>Buka folder tangkapan di host server TTSL.</value>
+  </data>
+  <data name="Plain text goes to /echo. Slash commands like /sit run verbatim" xml:space="preserve">
+    <value>Teks biasa masuk ke /echo. Perintah slash seperti /sit dijalankan apa adanya</value>
+  </data>
+  <data name="Select a client or aggregate party surface to inspect the detail pane." xml:space="preserve">
+    <value>Pilih klien atau panel grup gabungan untuk memeriksa detail.</value>
+  </data>
+  <data name="The tracked client does not currently expose target or hostile data." xml:space="preserve">
+    <value>Klien terlacak saat ini tidak menyediakan data target atau musuh.</value>
+  </data>
+  <data name="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV." xml:space="preserve">
+    <value>Klien ini belum mengizinkan teks, perintah slash, tangkapan, atau CCTV dari Web.</value>
+  </data>
+  <data name="DTR" xml:space="preserve">
+    <value>DTR</value>
+  </data>
+  <data name="Krangle" xml:space="preserve">
+    <value>Krangle</value>
+  </data>
+  <data name="CCTV" xml:space="preserve">
+    <value>CCTV</value>
+  </data>
+  <data name="HUD" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="HP" xml:space="preserve">
+    <value>HP</value>
+  </data>
+  <data name="MP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="FB" xml:space="preserve">
+    <value>FB</value>
+  </data>
+  <data name="CMD" xml:space="preserve">
+    <value>CMD</value>
+  </data>
+  <data name="SS" xml:space="preserve">
+    <value>SS</value>
+  </data>
+  <data name="SSF" xml:space="preserve">
+    <value>SSF</value>
+  </data>
+  <data name="Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets." xml:space="preserve">
+    <value>Mengizinkan HUD browser mengganti peta dengan siaran berkelanjutan pada preset rendah, sedang, atau tinggi.</value>
+  </data>
+  <data name="Captures the current FFXIV game-window client area and uploads it to the Python server." xml:space="preserve">
+    <value>Menangkap area klien jendela FFXIV saat ini dan mengunggahnya ke server Python.</value>
+  </data>
+  <data name="Clients are grouped by incoming account ID and character on the server page." xml:space="preserve">
+    <value>Klien dikelompokkan menurut ID akun masuk dan karakter di halaman server.</value>
+  </data>
+  <data name="Default view is 20y x 20y in combat and 50y x 50y out of combat." xml:space="preserve">
+    <value>Tampilan default 20y x 20y dalam pertempuran dan 50y x 50y di luar.</value>
+  </data>
+  <data name="Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0." xml:space="preserve">
+    <value>Untuk penonton LAN, edit perintah tersalin: ubah --host 127.0.0.1 menjadi --host 0.0.0.0.</value>
+  </data>
+  <data name="For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first." xml:space="preserve">
+    <value>Untuk ekstraksi sheet/ikon nanti, setidaknya satu klien di PC yang sama dengan monitor Python harus terhubung dahulu.</value>
+  </data>
+  <data name="Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable." xml:space="preserve">
+    <value>Default mati. Jika aktif, HUD Web dapat meminta pratinjau CharacterInspect dari klien hanya sebagai cadangan saat gambar tubuh Lodestone tidak ada.</value>
+  </data>
+  <data name="Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim." xml:space="preserve">
+    <value>Teks biasa dikirim ke /echo dengan awalan [TTSL Web]. Masukan berawalan slash dikirim apa adanya.</value>
+  </data>
+  <data name="Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache." xml:space="preserve">
+    <value>Teks Web biasa diberi awalan [TTSL Web]. Masukan slash dikirim apa adanya; tangkapan anggota asing grup gabungan memakai klien pengunggah/sumber, dan CCTV memakai cache bingkai bergulir dari klien yang sama.</value>
+  </data>
+  <data name="Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser." xml:space="preserve">
+    <value>Mengirim snapshot HUD lokal ke server mini Python agar beberapa klien terlihat di satu browser.</value>
+  </data>
+  <data name="TTSL settings are now stored per account ID once a live account is detected." xml:space="preserve">
+    <value>Pengaturan TTSL kini disimpan per ID akun setelah akun aktif terdeteksi.</value>
+  </data>
+  <data name="The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar." xml:space="preserve">
+    <value>HUD browser kini memiliki kontrol ukuran kotak dan yalm pertempuran/perjalanan di bilah atas.</value>
+  </data>
+  <data name="The server will cache the first same-PC game path it sees for the rest of that monitoring session." xml:space="preserve">
+    <value>Server menyimpan jalur game pertama dari PC yang sama selama sisa sesi pemantauan.</value>
+  </data>
+  <data name="Showing {0:F0}y x {1:F0}y ({2})." xml:space="preserve">
+    <value>Menampilkan {0:F0}y x {1:F0}y ({2}).</value>
+  </data>
+  <data name="Travel" xml:space="preserve">
+    <value>Perjalanan</value>
+  </data>
+  <data name="Shot" xml:space="preserve">
+    <value>Tangkapan</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Mode</value>
+  </data>
+  <data name="Krangle names" xml:space="preserve">
+    <value>Krangle nama</value>
+  </data>
+  <data name="DTR entry" xml:space="preserve">
+    <value>Entri DTR</value>
+  </data>
+  <data name="Mode: {0}" xml:space="preserve">
+    <value>Mode: {0}</value>
+  </data>
+  <data name="Condition panel: {0}" xml:space="preserve">
+    <value>Panel kondisi: {0}</value>
+  </data>
+  <data name="Repair summary: {0}" xml:space="preserve">
+    <value>Ringkasan perbaikan: {0}</value>
+  </data>
+  <data name="Party status: {0}" xml:space="preserve">
+    <value>Daftar status grup: {0}</value>
+  </data>
+  <data name="Party radar: {0}" xml:space="preserve">
+    <value>Radar grup: {0}</value>
+  </data>
+  <data name="Krangle names: {0}" xml:space="preserve">
+    <value>Krangle nama: {0}</value>
+  </data>
+  <data name="DTR entry: {0}" xml:space="preserve">
+    <value>Entri DTR: {0}</value>
+  </data>
+  <data name="Server: {0}" xml:space="preserve">
+    <value>Server: {0}</value>
+  </data>
+  <data name="Release asset: latestServer.zip" xml:space="preserve">
+    <value>Aset rilis: latestServer.zip</value>
+  </data>
+  <data name="(?)" xml:space="preserve">
+    <value>(?)</value>
+  </data>
+  <data name="TTSL " xml:space="preserve">
+    <value>TTSL </value>
+  </data>
+  <data name="In duty" xml:space="preserve">
+    <value>Dalam duty</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>Dalam antrean</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Tidak tersedia</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>Terkunci</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Teks</value>
+  </data>
+  <data name="Screens" xml:space="preserve">
+    <value>Tangkapan</value>
+  </data>
+  <data name="Telemetry" xml:space="preserve">
+    <value>Telemetri</value>
+  </data>
+  <data name="Unknown race" xml:space="preserve">
+    <value>Ras tidak diketahui</value>
+  </data>
+  <data name="Party Leader" xml:space="preserve">
+    <value>Pemimpin grup</value>
+  </data>
+  <data name="Party Role" xml:space="preserve">
+    <value>Peran grup</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>Klien</value>
+  </data>
+  <data name="Asset plan pending." xml:space="preserve">
+    <value>Rencana aset tertunda.</value>
+  </data>
+  <data name="Extraction idle." xml:space="preserve">
+    <value>Ekstraksi idle.</value>
+  </data>
+  <data name="Extracting..." xml:space="preserve">
+    <value>Mengekstrak...</value>
+  </data>
+  <data name="Waiting for clients..." xml:space="preserve">
+    <value>Menunggu klien...</value>
+  </data>
+  <data name="No updates yet." xml:space="preserve">
+    <value>Belum ada pembaruan.</value>
+  </data>
+  <data name="All tracked clients are stale or disconnected." xml:space="preserve">
+    <value>Semua klien terlacak kedaluwarsa atau terputus.</value>
+  </data>
+  <data name="No aggregate party surfaces are available right now, so command view is showing compact client cards." xml:space="preserve">
+    <value>Tidak ada panel grup gabungan saat ini, jadi tampilan perintah memakai kartu klien ringkas.</value>
+  </data>
+  <data name="Aggregate parties are disabled. Enable the toggle above to unlock the full party command board." xml:space="preserve">
+    <value>Grup gabungan nonaktif. Aktifkan opsi di atas untuk membuka papan perintah grup lengkap.</value>
+  </data>
+  <data name="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane." xml:space="preserve">
+    <value>Teks biasa diberi awalan [TTSL Web]. Masukan slash dikirim apa adanya. SS mengirim satu tangkapan cache; CCTV menampilkan siaran bergulir di panel peta.</value>
+  </data>
+  <data name="SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client." xml:space="preserve">
+    <value>SS dan CMD langsung menargetkan anggota terpantau. CCTV mengganti peta sampai ditutup. Tombol anggota asing tetap terlihat tetapi nonaktif sampai slot itu diwakili klien terlacak.</value>
+  </data>
+  <data name="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback." xml:space="preserve">
+    <value>Anggota asing sudah membawa HP, MP, posisi, level, dan job grup. Potret Lodestone dicari di latar memakai world mereka atau world klien sumber sebagai cadangan.</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor." xml:space="preserve">
+    <value>Belum ada klien terhubung. Mulai server, arahkan TTSL ke sana, lalu aktifkan publikasi jarak jauh. Ekstraksi sheet/ikon nanti perlu satu klien di PC yang sama dengan monitor native ini.</value>
+  </data>
+  <data name="Data folder is already active:" xml:space="preserve">
+    <value>Folder data sudah aktif:</value>
+  </data>
+  <data name="Data folder saved for next launch:" xml:space="preserve">
+    <value>Folder data disimpan untuk peluncuran berikut:</value>
+  </data>
+  <data name="Restart TTSL Native Server to use it. Current session keeps using:" xml:space="preserve">
+    <value>Mulai ulang TTSL Native Server untuk memakainya. Sesi saat ini tetap memakai:</value>
+  </data>
+  <data name="Failed to register TTSL native server window class." xml:space="preserve">
+    <value>Gagal mendaftarkan kelas jendela server native TTSL.</value>
+  </data>
+  <data name="Failed to create TTSL native server window." xml:space="preserve">
+    <value>Gagal membuat jendela server native TTSL.</value>
+  </data>
+  <data name="Click to toggle the HUD." xml:space="preserve">
+    <value>Klik untuk mengaktifkan/menonaktifkan HUD.</value>
+  </data>
+  <data name="Text Only: &apos;TTSL: On/Off&apos;&#10;Icon+Text: &apos;&lt;icon&gt; TTSL&apos;&#10;Icon Only: &apos;&lt;icon&gt;&apos;" xml:space="preserve">
+    <value>Teks saja: &apos;TTSL: Nyala/Mati&apos;
+Ikon + teks: &apos;&lt;icon&gt; TTSL&apos;
+Ikon saja: &apos;&lt;icon&gt;&apos;</value>
+  </data>
+  <data name="Busy" xml:space="preserve">
+    <value>Sibuk</value>
+  </data>
+  <data name="Current target" xml:space="preserve">
+    <value>Target saat ini</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>Putus</value>
+  </data>
+  <data name="Extra" xml:space="preserve">
+    <value>Tambahan</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>Ekstrak</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>Label</value>
+  </data>
+  <data name="Lookup" xml:space="preserve">
+    <value>Pencarian</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>Hilang</value>
+  </data>
+  <data name="Monitored" xml:space="preserve">
+    <value>Terpantau</value>
+  </data>
+  <data name="No current target" xml:space="preserve">
+    <value>Tidak ada target saat ini</value>
+  </data>
+  <data name="No radar data" xml:space="preserve">
+    <value>Tidak ada data radar</value>
+  </data>
+  <data name="No repair data" xml:space="preserve">
+    <value>Tidak ada data perbaikan</value>
+  </data>
+  <data name="No tracked target" xml:space="preserve">
+    <value>Tidak ada target terlacak</value>
+  </data>
+  <data name="Not casting" xml:space="preserve">
+    <value>Tidak merapal</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>Jalur</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>Dijeda</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>Kebijakan</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Posisi</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>Perbaikan</value>
+  </data>
+  <data name="Solo" xml:space="preserve">
+    <value>Solo</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Sumber</value>
+  </data>
+  <data name="Source host" xml:space="preserve">
+    <value>Host sumber</value>
+  </data>
+  <data name="Stranger" xml:space="preserve">
+    <value>Anggota asing</value>
+  </data>
+  <data name="Strangers" xml:space="preserve">
+    <value>Anggota asing</value>
+  </data>
+  <data name="Submitting" xml:space="preserve">
+    <value>Mengirim</value>
+  </data>
+  <data name="Targeting you" xml:space="preserve">
+    <value>Menargetkan Anda</value>
+  </data>
+  <data name="Texture" xml:space="preserve">
+    <value>Tekstur</value>
+  </data>
+  <data name="Tracked" xml:space="preserve">
+    <value>Terlacak</value>
+  </data>
+  <data name="Tracked client" xml:space="preserve">
+    <value>Klien terlacak</value>
+  </data>
+  <data name="Unknown host" xml:space="preserve">
+    <value>Host tidak diketahui</value>
+  </data>
+  <data name="Unknown time" xml:space="preserve">
+    <value>Waktu tidak diketahui</value>
+  </data>
+  <data name="Unknown zone" xml:space="preserve">
+    <value>Zona tidak diketahui</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>Tampilan</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>Terlihat</value>
+  </data>
+  <data name="Remote Control" xml:space="preserve">
+    <value>Kontrol jarak jauh</value>
+  </data>
+  <data name="Field Map" xml:space="preserve">
+    <value>Peta area</value>
+  </data>
+  <data name="Source Minimap" xml:space="preserve">
+    <value>Minimap sumber</value>
+  </data>
+  <data name="Aggregate parties" xml:space="preserve">
+    <value>Grup gabungan</value>
+  </data>
+  <data name="Krangle names/account IDs" xml:space="preserve">
+    <value>Krangle nama/ID akun</value>
+  </data>
+  <data name="Krangle enemy names" xml:space="preserve">
+    <value>Krangle nama musuh</value>
+  </data>
+  <data name="Show stale/disconnected" xml:space="preserve">
+    <value>Tampilkan kedaluwarsa/terputus</value>
+  </data>
+  <data name="Icons" xml:space="preserve">
+    <value>Ikon</value>
+  </data>
+  <data name="Total HP" xml:space="preserve">
+    <value>Total HP</value>
+  </data>
+  <data name="Total MP" xml:space="preserve">
+    <value>Total MP</value>
+  </data>
+  <data name="Party Members" xml:space="preserve">
+    <value>Anggota grup</value>
+  </data>
+  <data name="Waiting for local player" xml:space="preserve">
+    <value>Menunggu pemain lokal</value>
+  </data>
+  <data name="Connected to {0}" xml:space="preserve">
+    <value>Terhubung ke {0}</value>
+  </data>
+  <data name="Retrying in {0}s" xml:space="preserve">
+    <value>Mencoba lagi dalam {0}s</value>
+  </data>
+  <data name="Box px" xml:space="preserve">
+    <value>Ukuran kotak radar (px)</value>
+  </data>
+  <data name="Combat W" xml:space="preserve">
+    <value>Lebar radar pertempuran (yalm)</value>
+  </data>
+  <data name="Combat H" xml:space="preserve">
+    <value>Tinggi radar pertempuran (yalm)</value>
+  </data>
+  <data name="Travel W" xml:space="preserve">
+    <value>Lebar radar perjalanan (yalm)</value>
+  </data>
+  <data name="Travel H" xml:space="preserve">
+    <value>Tinggi radar perjalanan (yalm)</value>
+  </data>
+  <data name="Aggregate-party stranger actions route through the source client." xml:space="preserve">
+    <value>Tindakan anggota asing grup gabungan diarahkan melalui klien sumber.</value>
+  </data>
+  <data name="Extraction started." xml:space="preserve">
+    <value>Ekstraksi dimulai.</value>
+  </data>
+  <data name="Map texture not extracted yet." xml:space="preserve">
+    <value>Tekstur peta belum diekstrak.</value>
+  </data>
+  <data name="No map data captured yet." xml:space="preserve">
+    <value>Belum ada data peta ditangkap.</value>
+  </data>
+  <data name="Opened screenshot folder on the server host." xml:space="preserve">
+    <value>Folder tangkapan dibuka di host server.</value>
+  </data>
+  <data name="Party telemetry + Lodestone lookup" xml:space="preserve">
+    <value>Telemetri grup + pencarian Lodestone</value>
+  </data>
+  <data name="Queued remote action." xml:space="preserve">
+    <value>Tindakan jarak jauh diantrekan.</value>
+  </data>
+  <data name="Screenshot requests are not allowed for this client." xml:space="preserve">
+    <value>Permintaan tangkapan tidak diizinkan untuk klien ini.</value>
+  </data>
+  <data name="Source Remote Control" xml:space="preserve">
+    <value>Kontrol jarak jauh sumber</value>
+  </data>
+  <data name="Web text or slash commands are not allowed for this client." xml:space="preserve">
+    <value>Teks Web atau perintah slash tidak diizinkan untuk klien ini.</value>
+  </data>
+  <data name="same-PC game path not captured yet" xml:space="preserve">
+    <value>jalur game PC yang sama belum ditangkap</value>
+  </data>
+  <data name="see server log" xml:space="preserve">
+    <value>lihat log server</value>
+  </data>
+  <data name="Scroll down to &quot;The Dumpster Fire&quot; channel to discuss issues / suggestions for specific plugins." xml:space="preserve">
+    <value>Gulir ke kanal &quot;The Dumpster Fire&quot; untuk membahas masalah / saran plugin tertentu.</value>
+  </data>
+  <data name="Failed to open screenshot folder: {0}" xml:space="preserve">
+    <value>Gagal membuka folder tangkapan: {0}</value>
+  </data>
+  <data name="Extraction request failed: {0}" xml:space="preserve">
+    <value>Permintaan ekstraksi gagal: {0}</value>
+  </data>
+  <data name="Remote action failed: {0}" xml:space="preserve">
+    <value>Tindakan jarak jauh gagal: {0}</value>
+  </data>
+  <data name="Last update {0} · {1}" xml:space="preserve">
+    <value>Pembaruan terakhir {0} · {1}</value>
+  </data>
+  <data name="Stranger source locked to first monitored client: {0} · Connected {1}" xml:space="preserve">
+    <value>Sumber anggota asing dikunci ke klien terpantau pertama: {0} · Terhubung {1}</value>
+  </data>
+  <data name="{0} clients · {1} live · {2} stale/disconnected" xml:space="preserve">
+    <value>{0} klien · {1} langsung · {2} kedaluwarsa/terputus</value>
+  </data>
+  <data name="Generated {0} · stale after {1}s · {2}" xml:space="preserve">
+    <value>Dibuat {0} · kedaluwarsa setelah {1}s · {2}</value>
+  </data>
+  <data name="Last CCTV Frame" xml:space="preserve">
+    <value>Bingkai CCTV terakhir</value>
+  </data>
+  <data name="Close CCTV for {0}" xml:space="preserve">
+    <value>Tutup CCTV untuk {0}</value>
+  </data>
+  <data name="Replace the map pane with live CCTV for {0}" xml:space="preserve">
+    <value>Ganti panel peta dengan CCTV langsung untuk {0}</value>
+  </data>
+  <data name="Request a screenshot from {0}" xml:space="preserve">
+    <value>Minta tangkapan dari {0}</value>
+  </data>
+  <data name="Open a command prompt for {0}" xml:space="preserve">
+    <value>Buka prompt perintah untuk {0}</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor." xml:space="preserve">
+    <value>Belum ada klien terhubung. Mulai server, arahkan TTSL ke sana, lalu aktifkan publikasi jarak jauh. Ekstraksi sheet/ikon nanti perlu satu klien di PC yang sama dengan monitor Python ini.</value>
+  </data>
+  <data name="Select TTSL Native Server data folder" xml:space="preserve">
+    <value>Pilih folder data TTSL Native Server</value>
+  </data>
+  <data name="Invalid data folder: {0}" xml:space="preserve">
+    <value>Folder data tidak valid: {0}</value>
+  </data>
+  <data name="Party groups" xml:space="preserve">
+    <value>Grup</value>
+  </data>
+  <data name="Clan" xml:space="preserve">
+    <value>Klan</value>
+  </data>
+  <data name="Race" xml:space="preserve">
+    <value>Ras</value>
+  </data>
+  <data name="Working..." xml:space="preserve">
+    <value>Memproses...</value>
+  </data>
+  <data name="Targeting party member {0}" xml:space="preserve">
+    <value>Menargetkan anggota grup {0}</value>
+  </data>
+  <data name="Live CCTV for {0}" xml:space="preserve">
+    <value>CCTV langsung untuk {0}</value>
+  </data>
+  <data name="Send text or slash command to {0}" xml:space="preserve">
+    <value>Kirim teks atau perintah slash ke {0}</value>
+  </data>
+  <data name="Targeting {0}" xml:space="preserve">
+    <value>Menargetkan {0}</value>
+  </data>
+  <data name="Lodestone body image for {0}" xml:space="preserve">
+    <value>Gambar tubuh Lodestone untuk {0}</value>
+  </data>
+  <data name="Party telemetry available · Lodestone {0} · Direct actions disabled." xml:space="preserve">
+    <value>Telemetri grup tersedia · Lodestone {0} · Tindakan langsung nonaktif.</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Gagal</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Tertunda</value>
+  </data>
+  <data name="Refreshing" xml:space="preserve">
+    <value>Memperbarui</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>Sebagian</value>
+  </data>
+  <data name="Unresolved" xml:space="preserve">
+    <value>Belum terselesaikan</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>Lengkap</value>
+  </data>
+  <data name="Ally" xml:space="preserve">
+    <value>Sekutu</value>
+  </data>
+  <data name="Hostile" xml:space="preserve">
+    <value>Musuh</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>Bertempur</value>
+  </data>
+  <data name="{0} live" xml:space="preserve">
+    <value>{0} langsung</value>
+  </data>
+  <data name="Plugin fallback ready" xml:space="preserve">
+    <value>Cadangan plugin siap</value>
+  </data>
+  <data name="Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix." xml:space="preserve">
+    <value>Empat tata letak untuk 4-12 klien: kartu klasik, papan operator, perintah grup, dan matriks padat.</value>
+  </data>
+  <data name="Native asset extraction started." xml:space="preserve">
+    <value>Ekstraksi aset native dimulai.</value>
+  </data>
+  <data name="Loading race names from native EXD data..." xml:space="preserve">
+    <value>Memuat nama ras dari data EXD native...</value>
+  </data>
+  <data name="Loading tribe names from native EXD data..." xml:space="preserve">
+    <value>Memuat nama klan dari data EXD native...</value>
+  </data>
+  <data name="Loaded {0} race name row(s) from native EXD data." xml:space="preserve">
+    <value>Memuat {0} baris nama ras dari data EXD native.</value>
+  </data>
+  <data name="Loaded {0} tribe name row(s) from native EXD data." xml:space="preserve">
+    <value>Memuat {0} baris nama klan dari data EXD native.</value>
+  </data>
+  <data name="Extracting job icon {0}/{1} ({2})..." xml:space="preserve">
+    <value>Mengekstrak ikon job {0}/{1} ({2})...</value>
+  </data>
+  <data name="Extracting map texture {0}/{1} ({2})..." xml:space="preserve">
+    <value>Mengekstrak tekstur peta {0}/{1} ({2})...</value>
+  </data>
+  <data name="Generating race icon {0}/{1}..." xml:space="preserve">
+    <value>Membuat ikon ras {0}/{1}...</value>
+  </data>
+  <data name="Generating tribe icon {0}/{1}..." xml:space="preserve">
+    <value>Membuat ikon klan {0}/{1}...</value>
+  </data>
+  <data name="Native asset extraction {0}: {1} extracted, {2} failed." xml:space="preserve">
+    <value>Ekstraksi aset native {0}: {1} diekstrak, {2} gagal.</value>
+  </data>
+  <data name="Writing native asset extraction summary..." xml:space="preserve">
+    <value>Menulis ringkasan ekstraksi aset native...</value>
+  </data>
+  <data name="Native asset extraction failed: {0}" xml:space="preserve">
+    <value>Ekstraksi aset native gagal: {0}</value>
+  </data>
+  <data name="Launching extractor with the current session plan." xml:space="preserve">
+    <value>Meluncurkan ekstraktor dengan rencana sesi saat ini.</value>
+  </data>
+  <data name="Asset extraction started." xml:space="preserve">
+    <value>Ekstraksi aset dimulai.</value>
+  </data>
+  <data name="Extractor finished." xml:space="preserve">
+    <value>Ekstraktor selesai.</value>
+  </data>
+  <data name="Extractor failed." xml:space="preserve">
+    <value>Ekstraktor gagal.</value>
+  </data>
+  <data name="Summary written to {0}" xml:space="preserve">
+    <value>Ringkasan ditulis ke {0}</value>
+  </data>
+  <data name="Failed {0} file(s). See {1}." xml:space="preserve">
+    <value>{0} file gagal. Lihat {1}.</value>
+  </data>
+  <data name="Extractor failed: {0}" xml:space="preserve">
+    <value>Ekstraktor gagal: {0}</value>
+  </data>
+  <data name="No extracted asset summary found yet." xml:space="preserve">
+    <value>Belum ditemukan ringkasan aset yang diekstrak.</value>
+  </data>
+  <data name="Native asset extraction is already running." xml:space="preserve">
+    <value>Ekstraksi aset native sudah berjalan.</value>
+  </data>
+  <data name="Asset extraction is already running." xml:space="preserve">
+    <value>Ekstraksi aset sudah berjalan.</value>
+  </data>
+  <data name="Same-PC game path has not been captured yet." xml:space="preserve">
+    <value>Jalur game PC yang sama belum ditangkap.</value>
+  </data>
+  <data name="Extractor script not found: {0}" xml:space="preserve">
+    <value>Skrip ekstraktor tidak ditemukan: {0}</value>
+  </data>
+  <data name="Last asset extraction status was {0}." xml:space="preserve">
+    <value>Status ekstraksi aset terakhir adalah {0}.</value>
+  </data>
+  <data name="Target client is not currently tracked." xml:space="preserve">
+    <value>Klien target belum terlacak saat ini.</value>
+  </data>
+  <data name="That client does not allow web text or slash commands." xml:space="preserve">
+    <value>Klien itu tidak mengizinkan teks Web atau perintah slash.</value>
+  </data>
+  <data name="That client does not allow web CCTV streaming." xml:space="preserve">
+    <value>Klien itu tidak mengizinkan siaran CCTV Web.</value>
+  </data>
+  <data name="That client does not allow web screenshot requests." xml:space="preserve">
+    <value>Klien itu tidak mengizinkan permintaan tangkapan Web.</value>
+  </data>
+  <data name="Text is empty." xml:space="preserve">
+    <value>Teks kosong.</value>
+  </data>
+  <data name="Queued web text/slash command." xml:space="preserve">
+    <value>Teks/perintah slash Web diantrekan.</value>
+  </data>
+  <data name="Queued CCTV frame request." xml:space="preserve">
+    <value>Permintaan bingkai CCTV diantrekan.</value>
+  </data>
+  <data name="Queued screenshot request." xml:space="preserve">
+    <value>Permintaan tangkapan diantrekan.</value>
+  </data>
+  <data name="Unsupported action type: {0}" xml:space="preserve">
+    <value>Jenis tindakan tidak didukung: {0}</value>
+  </data>
+  <data name="Auto-extracting {0} for the current session." xml:space="preserve">
+    <value>Mengekstrak {0} otomatis untuk sesi ini.</value>
+  </data>
+  <data name="Race name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Pencarian nama ras memakai label yang dibuat: {0}</value>
+  </data>
+  <data name="Tribe name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Pencarian nama klan memakai label yang dibuat: {0}</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>Tidak ditemukan</value>
+  </data>
+  <data name="Server is already running." xml:space="preserve">
+    <value>Server sudah berjalan.</value>
+  </data>
+  <data name="WSAStartup failed: {0}" xml:space="preserve">
+    <value>WSAStartup gagal: {0}</value>
+  </data>
+  <data name="socket() failed: {0}" xml:space="preserve">
+    <value>socket() gagal: {0}</value>
+  </data>
+  <data name="Bind host must be an IPv4 address such as 127.0.0.1 or 0.0.0.0." xml:space="preserve">
+    <value>Host bind harus berupa alamat IPv4 seperti 127.0.0.1 atau 0.0.0.0.</value>
+  </data>
+  <data name="bind() failed on {0} with {1}" xml:space="preserve">
+    <value>bind() gagal pada {0} dengan {1}</value>
+  </data>
+  <data name="listen() failed: {0}" xml:space="preserve">
+    <value>listen() gagal: {0}</value>
+  </data>
+  <data name="Data folder path is empty." xml:space="preserve">
+    <value>Jalur folder data kosong.</value>
+  </data>
+  <data name="Failed to create {0}: {1}" xml:space="preserve">
+    <value>Gagal membuat {0}: {1}</value>
+  </data>
+  <data name="{0} is not a folder." xml:space="preserve">
+    <value>{0} bukan folder.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Ya</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Tidak</value>
+  </data>
+  <data name="Operator View" xml:space="preserve">
+    <value>Tampilan operator</value>
+  </data>
+  <data name="Select a client to monitor and interact" xml:space="preserve">
+    <value>Pilih klien untuk dipantau dan diajak berinteraksi</value>
+  </data>
+  <data name="Command Center" xml:space="preserve">
+    <value>Pusat perintah</value>
+  </data>
+  <data name="Aggregated party command board" xml:space="preserve">
+    <value>Papan perintah party gabungan</value>
+  </data>
+  <data name="Party Overview" xml:space="preserve">
+    <value>Ringkasan party</value>
+  </data>
+  <data name="Active Members" xml:space="preserve">
+    <value>Anggota aktif</value>
+  </data>
+  <data name="In Zone" xml:space="preserve">
+    <value>Di zona yang sama</value>
+  </data>
+  <data name="Selected Entity" xml:space="preserve">
+    <value>Entitas terpilih</value>
+  </data>
+  <data name="Compare clients across zones and status" xml:space="preserve">
+    <value>Bandingkan klien berdasarkan zona dan status</value>
+  </data>
+  <data name="Window appearance" xml:space="preserve"><value>Tampilan jendela</value></data>
+  <data name="Compact visible on main window" xml:space="preserve"><value>Tampilkan mode ringkas di jendela utama</value></data>
+  <data name="Language visible on main window" xml:space="preserve"><value>Tampilkan pilihan bahasa di jendela utama</value></data>
+  <data name="Transparency" xml:space="preserve"><value>Transparansi</value></data>
+  <data name="Opacity (%)" xml:space="preserve"><value>Opasitas (%)</value></data>
+  <data name="Auto-fade when unfocused" xml:space="preserve"><value>Redupkan otomatis saat tidak fokus</value></data>
+  <data name="Unfocused opacity (%)" xml:space="preserve"><value>Opasitas saat tidak fokus (%)</value></data>
+  <data name="Unfocused delay (seconds)" xml:space="preserve"><value>Jeda saat tidak fokus (detik)</value></data>
+</root>
+

@@ -1,4 +1,6 @@
 using System;
+using TTSL.Ui;
+using AethertekUI;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -23,9 +25,11 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         this.plugin = plugin;
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(430f, 280f),
-            MaximumSize = new Vector2(1100f, 820f),
+            MinimumSize = new Vector2(540f, 360f),
+            MaximumSize = new Vector2(2200f, 1800f),
         };
+        Size = new Vector2(1480, 1040);
+        SizeCondition = ImGuiCond.FirstUseEver;
     }
 
     public void Dispose()
@@ -34,9 +38,12 @@ public sealed class MainWindow : PositionedWindow, IDisposable
 
     public override void Draw()
     {
+        WindowMotion.DrawChrome();
         var cfg = plugin.Configuration;
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
         var player = Plugin.ObjectTable.LocalPlayer;
+
+        UiGui.Title(PluginInfo.DisplayName,PluginInfo.DisplayName+" "+version);
 
         DrawHeader(version);
         DrawToolbar(cfg);
@@ -45,161 +52,236 @@ public sealed class MainWindow : PositionedWindow, IDisposable
 
         if (player == null)
         {
-            ImGui.TextDisabled("Local player is not available yet.");
+            UiGui.TextDisabled("Local player is not available yet.");
             FinalizePendingWindowPlacement();
             return;
         }
 
         var snapshots = BuildPartySnapshots(player);
 
-        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(4f, 2f));
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Vector2(3f, 2f));
-        ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(3f, 2f));
-
-        if (ImGui.BeginTable("##TTSLMainLayout", 2, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
+        var wide = ImGui.GetContentRegionAvail().X >= 900 * MaterialTheme.Metrics.Scale;
+        if (ImGui.BeginTable("##TTSLMainLayout", wide ? 2 : 1, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
         {
-            ImGui.TableSetupColumn("Snapshot", ImGuiTableColumnFlags.WidthStretch, 1.12f);
-            ImGui.TableSetupColumn("Party", ImGuiTableColumnFlags.WidthStretch, 0.88f);
-
+            ImGui.TableSetupColumn("Snapshot", ImGuiTableColumnFlags.WidthStretch, 1f);
+            if(wide) ImGui.TableSetupColumn("Party", ImGuiTableColumnFlags.WidthStretch, 1f);
             ImGui.TableNextColumn();
-            DrawPlayerPanel(player);
-            DrawRemoteHudPanel();
-
-            if (cfg.ShowConditionPanel)
-                DrawConditionPanel();
-
-            if (cfg.ShowRepairSummary)
-                DrawRepairPanel();
-
-            ImGui.TableNextColumn();
-
-            if (cfg.ShowPartyStatus)
-                DrawPartyPanel(snapshots);
-
-            if (cfg.ShowPartyRadar)
-                DrawRadarPanel(player, snapshots);
-
+            Panel(()=>DrawPlayerPanel(player),cfg.UiCompact?212:248);
+            Panel(DrawRemoteHudPanel,cfg.UiCompact?286:330);
+            if(cfg.ShowConditionPanel) Panel(DrawConditionPanel,cfg.UiCompact?104:128);
+            if(cfg.ShowRepairSummary) Panel(DrawRepairPanel,cfg.UiCompact?104:126);
+            if(wide) ImGui.TableNextColumn();
+            if(cfg.ShowPartyStatus) Panel(()=>DrawPartyPanel(snapshots), (cfg.UiCompact?100:124)+(cfg.UiCompact?44:52)*Math.Max(1,snapshots.Count));
+            if(cfg.ShowPartyRadar) Panel(()=>DrawRadarPanel(player,snapshots),cfg.UiCompact?360:440);
             ImGui.EndTable();
         }
-
-        ImGui.PopStyleVar(3);
 
         FinalizePendingWindowPlacement();
     }
 
     private void DrawHeader(string version)
     {
-        var discordWidth = ImGui.CalcTextSize("Discord").X + (ImGui.GetStyle().FramePadding.X * 2f);
-        ImGui.Text($"{PluginInfo.DisplayName} v{version}");
-        ImGui.SameLine(ImGui.GetWindowWidth() - (120f + discordWidth));
-        if (ImGui.SmallButton("Ko-fi"))
-            Process.Start(new ProcessStartInfo { FileName = PluginInfo.SupportUrl, UseShellExecute = true });
-        ImGui.SameLine();
-        if (ImGui.SmallButton("Discord"))
-            Process.Start(new ProcessStartInfo { FileName = PluginInfo.DiscordUrl, UseShellExecute = true });
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(PluginInfo.DiscordFeedbackNote);
+        var scale=MaterialTheme.Metrics.Scale; var start=ImGui.GetCursorScreenPos();
+        TtslPresentation.Brand(start+new Vector2(0,8)*scale,44*scale);
+        ImGui.SetCursorScreenPos(start+new Vector2(62,6)*scale);
+        using(UiText.Font(plugin.Configuration.UiCompact?UiFontRole.CompactTitle:UiFontRole.Title)) MaterialText.Text(PluginInfo.DisplayName);
+        ImGui.SameLine(); UiGui.TextDisabled("TTSL "+version);
+        var right=ImGui.GetWindowPos().X+ImGui.GetWindowSize().X-ImGui.GetStyle().WindowPadding.X;
+        var single=right-ImGui.GetItemRectMax().X>570*scale;
+        ImGui.SetCursorScreenPos(single?new Vector2(right-570*scale,start.Y+12*scale):start+new Vector2(0,TtslPresentation.HeaderHeight)*scale);
+        if (plugin.Configuration.UiCompactVisibleOnMainWindow)
+        {
+            var compact=plugin.Configuration.UiCompact;
+            if(UiGui.Checkbox("C##CompactMode",ref compact)){plugin.Configuration.UiCompact=compact;plugin.SaveConfiguration();}
+            if(ImGui.IsItemHovered()) UiGui.SetTooltip("Compact mode");
+        }
+        if (plugin.Configuration.UiLanguageVisibleOnMainWindow)
+        { Flow("Language"); plugin.Appearance.DrawLanguageSelector(); }
+        Flow("Transparency"); plugin.Appearance.DrawTransparencyToggle();
+        Flow("Ko-fi"); if(UiGui.SmallButton("Ko-fi")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.SupportUrl,UseShellExecute=true});
+        Flow("Discord"); if(UiGui.SmallButton("Discord")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.DiscordUrl,UseShellExecute=true});
+        if(ImGui.IsItemHovered()) UiGui.SetTooltip(PluginInfo.DiscordFeedbackNote);
+        ImGui.SetCursorScreenPos(start+new Vector2(0,(single?TtslPresentation.HeaderHeight:TtslPresentation.HeaderHeight+38))*scale);
+        ImGui.Spacing();
+    }
+
+    private static void Flow(string label,bool action=false)
+    {
+        var labelWidth=MaterialText.Measure(UiText.T(label)).X;
+        var needed=action?Math.Max(156*MaterialTheme.Metrics.Scale,labelWidth+76*MaterialTheme.Metrics.Scale):labelWidth+ImGui.GetFrameHeight()+32*MaterialTheme.Metrics.Scale;
+        if(ImGui.GetItemRectMax().X+needed<ImGui.GetWindowPos().X+ImGui.GetWindowSize().X-ImGui.GetStyle().WindowPadding.X) ImGui.SameLine();
+    }
+
+    private static void Panel(Action draw,float logicalHeight)
+    {
+        var s=MaterialTheme.Metrics.Scale;var start=ImGui.GetCursorScreenPos();var width=ImGui.GetContentRegionAvail().X;
+        var height=logicalHeight*s;
+        var dl=ImGui.GetWindowDrawList();
+        dl.ChannelsSplit(2);dl.ChannelsSetCurrent(1);
+        ImGui.SetCursorScreenPos(start+new Vector2(16,12)*s);
+        var window=ImGuiP.GetCurrentWindow();
+        var previousWorkRect=window.WorkRect;var previousContentRect=window.ContentRegionRect;
+        var innerRight=Math.Max(start.X+16*s,start.X+width-16*s);
+        var innerWorkRect=previousWorkRect;innerWorkRect.Max.X=Math.Min(innerWorkRect.Max.X,innerRight);
+        var innerContentRect=previousContentRect;innerContentRect.Max.X=Math.Min(innerContentRect.Max.X,innerRight);
+        window.WorkRect=innerWorkRect;window.ContentRegionRect=innerContentRect;
+        ImGui.PushClipRect(new Vector2(start.X+16*s,window.ClipRect.Min.Y),new Vector2(innerRight,window.ClipRect.Max.Y),true);
+        ImGui.BeginGroup();
+        ImGuiP.PushOverrideID(ImGuiP.GetCurrentWindow().ID);
+        try { draw(); }
+        finally
+        {
+            ImGui.PopID();ImGui.EndGroup();ImGui.PopClipRect();
+            window.WorkRect=previousWorkRect;window.ContentRegionRect=previousContentRect;
+        }
+        var bottom=Math.Max(start.Y+height,ImGui.GetItemRectMax().Y+12*s);
+        dl.ChannelsSetCurrent(0);TtslPresentation.Surface(start,new Vector2(start.X+width,bottom));dl.ChannelsMerge();
+        ImGui.SetCursorScreenPos(new Vector2(start.X,bottom));ImGui.Dummy(new Vector2(width, TtslPresentation.Gap*s));
     }
 
     private void DrawToolbar(Configuration cfg)
     {
+        using var actionFont=UiText.Font(UiFontRole.Action);
+        using var actions=MaterialControls.Push(TtslPresentation.Controls());
         var enabled = cfg.OverlayEnabled;
-        if (ImGui.Checkbox("HUD", ref enabled))
+        if (UiGui.ToggleAction("HUD", ref enabled, MaterialIcon.Monitor))
             plugin.SetOverlayEnabled(enabled, "main window");
 
-        ImGui.SameLine();
+        Flow("DTR",true);
         var dtrEnabled = cfg.DtrBarEnabled;
-        if (ImGui.Checkbox("DTR", ref dtrEnabled))
+        if (UiGui.ToggleAction("DTR", ref dtrEnabled, MaterialIcon.Chart))
         {
             cfg.DtrBarEnabled = dtrEnabled;
             plugin.SaveConfiguration();
         }
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Show TTSL status in the server info bar.");
+            UiGui.SetTooltip("Show TTSL status in the server info bar.");
 
-        ImGui.SameLine();
+        Flow("Krangle",true);
         var krangleEnabled = cfg.KrangleEnabled;
-        if (ImGui.Checkbox("Krangle", ref krangleEnabled))
+        if (UiGui.ToggleAction("Krangle", ref krangleEnabled, MaterialIcon.Refresh))
             plugin.SetKrangleEnabled(krangleEnabled, "main window");
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Obfuscate displayed player names for screenshots.");
+            UiGui.SetTooltip("Obfuscate displayed player names for screenshots.");
 
-        ImGui.SameLine();
+        Flow("Enumerate",true);
         var enumeratePartyMembers = cfg.EnumeratePartyMembers;
-        if (ImGui.Checkbox("Enumerate", ref enumeratePartyMembers))
+        if (UiGui.ToggleAction("Enumerate", ref enumeratePartyMembers, MaterialIcon.Table))
         {
             cfg.EnumeratePartyMembers = enumeratePartyMembers;
             plugin.SaveConfiguration();
         }
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Use party slot numbers on the radar.");
+            UiGui.SetTooltip("Use party slot numbers on the radar.");
 
-        ImGui.SameLine();
-        if (ImGui.SmallButton("Setup"))
+        Flow("Setup",true);
+        if (UiGui.Button("Setup",new Vector2(Math.Max(150,MaterialText.Measure(UiText.T("Setup")).X/MaterialTheme.Metrics.Scale+60),TtslPresentation.ControlHeight)*MaterialTheme.Metrics.Scale))
             plugin.OpenSetupWizard();
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Open the guided local/web HUD setup.");
+            UiGui.SetTooltip("Open the guided local/web HUD setup.");
 
-        ImGui.SameLine();
-        if (ImGui.SmallButton("Settings"))
+        Flow("Settings",true);
+        if (UiGui.Button("Settings",new Vector2(Math.Max(150,MaterialText.Measure(UiText.T("Settings")).X/MaterialTheme.Metrics.Scale+60),TtslPresentation.ControlHeight)*MaterialTheme.Metrics.Scale))
             plugin.ToggleConfigUi();
 
-        ImGui.SameLine();
-        ImGui.TextDisabled("/ttsl ws | /ttsl j");
+        Flow("Settings");
+        UiGui.TextDisabled("/ttsl ws | /ttsl j");
     }
 
     private void DrawPlayerPanel(ICharacter player)
     {
-        ImGui.TextColored(new Vector4(0.95f, 0.75f, 0.35f, 1f), "Snapshot");
-        ImGui.Text(plugin.GetDisplayName(player.Name.TextValue));
-        ImGui.TextDisabled($"{plugin.GetTerritoryName(Plugin.ClientState.TerritoryType)} ({Plugin.ClientState.TerritoryType})");
-
-        if (ImGui.BeginTable("##TTSLCoreMetrics", 2, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
+        Heading("Snapshot");
+        using var metricRows = MetricRows();
+        if(ImGui.BeginTable("##TTSLCoreMetrics",2,ImGuiTableFlags.SizingStretchProp|ImGuiTableFlags.NoSavedSettings))
         {
-            DrawMetricCell("Position", $"X {player.Position.X:F1} | Y {player.Position.Y:F1} | Z {player.Position.Z:F1}");
-            DrawMetricCell("HP", $"{player.CurrentHp:N0} / {player.MaxHp:N0} ({GetPercentText(player.CurrentHp, player.MaxHp)})");
-            DrawMetricCell("MP", $"{player.CurrentMp:N0} / {MaxMana:N0} ({GetPercentText(player.CurrentMp, MaxMana)})");
-            DrawMetricCell("Party", $"{Plugin.PartyList.Length} member(s) visible");
-            ImGui.EndTable();
+            MetricColumns("Character", "Area", "Position (X, Y, Z)", "HP", "MP", "Party Size");
+            Pair("Character",plugin.GetDisplayName(player.Name.TextValue));
+            var territoryId = Plugin.ClientState.TerritoryType;
+            Pair("Area", AreaDisplay(plugin.GetResolvedTerritoryName(territoryId), territoryId));
+            Pair("Position (X, Y, Z)",string.Format(UiText.Current.Culture,"{0:F1}, {1:F1}, {2:F1}",player.Position.X,player.Position.Y,player.Position.Z));
+            ImGui.TableNextColumn();UiGui.Text("HP");ImGui.TableNextColumn();
+            ImGui.ProgressBar(player.MaxHp>0?player.CurrentHp/(float)player.MaxHp:0,new Vector2(-1,18*MaterialTheme.Metrics.Scale),GetPercentText(player.CurrentHp,player.MaxHp));
+            ImGui.TableNextColumn();UiGui.Text("MP");ImGui.TableNextColumn();
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram,new Vector4(.25f,.8f,.42f,1));
+            ImGui.ProgressBar(player.CurrentMp/(float)MaxMana,new Vector2(-1,18*MaterialTheme.Metrics.Scale),string.Format(UiText.Current.Culture,"{0:N0} / {1:N0}",player.CurrentMp,MaxMana));ImGui.PopStyleColor();
+            Pair("Party Size",Plugin.PartyList.Length.ToString(UiText.Current.Culture));ImGui.EndTable();
         }
+    }
+    private static void Heading(string text)
+    {
+        var s=MaterialTheme.Metrics.Scale;var p=ImGui.GetCursorScreenPos();var ink=MaterialTheme.Current.Colors.OnSurface;
+        var icon=text switch { "Snapshot" or "Party"=>MaterialIcon.Person, "Conditions"=>MaterialIcon.Document, "Equipment"=>MaterialIcon.Settings, _=>MaterialIcon.Link };
+        if(text=="Party Radar")
+        {
+            var dl=ImGui.GetWindowDrawList();var centre=p+new Vector2(12,12)*s;var color=MaterialCanvas.Color(ink);
+            dl.AddCircle(centre,10*s,color,24,2*s);dl.AddCircle(centre,5*s,color,20,2*s);
+            dl.AddLine(centre-new Vector2(14,0)*s,centre+new Vector2(14,0)*s,color,s);
+            dl.AddLine(centre-new Vector2(0,14)*s,centre+new Vector2(0,14)*s,color,s);
+        }
+        else MaterialIcons.Draw(icon,p,24*s,text=="Remote HUD"?MaterialTheme.Current.Colors.Primary:ink);
+        ImGui.SetCursorScreenPos(p+new Vector2(36*s,0));
+        using(UiText.Font(UiFontRole.PluginName)) UiGui.Text(text);ImGui.Separator();
+    }
+    private static void Pair(string label,string value){ImGui.TableNextColumn();UiGui.Text(label);ImGui.TableNextColumn();MaterialText.Text(value);}
+
+    private static string AreaDisplay(string? resolvedName, uint territoryId)
+        => resolvedName ?? UiText.T("Area") + " " + territoryId.ToString(UiText.Current.Culture);
+
+    internal static string CurrentAccountDisplay(string account)
+        => account == "Unavailable" ? UiText.T("Unavailable") : account;
+
+    private static MaterialStyleScope MetricRows()
+    {
+        var scope = new MaterialStyleScope();
+        scope.Style(ImGuiStyleVar.CellPadding, new Vector2(ImGui.GetStyle().CellPadding.X, (TtslPresentation.Compact ? 2 : 3) * MaterialTheme.Metrics.Scale));
+        return scope;
+    }
+
+    private static void MetricColumns(params string[] labels)
+    {
+        var labelMinimum = labels.Max(label => MaterialText.Measure(UiText.T(label)).X);
+        var preferred = ImGui.GetContentRegionAvail().X * .34f;
+        ImGui.TableSetupColumn("##label", ImGuiTableColumnFlags.WidthFixed, Math.Max(preferred, MathF.Ceiling(labelMinimum)));
+        ImGui.TableSetupColumn("##value", ImGuiTableColumnFlags.WidthStretch);
     }
 
     private void DrawRemoteHudPanel()
     {
         var cfg = plugin.Configuration;
         var publisher = plugin.RemoteHudPublisher;
-        var remoteHealthy = cfg.RemoteServerEnabled && string.IsNullOrWhiteSpace(publisher.LastError) && publisher.LastSuccessUtc.HasValue;
 
-        ImGui.TextColored(remoteHealthy
-            ? new Vector4(0.35f, 0.95f, 0.55f, 1f)
-            : new Vector4(0.8f, 0.8f, 0.8f, 1f), "Remote HUD");
+        Heading("Remote HUD");
 
+        using var metricRows = MetricRows();
         if (ImGui.BeginTable("##TTSLRemoteMetrics", 2, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
         {
-            DrawMetricCell("State", GetRemoteStateText(cfg, publisher));
-            DrawMetricCell("Cadence", $"{Math.Max(100, cfg.RemotePositionIntervalMs)} ms | {Math.Max(500, cfg.RemoteFullSnapshotIntervalMs)} ms");
-            DrawMetricCell("Server", cfg.RemoteServerUrl);
-            DrawMetricCell("Client", publisher.LastCharacterKey == null ? "Waiting" : plugin.GetDisplayName(publisher.LastCharacterKey));
-            DrawMetricCell("Account", publisher.LastAccountId ?? plugin.GetCurrentAccountId());
-            DrawMetricCell("Web", $"{(cfg.AllowWebEchoCommands ? "Text on" : "Text off")} | {(cfg.AllowWebScreenshotRequests ? "Shot on" : "Shot off")} | {(cfg.AllowWebCctvStreaming ? "CCTV on" : "CCTV off")} | {(cfg.EnablePluginFullBodyFallback ? "FB on" : "FB off")}");
-            DrawMetricCell("Last OK", publisher.LastSuccessUtc.HasValue
-                ? publisher.LastSuccessUtc.Value.ToLocalTime().ToString("HH:mm:ss")
-                : "None");
+            MetricColumns("State", "Update Cadence", "Server", "Client", "Account", "Web Text", "Shot", "CCTV", "FB", "Last OK");
+            Pair("State", UiText.T(GetRemoteStateText(cfg, publisher)));
+            Pair("Update Cadence", string.Format(UiText.Current.Culture,"{0:N0} ms / {1:N0} ms",Math.Max(100,cfg.RemotePositionIntervalMs),Math.Max(500,cfg.RemoteFullSnapshotIntervalMs)));
+            Pair("Server", cfg.RemoteServerUrl);
+            Pair("Client", publisher.LastCharacterKey == null ? UiText.T("Waiting") : plugin.GetDisplayName(publisher.LastCharacterKey));
+            Pair("Account", publisher.LastAccountId ?? CurrentAccountDisplay(plugin.GetCurrentAccountId()));
+            Pair("Web Text",UiText.T(cfg.AllowWebEchoCommands?"On":"Off"));
+            Pair("Shot",UiText.T(cfg.AllowWebScreenshotRequests?"On":"Off"));
+            Pair("CCTV",UiText.T(cfg.AllowWebCctvStreaming?"On":"Off"));
+            Pair("FB",UiText.T(cfg.EnablePluginFullBodyFallback?"On":"Off"));
+            Pair("Last OK", publisher.LastSuccessUtc.HasValue
+                ? publisher.LastSuccessUtc.Value.ToLocalTime().ToString("T",UiText.Current.Culture)
+                : UiText.T("None"));
             ImGui.EndTable();
         }
 
-        if (ImGui.SmallButton("Open Web HUD"))
+        if (UiGui.SmallButton("Open Web HUD"))
             plugin.OpenRemoteViewer();
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Open the Python remote HUD in your default browser.");
+            UiGui.SetTooltip("Open the Python remote HUD in your default browser.");
 
         if (!string.IsNullOrWhiteSpace(publisher.LastError))
-            ImGui.TextColored(new Vector4(1f, 0.55f, 0.4f, 1f), $"Last error: {publisher.LastError}");
+            UiGui.TextColored(new Vector4(1f, 0.55f, 0.4f, 1f), $"Last error: {publisher.LastError}");
     }
 
     private void DrawConditionPanel()
     {
-        ImGui.TextColored(new Vector4(0.55f, 0.85f, 1f, 1f), "Conditions");
+        Heading("Conditions");
         if (ImGui.BeginTable("##TTSLConditions", 3, ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.NoSavedSettings))
         {
             DrawConditionCell("Combat", Plugin.Condition[ConditionFlag.InCombat]);
@@ -215,29 +297,31 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     private void DrawRepairPanel()
     {
         var summary = plugin.GetRepairSummary();
-        ImGui.TextColored(new Vector4(0.8f, 1f, 0.45f, 1f), "Equipment");
+        Heading("Equipment");
         if (!summary.MinCondition.HasValue)
         {
-            ImGui.TextDisabled("Durability unavailable.");
+            UiGui.TextDisabled("Durability unavailable.");
             return;
         }
 
-        if (ImGui.BeginTable("##TTSLRepair", 3, ImGuiTableFlags.SizingStretchSame | ImGuiTableFlags.NoSavedSettings))
+        using var metricRows = MetricRows();
+        if (ImGui.BeginTable("##TTSLRepair", 2, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.NoSavedSettings))
         {
-            DrawMetricCell("Min", $"{summary.MinCondition.Value}%");
-            DrawMetricCell("Avg", $"{summary.AverageCondition}%");
-            DrawMetricCell("Slots", summary.EquippedCount.ToString());
+            MetricColumns("Min", "Avg", "Slots");
+            Pair("Min", summary.MinCondition.Value.ToString("0",UiText.Current.Culture)+"%");
+            Pair("Avg", summary.AverageCondition.ToString("0",UiText.Current.Culture)+"%");
+            Pair("Slots", summary.EquippedCount.ToString(UiText.Current.Culture));
             ImGui.EndTable();
         }
     }
 
     private static void DrawPartyPanel(IReadOnlyList<PartySnapshot> snapshots)
     {
-        ImGui.TextColored(new Vector4(1f, 0.6f, 0.8f, 1f), "Party");
+        Heading("Party");
 
         if (snapshots.Count == 0)
         {
-            ImGui.TextDisabled("No party members detected.");
+            UiGui.TextDisabled("No party members detected.");
             return;
         }
 
@@ -245,37 +329,64 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         {
             ImGui.TableSetupColumn("#", ImGuiTableColumnFlags.WidthFixed, 24f);
             ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthStretch, 1.7f);
-            ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, 42f);
-            ImGui.TableSetupColumn("HP", ImGuiTableColumnFlags.WidthFixed, 58f);
-            ImGui.TableSetupColumn("Dist", ImGuiTableColumnFlags.WidthFixed, 48f);
+            ImGui.TableSetupColumn("Job", ImGuiTableColumnFlags.WidthFixed, 100f*MaterialTheme.Metrics.Scale);
+            ImGui.TableSetupColumn("HP", ImGuiTableColumnFlags.WidthFixed, 100f*MaterialTheme.Metrics.Scale);
+            ImGui.TableSetupColumn("Dist", ImGuiTableColumnFlags.WidthFixed, 120f*MaterialTheme.Metrics.Scale);
+            UiGui.TableHeadersRow((TtslPresentation.Compact?40:48)*MaterialTheme.Metrics.Scale);
 
             foreach (var snapshot in snapshots)
             {
-                ImGui.TableNextRow();
+                ImGui.TableNextRow(ImGuiTableRowFlags.None,(TtslPresentation.Compact?44:52)*MaterialTheme.Metrics.Scale);
 
                 ImGui.TableSetColumnIndex(0);
-                ImGui.TextUnformatted(snapshot.SlotText);
+                UiGui.TextUnformatted(snapshot.SlotText);
 
                 ImGui.TableSetColumnIndex(1);
-                ImGui.TextUnformatted(snapshot.DisplayName);
+                MaterialText.Text(snapshot.DisplayName);
 
                 ImGui.TableSetColumnIndex(2);
-                ImGui.TextUnformatted(snapshot.Job);
+                DrawJob(snapshot.Job);
 
                 ImGui.TableSetColumnIndex(3);
-                ImGui.TextUnformatted(snapshot.HpText);
+                UiGui.TextUnformatted(snapshot.HpText);
 
                 ImGui.TableSetColumnIndex(4);
-                ImGui.TextUnformatted(snapshot.DistanceText);
+                UiGui.TextUnformatted(snapshot.DistanceText);
             }
 
             ImGui.EndTable();
         }
     }
 
+    private static void DrawJob(string job)
+    {
+        var s=MaterialTheme.Metrics.Scale;var p=ImGui.GetCursorScreenPos();var dl=ImGui.GetWindowDrawList();
+        if(job is "GLA" or "MRD" or "PLD" or "WAR" or "DRK" or "GNB")
+            MaterialIcons.Draw(MaterialIcon.Shield,p,22*s,new Vector4(.18f,.52f,1,1));
+        else if(job is "CNJ" or "WHM" or "SCH" or "AST" or "SGE")
+        {
+            var color=MaterialCanvas.Color(new Vector4(.2f,.82f,.34f,1));
+            dl.AddLine(p+new Vector2(11,1)*s,p+new Vector2(11,21)*s,color,5*s);
+            dl.AddLine(p+new Vector2(1,11)*s,p+new Vector2(21,11)*s,color,5*s);
+        }
+        else if(job is "ARC" or "BRD" or "MCH" or "DNC")
+        {
+            var color=MaterialCanvas.Color(new Vector4(1,.75f,.19f,1));
+            dl.PathLineTo(p+new Vector2(3,2)*s);dl.PathBezierCubicCurveTo(p+new Vector2(21,3)*s,p+new Vector2(21,19)*s,p+new Vector2(3,20)*s);dl.PathStroke(color,ImDrawFlags.None,2*s);
+            dl.AddLine(p+new Vector2(3,2)*s,p+new Vector2(3,20)*s,color,s);dl.AddLine(p+new Vector2(1,18)*s,p+new Vector2(20,3)*s,color,2*s);
+        }
+        else if(job is "PGL" or "LNC" or "ROG" or "THM" or "ACN" or "MNK" or "DRG" or "NIN" or "SAM" or "RPR" or "VPR" or "BLM" or "SMN" or "RDM" or "PCT" or "BLU")
+        {
+            var color=MaterialCanvas.Color(new Vector4(1,.3f,.36f,1));
+            dl.AddLine(p+new Vector2(3,19)*s,p+new Vector2(19,3)*s,color,4*s);dl.AddLine(p+new Vector2(3,12)*s,p+new Vector2(10,19)*s,color,2*s);
+        }
+        else { MaterialText.Text(job);return; }
+        ImGui.SetCursorScreenPos(p+new Vector2(32*s,0));MaterialText.Text(job);
+    }
+
     private void DrawRadarPanel(ICharacter localPlayer, IReadOnlyList<PartySnapshot> snapshots)
     {
-        ImGui.TextColored(new Vector4(0.85f, 0.8f, 1f, 1f), "Radar");
+        Heading("Party Radar");
         var inCombat = Plugin.Condition[ConditionFlag.InCombat];
         var spanWidth = MathF.Max(5f, inCombat
             ? plugin.Configuration.RadarCombatWidthYalms
@@ -284,24 +395,30 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             ? plugin.Configuration.RadarCombatHeightYalms
             : plugin.Configuration.RadarOutOfCombatHeightYalms);
         var radarMode = inCombat ? "combat" : "travel";
-        ImGui.TextDisabled($"{(plugin.Configuration.EnumeratePartyMembers ? "Labels use party slots." : "Labels use party names.")} Showing {spanWidth:F0}y x {spanHeight:F0}y ({radarMode}).");
+        UiGui.TextDisabled(UiText.F("Showing {0:F0}y x {1:F0}y ({2}).",spanWidth,spanHeight,UiText.T(radarMode)));
 
         var availableWidth = MathF.Max(140f, ImGui.GetContentRegionAvail().X);
         var desiredEdge = Math.Clamp(plugin.Configuration.RadarBoxSizePixels, 96f, 320f);
         var canvasEdge = MathF.Min(availableWidth, desiredEdge);
-        var canvasSize = new Vector2(canvasEdge, canvasEdge);
+        var ratio=Math.Clamp(plugin.Configuration.RadarBoxSizePixels/160f,.6f,2f);
+        var canvasSize = new Vector2(Math.Max(canvasEdge, availableWidth-32*MaterialTheme.Metrics.Scale), (plugin.Configuration.UiCompact ? 260 : 330)*ratio*MaterialTheme.Metrics.Scale);
         var drawList = ImGui.GetWindowDrawList();
         var topLeft = ImGui.GetCursorScreenPos();
         var bottomRight = topLeft + canvasSize;
         var center = topLeft + (canvasSize / 2f);
         var halfSpanWidth = spanWidth / 2f;
         var halfSpanHeight = spanHeight / 2f;
-        var radius = (canvasSize.X / 2f) - 12f;
+        var radius = canvasSize / 2f - new Vector2(16f);
 
-        drawList.AddRectFilled(topLeft, bottomRight, ImGui.GetColorU32(new Vector4(0.08f, 0.08f, 0.11f, 1f)), 6f);
-        drawList.AddRect(topLeft, bottomRight, ImGui.GetColorU32(new Vector4(0.35f, 0.35f, 0.45f, 1f)), 6f);
-        drawList.AddLine(new Vector2(center.X, topLeft.Y + 6f), new Vector2(center.X, bottomRight.Y - 6f), ImGui.GetColorU32(new Vector4(0.3f, 0.3f, 0.4f, 1f)));
-        drawList.AddLine(new Vector2(topLeft.X + 6f, center.Y), new Vector2(bottomRight.X - 6f, center.Y), ImGui.GetColorU32(new Vector4(0.3f, 0.3f, 0.4f, 1f)));
+        drawList.AddRectFilled(topLeft, bottomRight, MaterialCanvas.Color(MaterialTheme.Current.Colors.SurfaceContainerLowest), 6f);
+        drawList.AddRect(topLeft, bottomRight, MaterialCanvas.Color(MaterialTheme.Current.Colors.OutlineVariant), 6f);
+        drawList.AddLine(new Vector2(center.X, topLeft.Y + 6f), new Vector2(center.X, bottomRight.Y - 6f), MaterialCanvas.Color(MaterialTheme.Current.Colors.OutlineVariant));
+        drawList.AddLine(new Vector2(topLeft.X + 6f, center.Y), new Vector2(bottomRight.X - 6f, center.Y), MaterialCanvas.Color(MaterialTheme.Current.Colors.OutlineVariant));
+        var compass=MaterialCanvas.Color(MaterialTheme.Current.Colors.OnSurface);var north=MaterialText.Measure("N");var east=MaterialText.Measure("E");
+        MaterialText.AddText(drawList,new Vector2(center.X-north.X*.5f,topLeft.Y+2),compass,"N");
+        MaterialText.AddText(drawList,new Vector2(center.X-north.X*.5f,bottomRight.Y-north.Y-2),compass,"S");
+        MaterialText.AddText(drawList,new Vector2(topLeft.X+2,center.Y-north.Y*.5f),compass,"W");
+        MaterialText.AddText(drawList,new Vector2(bottomRight.X-east.X-2,center.Y-north.Y*.5f),compass,"E");
         drawList.AddCircle(center, 4f, ImGui.GetColorU32(new Vector4(0.4f, 1f, 0.5f, 1f)), 16, 2f);
 
         foreach (var snapshot in snapshots)
@@ -312,10 +429,16 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             var relative = snapshot.Character.Position - localPlayer.Position;
             var normalized = new Vector2(relative.X / halfSpanWidth, relative.Z / halfSpanHeight);
             normalized = Vector2.Clamp(normalized, new Vector2(-1f, -1f), new Vector2(1f, 1f));
-            var dotPosition = center + new Vector2(normalized.X * radius, normalized.Y * radius);
+            var dotPosition = center + new Vector2(normalized.X * radius.X, normalized.Y * radius.Y);
 
             drawList.AddCircleFilled(dotPosition, 4f, ImGui.GetColorU32(new Vector4(1f, 0.7f, 0.2f, 1f)));
-            drawList.AddText(dotPosition + new Vector2(6f, -8f), ImGui.GetColorU32(new Vector4(1f, 1f, 1f, 1f)), snapshot.RadarLabel);
+            var labelSize = MaterialText.Measure(snapshot.RadarLabel);
+            var labelMinimum = topLeft + new Vector2(4f);
+            var labelMaximum = Vector2.Max(labelMinimum, bottomRight - labelSize - new Vector2(4f));
+            var labelPosition = Vector2.Clamp(dotPosition + new Vector2(6f, -8f), labelMinimum, labelMaximum);
+            drawList.PushClipRect(topLeft, bottomRight, true);
+            MaterialText.AddText(drawList,labelPosition, MaterialCanvas.Color(MaterialTheme.Current.Colors.OnSurface), snapshot.RadarLabel);
+            drawList.PopClipRect();
         }
 
         ImGui.Dummy(canvasSize);
@@ -345,12 +468,12 @@ public sealed class MainWindow : PositionedWindow, IDisposable
                 : GetPercentText(foundCharacter.CurrentHp, foundCharacter.MaxHp);
             var distanceText = foundCharacter == null
                 ? "--"
-                : $"{Vector3.Distance(localPlayer.Position, foundCharacter.Position):F1}y";
+                : Vector3.Distance(localPlayer.Position, foundCharacter.Position).ToString("F1",UiText.Current.Culture)+"y";
 
             snapshots.Add(new PartySnapshot
             {
                 Character = foundCharacter,
-                SlotText = slotNumber.ToString(),
+                SlotText = slotNumber.ToString(UiText.Current.Culture),
                 DisplayName = displayName,
                 Job = job,
                 HpText = hpText,
@@ -365,16 +488,16 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     private static void DrawMetricCell(string label, string value)
     {
         ImGui.TableNextColumn();
-        ImGui.TextDisabled(label);
-        ImGui.TextWrapped(value);
+        UiGui.TextDisabled(label);
+        UiGui.TextWrapped(value);
     }
 
     private static void DrawConditionCell(string label, bool active)
     {
         ImGui.TableNextColumn();
-        ImGui.TextColored(active
+        UiGui.TextColored(active
             ? new Vector4(0.35f, 0.95f, 0.45f, 1f)
-            : new Vector4(0.42f, 0.46f, 0.52f, 1f), label);
+            : MaterialTheme.Current.Colors.OnSurfaceVariant, UiText.T(label)+"  "+UiText.T(active?"Yes":"No"));
     }
 
     private static string GetPercentText(long current, long max)
@@ -382,7 +505,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         if (max <= 0)
             return "--";
 
-        return $"{(current / (float)max) * 100f:0}%";
+        return ((current/(float)max)*100f).ToString("0",UiText.Current.Culture)+"%";
     }
 
     private static string GetRemoteStateText(Configuration cfg, Services.RemoteHudPublisherService publisher)

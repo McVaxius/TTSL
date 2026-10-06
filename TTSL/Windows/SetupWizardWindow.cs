@@ -1,4 +1,7 @@
 using System;
+using TTSL.Ui;
+using AethertekUI;
+using AethertekUI.Dalamud;
 using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Windowing;
@@ -7,6 +10,7 @@ namespace TTSL.Windows;
 
 public sealed class SetupWizardWindow : Window, IDisposable
 {
+    private readonly MaterialWindowMotion windowMotion = new();
     private enum SetupMode
     {
         LocalHud,
@@ -79,11 +83,22 @@ public sealed class SetupWizardWindow : Window, IDisposable
         ResetDraft();
     }
 
+    public override void PreDraw()
+    {
+        var width = 560f * ImGui.GetIO().FontGlobalScale;
+        ImGui.SetNextWindowSizeConstraints(new Vector2(width, 0), new Vector2(width, float.MaxValue));
+        windowMotion.Prepare(this, reducedMotion: false, roundedCorners: true);
+    }
+
+    public override void PostDraw() => windowMotion.Restore(this);
+
     public override void Draw()
     {
+        windowMotion.DrawChrome();
+        UiGui.Title("TTSL Setup Wizard","TTSL "+UiText.T("Setup Wizard"));
         draft ??= WizardDraft.From(plugin.Configuration);
 
-        ImGui.Text($"Step {step + 1} of 3");
+        UiGui.Text($"Step {step + 1} of 3");
         ImGui.Separator();
         ImGui.Spacing();
 
@@ -103,7 +118,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
         if (!string.IsNullOrWhiteSpace(finishError))
         {
             ImGui.Spacing();
-            ImGui.TextColored(new Vector4(1f, 0.45f, 0.35f, 1f), finishError);
+            UiGui.TextColored(new Vector4(1f, 0.45f, 0.35f, 1f), finishError);
         }
 
         ImGui.Spacing();
@@ -113,8 +128,8 @@ public sealed class SetupWizardWindow : Window, IDisposable
 
     private void DrawModeStep()
     {
-        ImGui.Text("Where should TTSL show your HUD?");
-        ImGui.TextWrapped("Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are.");
+        UiGui.Text("Where should TTSL show your HUD?");
+        UiGui.TextWrapped("Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are.");
         ImGui.Spacing();
 
         DrawModeChoice(
@@ -133,19 +148,19 @@ public sealed class SetupWizardWindow : Window, IDisposable
 
     private void DrawModeChoice(string label, SetupMode mode, string description)
     {
-        if (ImGui.RadioButton(label, draft!.Mode == mode))
+        if (UiGui.RadioButton(label, draft!.Mode == mode))
             draft.Mode = mode;
 
         ImGui.Indent();
-        ImGui.TextDisabled(description);
+        UiGui.TextDisabled(description);
         ImGui.Unindent();
         ImGui.Spacing();
     }
 
     private void DrawPanelsStep()
     {
-        ImGui.Text("Choose the local HUD details you want ready");
-        ImGui.TextWrapped("These choices also control which sections are included when local HUD data is published.");
+        UiGui.Text("Choose the local HUD details you want ready");
+        UiGui.TextWrapped("These choices also control which sections are included when local HUD data is published.");
         ImGui.Spacing();
 
         DrawCheckbox("Condition panel", ref draft!.ShowConditionPanel);
@@ -160,8 +175,8 @@ public sealed class SetupWizardWindow : Window, IDisposable
     {
         var usesRemote = draft!.Mode != SetupMode.LocalHud;
 
-        ImGui.Text("Remote server and review");
-        ImGui.TextWrapped(usesRemote
+        UiGui.Text("Remote server and review");
+        UiGui.TextWrapped(usesRemote
             ? "Confirm the web server address and copy the existing launch command if you need to start the local server."
             : "Local HUD mode does not publish snapshots. The existing remote URL is preserved for later.");
         ImGui.Spacing();
@@ -169,14 +184,14 @@ public sealed class SetupWizardWindow : Window, IDisposable
         ImGui.BeginDisabled(!usesRemote);
         var remoteUrl = draft.RemoteServerUrl;
         ImGui.SetNextItemWidth(390f);
-        if (ImGui.InputText("Server URL", ref remoteUrl, 256))
+        if (UiGui.InputText("Server URL", ref remoteUrl, 256))
             draft.RemoteServerUrl = remoteUrl;
 
         var launchCommand = plugin.GetSuggestedServerLaunchCommand();
         ImGui.SetNextItemWidth(390f);
-        ImGui.InputText("Launch command", ref launchCommand, 1024, ImGuiInputTextFlags.ReadOnly);
+        UiGui.InputText("Launch command", ref launchCommand, 1024, ImGuiInputTextFlags.ReadOnly);
         ImGui.SameLine();
-        if (ImGui.SmallButton("Copy"))
+        if (UiGui.SmallButton("Copy"))
         {
             ImGui.SetClipboardText(launchCommand);
             Plugin.Log.Information("[TTSL] Copied server launch command from setup wizard.");
@@ -184,26 +199,26 @@ public sealed class SetupWizardWindow : Window, IDisposable
         ImGui.EndDisabled();
 
         ImGui.Spacing();
-        ImGui.Text("Review");
-        ImGui.BulletText($"Mode: {GetModeName(draft.Mode)}");
-        ImGui.BulletText($"Condition panel: {OnOff(draft.ShowConditionPanel)}");
-        ImGui.BulletText($"Repair summary: {OnOff(draft.ShowRepairSummary)}");
-        ImGui.BulletText($"Party status: {OnOff(draft.ShowPartyStatus)}");
-        ImGui.BulletText($"Party radar: {OnOff(draft.ShowPartyRadar)}");
-        ImGui.BulletText($"Krangle names: {OnOff(draft.KrangleEnabled)}");
-        ImGui.BulletText($"DTR entry: {OnOff(draft.DtrBarEnabled)}");
+        UiGui.Text("Review");
+        UiGui.BulletText(UiText.F("Mode: {0}", UiText.T(GetModeName(draft.Mode))));
+        UiGui.BulletText(UiText.F("Condition panel: {0}", UiText.T(OnOff(draft.ShowConditionPanel))));
+        UiGui.BulletText(UiText.F("Repair summary: {0}", UiText.T(OnOff(draft.ShowRepairSummary))));
+        UiGui.BulletText(UiText.F("Party status: {0}", UiText.T(OnOff(draft.ShowPartyStatus))));
+        UiGui.BulletText(UiText.F("Party radar: {0}", UiText.T(OnOff(draft.ShowPartyRadar))));
+        UiGui.BulletText(UiText.F("Krangle names: {0}", UiText.T(OnOff(draft.KrangleEnabled))));
+        UiGui.BulletText(UiText.F("DTR entry: {0}", UiText.T(OnOff(draft.DtrBarEnabled))));
         if (usesRemote)
         {
             var displayedUrl = string.IsNullOrWhiteSpace(draft.RemoteServerUrl)
                 ? "http://127.0.0.1:6942"
                 : draft.RemoteServerUrl.Trim();
-            ImGui.BulletText($"Server: {displayedUrl}");
+            UiGui.BulletText($"Server: {displayedUrl}");
         }
     }
 
     private void DrawNavigation()
     {
-        if (ImGui.Button("Cancel"))
+        if (UiGui.Button("Cancel"))
         {
             DismissFirstRunIfNeeded();
             ResetDraft();
@@ -214,7 +229,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
         if (step > 0)
         {
             ImGui.SameLine();
-            if (ImGui.Button("Back"))
+            if (UiGui.Button("Back"))
             {
                 step--;
                 finishError = string.Empty;
@@ -224,7 +239,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
         ImGui.SameLine();
         if (step < 2)
         {
-            if (ImGui.Button("Next"))
+            if (UiGui.Button("Next"))
             {
                 step++;
                 finishError = string.Empty;
@@ -233,7 +248,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
             return;
         }
 
-        if (!ImGui.Button("Finish"))
+        if (!UiGui.Button("Finish"))
             return;
 
         var completed = draft!;
@@ -278,7 +293,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
     }
 
     private static void DrawCheckbox(string label, ref bool value)
-        => ImGui.Checkbox(label, ref value);
+        => UiGui.Checkbox(label, ref value);
 
     private static string OnOff(bool value)
         => value ? "On" : "Off";

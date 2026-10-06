@@ -32,6 +32,18 @@ Current surface:
 
 This repo is still under active development.
 
+## Appearance
+
+The main HUD now uses the approved two-column snapshot/remote/conditions/equipment and party/radar composition. Narrow windows stack the same groups and retain native scrolling. The header includes a compact `C` checkbox, colour picker, and language selector; Settings mirrors those preferences. Segoe UI content fonts use Dalamud's managed atlas with host CJK and symbol coverage. The plugin waits for required fonts instead of accepting a temporary host font as the finished design.
+
+English, German, French, Spanish, Italian, Russian, Japanese, Korean, Simplified Chinese, Vietnamese, Brazilian Portuguese, Indonesian, Polish and Turkish resources are embedded in the plugin. The five additions appear as Tiếng Việt, Português (Brasil), Bahasa Indonesia, Polski and Türkçe after the original nine choices in the plugin, native server and generated browser HUD. Each catalog contains all 442 authored controls, help and status phrases. Colour changes derive decorative surfaces, borders, text, and accents together; health and live/stale/disconnected meanings retain their own colours. Plugin appearance preferences use the existing configuration save path. Account-scoped publisher and permission settings keep their existing ownership.
+
+The standalone native server has the same compact, colour, and language choices in its existing local configuration. Its Win32 controls resize with the window, wrap action rows, and show actual account/character/status/last-seen columns. The configured listening port supplies its HUD URL. The generated browser HUD stores its appearance choices beside its existing browser preferences and preserves Classic, Operator, Command, and Matrix modes, the five Inspector tabs, aggregate party rows, and source permission checks. `C` controls density; Show Details controls telemetry visibility. Both native and Python page producers contain the reviewed resource values.
+
+Build and source checks do not establish visual acceptance. Actual game, native-window, and browser screenshots at the stated scale remain required before accepting the redesign. No font files are distributed. Legacy Debug output continues to be mirrored under `TTSL/bin/Debug` by the existing project target.
+
+Local plugin builds require the sibling `aethertekUI` checkout and SDK 10.0.201. Enter its `eng/Enter-RepoEnv.ps1` environment and build `TTSL/TTSL.csproj` directly. The native route remains `cpp/build.bat [all|Debug|Release]`. GitHub builds check out the library beside TTSL using the repository's read-only `AETHERTEKUI_DEPLOY_KEY`; the existing public release keeps `latest.zip` and `latestServer.zip`.
+
 ## Setup Wizard
 
 TTSL automatically opens a three-step setup wizard once for each fresh installation after a character is available. After that, you can reopen it from the main window, the settings window, or any setup command above.

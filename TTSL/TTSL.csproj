@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>0.0.1.16</Version>
-    <FileVersion>0.0.1.16</FileVersion>
-    <AssemblyVersion>0.0.1.16</AssemblyVersion>
+    <Version>1.0.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <RootNamespace>TTSL</RootNamespace>
@@ -17,6 +17,11 @@
   <PropertyGroup>
     <DalamudLibPath Condition="$(DALAMUD_HOME) != ''">$(DALAMUD_HOME)/</DalamudLibPath>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\aethertekUI\src\AethertekUI\AethertekUI.csproj" />
+    <ProjectReference Include="..\..\aethertekUI\src\AethertekUI.Dalamud\AethertekUI.Dalamud.csproj" />
+    <EmbeddedResource Update="Localization\*.resx" WithCulture="false" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Remove="backups\**" />
     <Compile Remove="**\backups\**" />

@@ -1,0 +1,1352 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <data name="Blue" xml:space="preserve">
+    <value>파란색</value>
+  </data>
+  <data name="Character" xml:space="preserve">
+    <value>캐릭터</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>색상</value>
+  </data>
+  <data name="Compact mode" xml:space="preserve">
+    <value>컴팩트 모드</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>복사</value>
+  </data>
+  <data name="Copy Icon Guide Link" xml:space="preserve">
+    <value>아이콘 안내 링크 복사</value>
+  </data>
+  <data name="Custom RGB" xml:space="preserve">
+    <value>사용자 RGB</value>
+  </data>
+  <data name="Discord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>활성화</value>
+  </data>
+  <data name="Job" xml:space="preserve">
+    <value>직업</value>
+  </data>
+  <data name="Ko-fi" xml:space="preserve">
+    <value>Ko-fi</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>언어</value>
+  </data>
+  <data name="Loading UI fonts..." xml:space="preserve">
+    <value>UI 글꼴 로드 중...</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>없음</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>꺼짐</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>켜짐</value>
+  </data>
+  <data name="Pink" xml:space="preserve">
+    <value>분홍색</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="Teal" xml:space="preserve">
+    <value>청록색</value>
+  </data>
+  <data name="UI fonts failed to load. See the plugin log." xml:space="preserve">
+    <value>UI 글꼴 로드 실패. 플러그인 로그를 확인하세요.</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>계정</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>지역</value>
+  </data>
+  <data name="Avg" xml:space="preserve">
+    <value>평균</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>뒤로</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>취소</value>
+  </data>
+  <data name="Cast" xml:space="preserve">
+    <value>시전</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>클라이언트</value>
+  </data>
+  <data name="Combat" xml:space="preserve">
+    <value>전투</value>
+  </data>
+  <data name="Condition panel" xml:space="preserve">
+    <value>상태 패널</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="Copy Command" xml:space="preserve">
+    <value>명령 복사</value>
+  </data>
+  <data name="Copy DLL Path" xml:space="preserve">
+    <value>DLL 경로 복사</value>
+  </data>
+  <data name="DTR Bar Enabled" xml:space="preserve">
+    <value>DTR 바 표시</value>
+  </data>
+  <data name="DTR Bar Mode" xml:space="preserve">
+    <value>DTR 바 모드</value>
+  </data>
+  <data name="DTR Icons (max 3 characters)" xml:space="preserve">
+    <value>DTR 아이콘 (최대 3자)</value>
+  </data>
+  <data name="DTR status entry" xml:space="preserve">
+    <value>DTR 상태 항목</value>
+  </data>
+  <data name="Dead" xml:space="preserve">
+    <value>전투 불능</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>비활성</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>거리</value>
+  </data>
+  <data name="Download Native Server" xml:space="preserve">
+    <value>네이티브 서버 다운로드</value>
+  </data>
+  <data name="Durability unavailable." xml:space="preserve">
+    <value>내구도 정보를 사용할 수 없습니다.</value>
+  </data>
+  <data name="Duty" xml:space="preserve">
+    <value>임무</value>
+  </data>
+  <data name="Enable Thick Thighs Save Lives HUD" xml:space="preserve">
+    <value>Thick Thighs Save Lives HUD 활성화</value>
+  </data>
+  <data name="Enable plugin full-body fallback" xml:space="preserve">
+    <value>플러그인 전신 대체 캡처 활성화</value>
+  </data>
+  <data name="Enumerate" xml:space="preserve">
+    <value>번호 표시</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>장비</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>완료</value>
+  </data>
+  <data name="Icon Only" xml:space="preserve">
+    <value>아이콘만</value>
+  </data>
+  <data name="Icon+Text" xml:space="preserve">
+    <value>아이콘+텍스트</value>
+  </data>
+  <data name="Krangle displayed names" xml:space="preserve">
+    <value>표시 이름 숨기기</value>
+  </data>
+  <data name="Krangle displayed player names" xml:space="preserve">
+    <value>플레이어 이름 숨기기</value>
+  </data>
+  <data name="Last OK" xml:space="preserve">
+    <value>최근 성공</value>
+  </data>
+  <data name="Launch command" xml:space="preserve">
+    <value>실행 명령</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>연결됨</value>
+  </data>
+  <data name="Loaded DLL" xml:space="preserve">
+    <value>로드된 DLL</value>
+  </data>
+  <data name="Local + Web" xml:space="preserve">
+    <value>로컬 + 웹</value>
+  </data>
+  <data name="Local HUD" xml:space="preserve">
+    <value>로컬 HUD</value>
+  </data>
+  <data name="Local player is not available yet." xml:space="preserve">
+    <value>로컬 플레이어를 아직 사용할 수 없습니다.</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>최소</value>
+  </data>
+  <data name="Mount" xml:space="preserve">
+    <value>탈것</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>이름</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>다음</value>
+  </data>
+  <data name="No party members detected." xml:space="preserve">
+    <value>파티원이 감지되지 않았습니다.</value>
+  </data>
+  <data name="Open Web HUD" xml:space="preserve">
+    <value>웹 HUD 열기</value>
+  </data>
+  <data name="Overlay" xml:space="preserve">
+    <value>오버레이</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>파티</value>
+  </data>
+  <data name="Party Radar" xml:space="preserve">
+    <value>파티 레이더</value>
+  </data>
+  <data name="Party Size" xml:space="preserve">
+    <value>파티 인원</value>
+  </data>
+  <data name="Party status list" xml:space="preserve">
+    <value>파티 상태 목록</value>
+  </data>
+  <data name="Position (X, Y, Z)" xml:space="preserve">
+    <value>위치 (X, Y, Z)</value>
+  </data>
+  <data name="Publish failed" xml:space="preserve">
+    <value>게시 실패</value>
+  </data>
+  <data name="Queue" xml:space="preserve">
+    <value>대기열</value>
+  </data>
+  <data name="Remote HUD" xml:space="preserve">
+    <value>원격 HUD</value>
+  </data>
+  <data name="Remote HUD Server" xml:space="preserve">
+    <value>원격 HUD 서버</value>
+  </data>
+  <data name="Remote server and review" xml:space="preserve">
+    <value>원격 서버 및 검토</value>
+  </data>
+  <data name="Repair summary" xml:space="preserve">
+    <value>수리 요약</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>검토</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>서버</value>
+  </data>
+  <data name="Server URL" xml:space="preserve">
+    <value>서버 URL</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="Setup Wizard" xml:space="preserve">
+    <value>설정 마법사</value>
+  </data>
+  <data name="Show condition panel" xml:space="preserve">
+    <value>상태 패널 표시</value>
+  </data>
+  <data name="Show party radar" xml:space="preserve">
+    <value>파티 레이더 표시</value>
+  </data>
+  <data name="Show party status list" xml:space="preserve">
+    <value>파티 상태 목록 표시</value>
+  </data>
+  <data name="Show repair summary" xml:space="preserve">
+    <value>수리 요약 표시</value>
+  </data>
+  <data name="Slots" xml:space="preserve">
+    <value>슬롯</value>
+  </data>
+  <data name="Snapshot" xml:space="preserve">
+    <value>스냅샷</value>
+  </data>
+  <data name="Text Only" xml:space="preserve">
+    <value>텍스트만</value>
+  </data>
+  <data name="Update Cadence" xml:space="preserve">
+    <value>업데이트 주기</value>
+  </data>
+  <data name="Use Local Default" xml:space="preserve">
+    <value>로컬 기본값 사용</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>대기 중</value>
+  </data>
+  <data name="Web Text" xml:space="preserve">
+    <value>웹 텍스트</value>
+  </data>
+  <data name="Web Viewer Policy" xml:space="preserve">
+    <value>웹 뷰어 권한</value>
+  </data>
+  <data name="Web only" xml:space="preserve">
+    <value>웹 전용</value>
+  </data>
+  <data name="Bind host" xml:space="preserve">
+    <value>바인딩 호스트</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>포트</value>
+  </data>
+  <data name="Stale seconds" xml:space="preserve">
+    <value>만료 시간 (초)</value>
+  </data>
+  <data name="Start Server" xml:space="preserve">
+    <value>서버 시작</value>
+  </data>
+  <data name="Stop Server" xml:space="preserve">
+    <value>서버 중지</value>
+  </data>
+  <data name="Open HUD" xml:space="preserve">
+    <value>HUD 열기</value>
+  </data>
+  <data name="Screenshots" xml:space="preserve">
+    <value>스크린샷</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>캐시</value>
+  </data>
+  <data name="Extracted" xml:space="preserve">
+    <value>추출됨</value>
+  </data>
+  <data name="Copy URL" xml:space="preserve">
+    <value>URL 복사</value>
+  </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>진단</value>
+  </data>
+  <data name="Clear Stale" xml:space="preserve">
+    <value>만료 항목 지우기</value>
+  </data>
+  <data name="Clear Cache" xml:space="preserve">
+    <value>캐시 지우기</value>
+  </data>
+  <data name="Extract Assets" xml:space="preserve">
+    <value>에셋 추출</value>
+  </data>
+  <data name="Data folder" xml:space="preserve">
+    <value>데이터 폴더</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>찾아보기</value>
+  </data>
+  <data name="Open Data" xml:space="preserve">
+    <value>데이터 열기</value>
+  </data>
+  <data name="Reset Default" xml:space="preserve">
+    <value>기본값 복원</value>
+  </data>
+  <data name="Server running" xml:space="preserve">
+    <value>서버 실행 중</value>
+  </data>
+  <data name="Server stopped" xml:space="preserve">
+    <value>서버 중지됨</value>
+  </data>
+  <data name="Active clients" xml:space="preserve">
+    <value>활성 클라이언트</value>
+  </data>
+  <data name="Runtime log" xml:space="preserve">
+    <value>런타임 로그</value>
+  </data>
+  <data name="Server configuration" xml:space="preserve">
+    <value>서버 설정</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>작업</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>요약</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>지도</value>
+  </data>
+  <data name="Threat" xml:space="preserve">
+    <value>위협</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>운영자</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>명령</value>
+  </data>
+  <data name="Matrix" xml:space="preserve">
+    <value>매트릭스</value>
+  </data>
+  <data name="Classic" xml:space="preserve">
+    <value>클래식</value>
+  </data>
+  <data name="Show Details" xml:space="preserve">
+    <value>세부 정보 표시</value>
+  </data>
+  <data name="Hide Details" xml:space="preserve">
+    <value>세부 정보 숨기기</value>
+  </data>
+  <data name="Remote Monitor + Command Relay" xml:space="preserve">
+    <value>원격 모니터 및 명령 중계</value>
+  </data>
+  <data name="Remote HUD and command relay" xml:space="preserve">
+    <value>원격 HUD 및 명령 중계</value>
+  </data>
+  <data name="Send Text" xml:space="preserve">
+    <value>텍스트 보내기</value>
+  </data>
+  <data name="Request Screenshot" xml:space="preserve">
+    <value>스크린샷 요청</value>
+  </data>
+  <data name="Last Screenshot" xml:space="preserve">
+    <value>최근 스크린샷</value>
+  </data>
+  <data name="Last update" xml:space="preserve">
+    <value>최근 업데이트</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>만료됨</value>
+  </data>
+  <data name="Disconnected" xml:space="preserve">
+    <value>연결 해제됨</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>온라인</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>오프라인</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>대기</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>알 수 없음</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>준비됨</value>
+  </data>
+  <data name="Allow web viewer CCTV mode" xml:space="preserve">
+    <value>웹 CCTV 허용</value>
+  </data>
+  <data name="Allow web viewer screenshot requests" xml:space="preserve">
+    <value>웹 스크린샷 요청 허용</value>
+  </data>
+  <data name="Allow web viewer text and slash commands" xml:space="preserve">
+    <value>웹 텍스트 및 슬래시 명령 허용</value>
+  </data>
+  <data name="Combat radar height (yalms)" xml:space="preserve">
+    <value>전투 레이더 높이 (얄름)</value>
+  </data>
+  <data name="Combat radar width (yalms)" xml:space="preserve">
+    <value>전투 레이더 너비 (얄름)</value>
+  </data>
+  <data name="Travel radar height (yalms)" xml:space="preserve">
+    <value>비전투 레이더 높이 (얄름)</value>
+  </data>
+  <data name="Travel radar width (yalms)" xml:space="preserve">
+    <value>비전투 레이더 너비 (얄름)</value>
+  </data>
+  <data name="Radar box size (px)" xml:space="preserve">
+    <value>레이더 크기 (px)</value>
+  </data>
+  <data name="Fast position interval (ms)" xml:space="preserve">
+    <value>위치 갱신 간격 (ms)</value>
+  </data>
+  <data name="Full snapshot interval (ms)" xml:space="preserve">
+    <value>전체 스냅샷 간격 (ms)</value>
+  </data>
+  <data name="Python launch command" xml:space="preserve">
+    <value>Python 실행 명령</value>
+  </data>
+  <data name="Publish HUD snapshots to remote server" xml:space="preserve">
+    <value>HUD 스냅샷을 원격 서버에 게시</value>
+  </data>
+  <data name="Enumerate party members for radar labels" xml:space="preserve">
+    <value>레이더 라벨에 파티 번호 사용</value>
+  </data>
+  <data name="Display size of the local HUD radar box." xml:space="preserve">
+    <value>로컬 HUD 레이더 표시 크기.</value>
+  </data>
+  <data name="Show TTSL status in the server info bar." xml:space="preserve">
+    <value>서버 정보 바에 TTSL 상태 표시.</value>
+  </data>
+  <data name="Show or hide the server-info bar entry for TTSL." xml:space="preserve">
+    <value>서버 정보 바의 TTSL 항목 표시 또는 숨기기.</value>
+  </data>
+  <data name="Obfuscate displayed player names for screenshots." xml:space="preserve">
+    <value>스크린샷을 위해 플레이어 이름 숨기기.</value>
+  </data>
+  <data name="Use party slot numbers on the radar." xml:space="preserve">
+    <value>레이더에 파티 슬롯 번호 사용.</value>
+  </data>
+  <data name="Open the guided local/web HUD setup." xml:space="preserve">
+    <value>로컬/웹 HUD 설정 마법사 열기.</value>
+  </data>
+  <data name="Open the Python remote HUD in your default browser." xml:space="preserve">
+    <value>기본 브라우저에서 원격 HUD 열기.</value>
+  </data>
+  <data name="Guided local HUD and web publisher setup" xml:space="preserve">
+    <value>로컬 HUD 및 웹 게시 설정 안내</value>
+  </data>
+  <data name="Copies the best local server-launch command TTSL could resolve from this install." xml:space="preserve">
+    <value>TTSL이 설치에서 찾은 로컬 서버 실행 명령 복사.</value>
+  </data>
+  <data name="Copies the Lodestone blog link with suggested glyphs." xml:space="preserve">
+    <value>권장 글리프가 있는 Lodestone 블로그 링크 복사.</value>
+  </data>
+  <data name="Customize the glyphs used when TTSL is on or off." xml:space="preserve">
+    <value>TTSL 켜짐/꺼짐 글리프 사용자 지정.</value>
+  </data>
+  <data name="Where should TTSL show your HUD?" xml:space="preserve">
+    <value>TTSL HUD를 어디에 표시할까요?</value>
+  </data>
+  <data name="Choose the local HUD details you want ready" xml:space="preserve">
+    <value>로컬 HUD 세부 정보 선택</value>
+  </data>
+  <data name="These choices also control which sections are included when local HUD data is published." xml:space="preserve">
+    <value>이 선택은 게시되는 로컬 HUD 항목에도 적용됩니다.</value>
+  </data>
+  <data name="Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are." xml:space="preserve">
+    <value>시작 모드를 선택하세요. 여기에 표시된 설정만 변경되며 웹 권한, 갱신 간격, 레이더 크기, 아이콘과 라벨은 유지됩니다.</value>
+  </data>
+  <data name="Show the in-game TTSL window without publishing to the web server." xml:space="preserve">
+    <value>웹 게시 없이 게임 내 TTSL 창 표시.</value>
+  </data>
+  <data name="Show the in-game TTSL window and publish snapshots to the configured web server." xml:space="preserve">
+    <value>게임 내 TTSL 창을 표시하고 설정한 서버에 스냅샷 게시.</value>
+  </data>
+  <data name="Publish snapshots to the web server while keeping the in-game HUD hidden." xml:space="preserve">
+    <value>게임 내 HUD를 숨기고 웹 서버에 스냅샷 게시.</value>
+  </data>
+  <data name="Confirm the web server address and copy the existing launch command if you need to start the local server." xml:space="preserve">
+    <value>웹 서버 주소를 확인하고 로컬 서버 실행이 필요하면 명령을 복사하세요.</value>
+  </data>
+  <data name="Local HUD mode does not publish snapshots. The existing remote URL is preserved for later." xml:space="preserve">
+    <value>로컬 HUD 모드에서는 게시하지 않습니다. 기존 원격 URL은 유지됩니다.</value>
+  </data>
+  <data name="The active account changed. Reopen the wizard and review that account's settings." xml:space="preserve">
+    <value>활성 계정이 변경되었습니다. 마법사를 다시 열어 설정을 검토하세요.</value>
+  </data>
+  <data name="Step {0} of 3" xml:space="preserve">
+    <value>단계 {0} / 3</value>
+  </data>
+  <data name="Preview: {0}" xml:space="preserve">
+    <value>미리 보기: {0}</value>
+  </data>
+  <data name="Current account ID: {0}" xml:space="preserve">
+    <value>현재 계정 ID: {0}</value>
+  </data>
+  <data name="Publisher: {0}" xml:space="preserve">
+    <value>게시자: {0}</value>
+  </data>
+  <data name="Last error: {0}" xml:space="preserve">
+    <value>최근 오류: {0}</value>
+  </data>
+  <data name="Enabled Icon" xml:space="preserve">
+    <value>활성 아이콘</value>
+  </data>
+  <data name="Disabled Icon" xml:space="preserve">
+    <value>비활성 아이콘</value>
+  </data>
+  <data name="Age" xml:space="preserve">
+    <value>경과 시간</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>닫기</value>
+  </data>
+  <data name="Command View" xml:space="preserve">
+    <value>명령 보기</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>연결됨</value>
+  </data>
+  <data name="Dist" xml:space="preserve">
+    <value>거리</value>
+  </data>
+  <data name="Enmity" xml:space="preserve">
+    <value>적개심</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>흐름</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>초점</value>
+  </data>
+  <data name="Game path" xml:space="preserve">
+    <value>게임 경로</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>높음</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>호스트</value>
+  </data>
+  <data name="Inspector" xml:space="preserve">
+    <value>검사기</value>
+  </data>
+  <data name="Last Screenshot Sent" xml:space="preserve">
+    <value>최근 전송한 스크린샷</value>
+  </data>
+  <data name="Loose Clients" xml:space="preserve">
+    <value>그룹 외 클라이언트</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>낮음</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>중간</value>
+  </data>
+  <data name="Minimap" xml:space="preserve">
+    <value>미니맵</value>
+  </data>
+  <data name="No combat telemetry captured." xml:space="preserve">
+    <value>전투 데이터를 아직 수집하지 않았습니다.</value>
+  </data>
+  <data name="No party data captured yet." xml:space="preserve">
+    <value>파티 데이터를 아직 수집하지 않았습니다.</value>
+  </data>
+  <data name="Party Surface" xml:space="preserve">
+    <value>파티 화면</value>
+  </data>
+  <data name="Refresh failed" xml:space="preserve">
+    <value>새로 고침 실패</value>
+  </data>
+  <data name="Situation" xml:space="preserve">
+    <value>상황</value>
+  </data>
+  <data name="Slot" xml:space="preserve">
+    <value>슬롯</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>상태</value>
+  </data>
+  <data name="Surface Matrix" xml:space="preserve">
+    <value>화면 매트릭스</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>유형</value>
+  </data>
+  <data name="Vitals" xml:space="preserve">
+    <value>활력 정보</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>지역</value>
+  </data>
+  <data name="Asset plan unavailable." xml:space="preserve">
+    <value>에셋 계획을 사용할 수 없습니다.</value>
+  </data>
+  <data name="Extraction status unavailable." xml:space="preserve">
+    <value>추출 상태를 사용할 수 없습니다.</value>
+  </data>
+  <data name="Awaiting the first CCTV frame from the client." xml:space="preserve">
+    <value>클라이언트의 첫 CCTV 프레임 대기 중.</value>
+  </data>
+  <data name="CCTV frames appear here after the first live capture." xml:space="preserve">
+    <value>첫 라이브 캡처 후 CCTV 프레임이 여기에 표시됩니다.</value>
+  </data>
+  <data name="CCTV is not allowed for this client." xml:space="preserve">
+    <value>이 클라이언트는 CCTV를 허용하지 않습니다.</value>
+  </data>
+  <data name="CCTV uses rolling game-window captures and replaces the map pane until closed." xml:space="preserve">
+    <value>CCTV는 닫을 때까지 연속 게임 창 캡처로 지도를 대체합니다.</value>
+  </data>
+  <data name="Clients not currently represented inside an aggregate party surface." xml:space="preserve">
+    <value>통합 파티 화면에 포함되지 않은 클라이언트.</value>
+  </data>
+  <data name="Open the screenshot folder on the TTSL server host." xml:space="preserve">
+    <value>TTSL 서버 호스트의 스크린샷 폴더 열기.</value>
+  </data>
+  <data name="Plain text goes to /echo. Slash commands like /sit run verbatim" xml:space="preserve">
+    <value>텍스트는 /echo로 보내며 /sit 같은 명령은 그대로 실행됩니다.</value>
+  </data>
+  <data name="Select a client or aggregate party surface to inspect the detail pane." xml:space="preserve">
+    <value>클라이언트 또는 통합 파티를 선택해 세부 정보 보기.</value>
+  </data>
+  <data name="The tracked client does not currently expose target or hostile data." xml:space="preserve">
+    <value>이 클라이언트는 현재 대상이나 적 데이터를 제공하지 않습니다.</value>
+  </data>
+  <data name="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV." xml:space="preserve">
+    <value>이 클라이언트는 웹 텍스트, 명령, 스크린샷 또는 CCTV를 허용하지 않습니다.</value>
+  </data>
+  <data name="DTR" xml:space="preserve">
+    <value>DTR</value>
+  </data>
+  <data name="Krangle" xml:space="preserve">
+    <value>Krangle</value>
+  </data>
+  <data name="CCTV" xml:space="preserve">
+    <value>CCTV</value>
+  </data>
+  <data name="HUD" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="HP" xml:space="preserve">
+    <value>HP</value>
+  </data>
+  <data name="MP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="FB" xml:space="preserve">
+    <value>FB</value>
+  </data>
+  <data name="CMD" xml:space="preserve">
+    <value>CMD</value>
+  </data>
+  <data name="SS" xml:space="preserve">
+    <value>SS</value>
+  </data>
+  <data name="SSF" xml:space="preserve">
+    <value>SSF</value>
+  </data>
+  <data name="Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets." xml:space="preserve">
+    <value>저/중/고 품질의 라이브 영상으로 지도를 대체하도록 허용.</value>
+  </data>
+  <data name="Captures the current FFXIV game-window client area and uploads it to the Python server." xml:space="preserve">
+    <value>FFXIV 게임 창의 클라이언트 영역을 캡처해 Python 서버에 업로드.</value>
+  </data>
+  <data name="Clients are grouped by incoming account ID and character on the server page." xml:space="preserve">
+    <value>서버 페이지에서는 수신한 계정 ID와 캐릭터로 그룹화.</value>
+  </data>
+  <data name="Default view is 20y x 20y in combat and 50y x 50y out of combat." xml:space="preserve">
+    <value>기본값: 전투 중 20y × 20y, 비전투 시 50y × 50y.</value>
+  </data>
+  <data name="Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0." xml:space="preserve">
+    <value>LAN 뷰어를 사용하려면 복사한 명령의 --host 127.0.0.1을 --host 0.0.0.0으로 변경.</value>
+  </data>
+  <data name="For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first." xml:space="preserve">
+    <value>데이터/아이콘 추출에는 Python 모니터와 같은 PC의 클라이언트가 먼저 연결되어야 합니다.</value>
+  </data>
+  <data name="Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable." xml:space="preserve">
+    <value>기본적으로 꺼짐. Lodestone 전신 이미지가 없을 때만 CharacterInspect 미리 보기 캡처를 대체로 요청.</value>
+  </data>
+  <data name="Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim." xml:space="preserve">
+    <value>텍스트는 [TTSL Web] 접두사와 함께 /echo로 전송됩니다. 슬래시 입력은 그대로 전송됩니다.</value>
+  </data>
+  <data name="Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache." xml:space="preserve">
+    <value>웹 텍스트는 [TTSL Web]와 함께 /echo로 전송되며 슬래시 입력은 그대로 전송됩니다. 미추적 파티원의 스크린샷은 소스 클라이언트를 사용하고 CCTV는 같은 클라이언트의 연속 프레임 캐시를 사용합니다.</value>
+  </data>
+  <data name="Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser." xml:space="preserve">
+    <value>여러 클라이언트를 한 브라우저에서 볼 수 있도록 로컬 HUD 스냅샷을 Python 서버에 전송.</value>
+  </data>
+  <data name="TTSL settings are now stored per account ID once a live account is detected." xml:space="preserve">
+    <value>활성 계정 감지 후 TTSL 설정이 계정 ID별로 저장됩니다.</value>
+  </data>
+  <data name="The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar." xml:space="preserve">
+    <value>웹 HUD 상단 도구 모음에서 표시 크기와 전투/이동 범위를 실시간 변경할 수 있습니다.</value>
+  </data>
+  <data name="The server will cache the first same-PC game path it sees for the rest of that monitoring session." xml:space="preserve">
+    <value>서버는 처음 감지한 같은 PC의 게임 경로를 모니터링 세션 동안 유지합니다.</value>
+  </data>
+  <data name="Showing {0:F0}y x {1:F0}y ({2})." xml:space="preserve">
+    <value>표시 범위: {0:F0}y × {1:F0}y ({2}).</value>
+  </data>
+  <data name="Travel" xml:space="preserve"><value>이동 중</value></data>
+  <data name="Shot" xml:space="preserve">
+    <value>스크린샷</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>모드</value>
+  </data>
+  <data name="Krangle names" xml:space="preserve">
+    <value>이름 숨기기</value>
+  </data>
+  <data name="DTR entry" xml:space="preserve">
+    <value>DTR 항목</value>
+  </data>
+  <data name="Mode: {0}" xml:space="preserve">
+    <value>모드: {0}</value>
+  </data>
+  <data name="Condition panel: {0}" xml:space="preserve">
+    <value>상태 패널: {0}</value>
+  </data>
+  <data name="Repair summary: {0}" xml:space="preserve">
+    <value>수리 요약: {0}</value>
+  </data>
+  <data name="Party status: {0}" xml:space="preserve">
+    <value>파티 상태 목록: {0}</value>
+  </data>
+  <data name="Party radar: {0}" xml:space="preserve">
+    <value>파티 레이더: {0}</value>
+  </data>
+  <data name="Krangle names: {0}" xml:space="preserve">
+    <value>이름 숨기기: {0}</value>
+  </data>
+  <data name="DTR entry: {0}" xml:space="preserve">
+    <value>DTR 항목: {0}</value>
+  </data>
+  <data name="Server: {0}" xml:space="preserve">
+    <value>서버: {0}</value>
+  </data>
+  <data name="Release asset: latestServer.zip" xml:space="preserve">
+    <value>릴리스 파일: latestServer.zip</value>
+  </data>
+  <data name="(?)" xml:space="preserve">
+    <value>(?)</value>
+  </data>
+  <data name="TTSL " xml:space="preserve">
+    <value>TTSL </value>
+  </data>
+  <data name="In duty" xml:space="preserve">
+    <value>임무 중</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>대기열 중</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>사용 불가</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>잠김</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>텍스트</value>
+  </data>
+  <data name="Screens" xml:space="preserve">
+    <value>스크린샷</value>
+  </data>
+  <data name="Telemetry" xml:space="preserve">
+    <value>원격 측정</value>
+  </data>
+  <data name="Unknown race" xml:space="preserve">
+    <value>종족 알 수 없음</value>
+  </data>
+  <data name="Party Leader" xml:space="preserve">
+    <value>파티장</value>
+  </data>
+  <data name="Party Role" xml:space="preserve">
+    <value>파티 역할</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>클라이언트</value>
+  </data>
+  <data name="Asset plan pending." xml:space="preserve">
+    <value>에셋 계획 대기 중.</value>
+  </data>
+  <data name="Extraction idle." xml:space="preserve">
+    <value>추출 대기 중.</value>
+  </data>
+  <data name="Extracting..." xml:space="preserve">
+    <value>추출 중...</value>
+  </data>
+  <data name="Waiting for clients..." xml:space="preserve">
+    <value>클라이언트 대기 중...</value>
+  </data>
+  <data name="No updates yet." xml:space="preserve">
+    <value>아직 업데이트가 없습니다.</value>
+  </data>
+  <data name="All tracked clients are stale or disconnected." xml:space="preserve">
+    <value>모든 추적 클라이언트가 만료되었거나 연결 해제되었습니다.</value>
+  </data>
+  <data name="No aggregate party surfaces are available right now, so command view is showing compact client cards." xml:space="preserve">
+    <value>통합 파티가 없어 컴팩트 클라이언트 카드를 표시합니다.</value>
+  </data>
+  <data name="Aggregate parties are disabled. Enable the toggle above to unlock the full party command board." xml:space="preserve">
+    <value>파티 통합이 꺼져 있습니다. 위 토글을 켜 전체 파티 명령 보드를 사용하세요.</value>
+  </data>
+  <data name="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane." xml:space="preserve">
+    <value>텍스트는 [TTSL Web]와 함께 /echo로 전송되며 슬래시 입력은 그대로 전송됩니다. SS는 캐시 스크린샷 하나를 보내고 CCTV는 지도에 라이브 영상을 표시합니다.</value>
+  </data>
+  <data name="SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client." xml:space="preserve">
+    <value>SS와 CMD는 모니터링 중인 파티원을 직접 대상으로 합니다. CCTV는 닫을 때까지 지도를 대체합니다. 미추적 파티원의 버튼은 해당 클라이언트가 추적될 때까지 비활성화됩니다.</value>
+  </data>
+  <data name="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback." xml:space="preserve">
+    <value>미추적 파티원도 HP, MP, 위치, 레벨과 직업 정보를 갖습니다. Lodestone 초상화는 해당 월드나 대체 소스 클라이언트 월드를 사용해 백그라운드에서 가져옵니다.</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor." xml:space="preserve">
+    <value>연결된 클라이언트가 없습니다. 서버를 시작하고 TTSL URL을 설정한 뒤 원격 게시를 켜세요. 데이터/아이콘 추출에는 같은 PC의 클라이언트가 필요합니다.</value>
+  </data>
+  <data name="Data folder is already active:" xml:space="preserve">
+    <value>데이터 폴더가 이미 활성화됨:</value>
+  </data>
+  <data name="Data folder saved for next launch:" xml:space="preserve">
+    <value>다음 실행을 위해 데이터 폴더 저장됨:</value>
+  </data>
+  <data name="Restart TTSL Native Server to use it. Current session keeps using:" xml:space="preserve">
+    <value>적용하려면 TTSL Native Server를 다시 시작하세요. 현재 세션은 다음을 사용합니다:</value>
+  </data>
+  <data name="Failed to register TTSL native server window class." xml:space="preserve">
+    <value>TTSL 창 클래스 등록 실패.</value>
+  </data>
+  <data name="Failed to create TTSL native server window." xml:space="preserve">
+    <value>TTSL 창 생성 실패.</value>
+  </data>
+  <data name="Click to toggle the HUD." xml:space="preserve">
+    <value>클릭하여 HUD 전환.</value>
+  </data>
+  <data name="Text Only: 'TTSL: On/Off'&#10;Icon+Text: '&lt;icon&gt; TTSL'&#10;Icon Only: '&lt;icon&gt;'" xml:space="preserve">
+    <value>텍스트만: 'TTSL: On/Off'
+아이콘+텍스트: '&lt;icon&gt; TTSL'
+아이콘만: '&lt;icon&gt;'</value>
+  </data>
+  <data name="Busy" xml:space="preserve">
+    <value>작업 중</value>
+  </data>
+  <data name="Current target" xml:space="preserve">
+    <value>현재 대상</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>연결 해제</value>
+  </data>
+  <data name="Extra" xml:space="preserve">
+    <value>추가</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>추출</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>라벨</value>
+  </data>
+  <data name="Lookup" xml:space="preserve">
+    <value>조회</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>없음</value>
+  </data>
+  <data name="Monitored" xml:space="preserve">
+    <value>모니터링 중</value>
+  </data>
+  <data name="No current target" xml:space="preserve">
+    <value>현재 대상 없음</value>
+  </data>
+  <data name="No radar data" xml:space="preserve">
+    <value>레이더 데이터 없음</value>
+  </data>
+  <data name="No repair data" xml:space="preserve">
+    <value>수리 데이터 없음</value>
+  </data>
+  <data name="No tracked target" xml:space="preserve">
+    <value>추적 대상 없음</value>
+  </data>
+  <data name="Not casting" xml:space="preserve">
+    <value>시전 중 아님</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>경로</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>일시 중지</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>권한</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>위치</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>수리</value>
+  </data>
+  <data name="Solo" xml:space="preserve">
+    <value>솔로</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>소스</value>
+  </data>
+  <data name="Source host" xml:space="preserve">
+    <value>소스 호스트</value>
+  </data>
+  <data name="Stranger" xml:space="preserve">
+    <value>미추적</value>
+  </data>
+  <data name="Strangers" xml:space="preserve">
+    <value>미추적 파티원</value>
+  </data>
+  <data name="Submitting" xml:space="preserve">
+    <value>전송 중</value>
+  </data>
+  <data name="Targeting you" xml:space="preserve">
+    <value>나를 대상으로 지정</value>
+  </data>
+  <data name="Texture" xml:space="preserve">
+    <value>텍스처</value>
+  </data>
+  <data name="Tracked" xml:space="preserve">
+    <value>추적 중</value>
+  </data>
+  <data name="Tracked client" xml:space="preserve">
+    <value>추적 클라이언트</value>
+  </data>
+  <data name="Unknown host" xml:space="preserve">
+    <value>호스트 알 수 없음</value>
+  </data>
+  <data name="Unknown time" xml:space="preserve">
+    <value>시간 알 수 없음</value>
+  </data>
+  <data name="Unknown zone" xml:space="preserve">
+    <value>지역 알 수 없음</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>보기</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>표시됨</value>
+  </data>
+  <data name="Remote Control" xml:space="preserve">
+    <value>원격 제어</value>
+  </data>
+  <data name="Field Map" xml:space="preserve">
+    <value>지역 지도</value>
+  </data>
+  <data name="Source Minimap" xml:space="preserve">
+    <value>소스 미니맵</value>
+  </data>
+  <data name="Aggregate parties" xml:space="preserve">
+    <value>파티 통합</value>
+  </data>
+  <data name="Krangle names/account IDs" xml:space="preserve">
+    <value>이름/계정 ID 숨기기</value>
+  </data>
+  <data name="Krangle enemy names" xml:space="preserve">
+    <value>적 이름 숨기기</value>
+  </data>
+  <data name="Show stale/disconnected" xml:space="preserve">
+    <value>만료/연결 해제 항목 표시</value>
+  </data>
+  <data name="Icons" xml:space="preserve">
+    <value>아이콘</value>
+  </data>
+  <data name="Total HP" xml:space="preserve">
+    <value>총 HP</value>
+  </data>
+  <data name="Total MP" xml:space="preserve">
+    <value>총 MP</value>
+  </data>
+  <data name="Party Members" xml:space="preserve">
+    <value>파티원</value>
+  </data>
+  <data name="Waiting for local player" xml:space="preserve">
+    <value>로컬 플레이어 대기 중</value>
+  </data>
+  <data name="Connected to {0}" xml:space="preserve">
+    <value>{0}에 연결됨</value>
+  </data>
+  <data name="Retrying in {0}s" xml:space="preserve">
+    <value>{0}초 후 재시도</value>
+  </data>
+  <data name="Box px" xml:space="preserve">
+    <value>레이더 크기 (px)</value>
+  </data>
+  <data name="Combat W" xml:space="preserve">
+    <value>전투 레이더 너비 (얄름)</value>
+  </data>
+  <data name="Combat H" xml:space="preserve">
+    <value>전투 레이더 높이 (얄름)</value>
+  </data>
+  <data name="Travel W" xml:space="preserve">
+    <value>비전투 레이더 너비 (얄름)</value>
+  </data>
+  <data name="Travel H" xml:space="preserve">
+    <value>비전투 레이더 높이 (얄름)</value>
+  </data>
+  <data name="Aggregate-party stranger actions route through the source client." xml:space="preserve">
+    <value>미추적 파티원 작업은 소스 클라이언트를 통해 실행됩니다.</value>
+  </data>
+  <data name="Extraction started." xml:space="preserve">
+    <value>추출 시작됨.</value>
+  </data>
+  <data name="Map texture not extracted yet." xml:space="preserve">
+    <value>지도 텍스처를 아직 추출하지 않았습니다.</value>
+  </data>
+  <data name="No map data captured yet." xml:space="preserve">
+    <value>지도 데이터를 아직 수집하지 않았습니다.</value>
+  </data>
+  <data name="Opened screenshot folder on the server host." xml:space="preserve">
+    <value>서버 호스트의 스크린샷 폴더를 열었습니다.</value>
+  </data>
+  <data name="Party telemetry + Lodestone lookup" xml:space="preserve">
+    <value>파티 데이터 + Lodestone 조회</value>
+  </data>
+  <data name="Queued remote action." xml:space="preserve">
+    <value>원격 작업을 대기열에 추가했습니다.</value>
+  </data>
+  <data name="Screenshot requests are not allowed for this client." xml:space="preserve">
+    <value>이 클라이언트는 스크린샷 요청을 허용하지 않습니다.</value>
+  </data>
+  <data name="Source Remote Control" xml:space="preserve">
+    <value>소스 원격 제어</value>
+  </data>
+  <data name="Web text or slash commands are not allowed for this client." xml:space="preserve">
+    <value>이 클라이언트는 웹 텍스트나 슬래시 명령을 허용하지 않습니다.</value>
+  </data>
+  <data name="same-PC game path not captured yet" xml:space="preserve">
+    <value>같은 PC의 게임 경로를 아직 찾지 못함</value>
+  </data>
+  <data name="see server log" xml:space="preserve">
+    <value>서버 로그 확인</value>
+  </data>
+  <data name="Scroll down to &quot;The Dumpster Fire&quot; channel to discuss issues / suggestions for specific plugins." xml:space="preserve">
+    <value>아래 "The Dumpster Fire" 채널에서 플러그인 문제와 제안을 논의하세요.</value>
+  </data>
+  <data name="Failed to open screenshot folder: {0}" xml:space="preserve">
+    <value>스크린샷 폴더를 열 수 없습니다: {0}</value>
+  </data>
+  <data name="Extraction request failed: {0}" xml:space="preserve">
+    <value>추출 요청 실패: {0}</value>
+  </data>
+  <data name="Remote action failed: {0}" xml:space="preserve">
+    <value>원격 작업 실패: {0}</value>
+  </data>
+  <data name="Last update {0} · {1}" xml:space="preserve">
+    <value>최근 업데이트 {0} · {1}</value>
+  </data>
+  <data name="Stranger source locked to first monitored client: {0} · Connected {1}" xml:space="preserve">
+    <value>미추적 파티원 소스가 첫 모니터링 클라이언트로 고정됨: {0} · 연결 {1}</value>
+  </data>
+  <data name="{0} clients · {1} live · {2} stale/disconnected" xml:space="preserve">
+    <value>클라이언트 {0} · 연결 {1} · 만료/연결 해제 {2}</value>
+  </data>
+  <data name="Generated {0} · stale after {1}s · {2}" xml:space="preserve">
+    <value>생성 {0} · {1}초 후 만료 · {2}</value>
+  </data>
+  <data name="Last CCTV Frame" xml:space="preserve">
+    <value>최근 CCTV 프레임</value>
+  </data>
+  <data name="Close CCTV for {0}" xml:space="preserve">
+    <value>{0}의 CCTV 닫기</value>
+  </data>
+  <data name="Replace the map pane with live CCTV for {0}" xml:space="preserve">
+    <value>지도를 {0}의 라이브 CCTV로 대체</value>
+  </data>
+  <data name="Request a screenshot from {0}" xml:space="preserve">
+    <value>{0}에게 스크린샷 요청</value>
+  </data>
+  <data name="Open a command prompt for {0}" xml:space="preserve">
+    <value>{0}의 명령 프롬프트 열기</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor." xml:space="preserve">
+    <value>연결된 클라이언트가 없습니다. 서버를 시작하고 TTSL URL을 설정한 뒤 원격 게시를 켜세요. 데이터/아이콘 추출에는 같은 PC의 클라이언트가 필요합니다.</value>
+  </data>
+  <data name="Select TTSL Native Server data folder" xml:space="preserve">
+    <value>TTSL Native Server 데이터 폴더 선택</value>
+  </data>
+  <data name="Invalid data folder: {0}" xml:space="preserve">
+    <value>잘못된 데이터 폴더: {0}</value>
+  </data>
+  <data name="Party groups" xml:space="preserve">
+    <value>파티 그룹</value>
+  </data>
+  <data name="Clan" xml:space="preserve">
+    <value>부족</value>
+  </data>
+  <data name="Race" xml:space="preserve">
+    <value>종족</value>
+  </data>
+  <data name="Working..." xml:space="preserve">
+    <value>처리 중...</value>
+  </data>
+  <data name="Targeting party member {0}" xml:space="preserve">
+    <value>파티원 {0} 대상 지정</value>
+  </data>
+  <data name="Live CCTV for {0}" xml:space="preserve">
+    <value>{0} 실시간 CCTV</value>
+  </data>
+  <data name="Send text or slash command to {0}" xml:space="preserve">
+    <value>{0}에게 텍스트 또는 슬래시 명령 보내기</value>
+  </data>
+  <data name="Targeting {0}" xml:space="preserve">
+    <value>대상: {0}</value>
+  </data>
+  <data name="Lodestone body image for {0}" xml:space="preserve">
+    <value>{0}의 Lodestone 전신 이미지</value>
+  </data>
+  <data name="Party telemetry available · Lodestone {0} · Direct actions disabled." xml:space="preserve">
+    <value>파티 정보 사용 가능 · Lodestone {0} · 직접 작업 비활성화.</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>실패</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>대기 중</value>
+  </data>
+  <data name="Refreshing" xml:space="preserve">
+    <value>새로 고치는 중</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>일부 완료</value>
+  </data>
+  <data name="Unresolved" xml:space="preserve">
+    <value>미해결</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>전체</value>
+  </data>
+  <data name="Ally" xml:space="preserve">
+    <value>아군</value>
+  </data>
+  <data name="Hostile" xml:space="preserve">
+    <value>적</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>교전 중</value>
+  </data>
+  <data name="{0} live" xml:space="preserve">
+    <value>{0} 온라인</value>
+  </data>
+  <data name="Plugin fallback ready" xml:space="preserve">
+    <value>플러그인 대체 이미지 준비 완료</value>
+  </data>
+  <data name="Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix." xml:space="preserve">
+    <value>클라이언트 4~12개를 위한 네 가지 보기: 기본 카드, 운영자 패널, 파티 명령 패널, 간결한 표.</value>
+  </data>
+  <data name="Native asset extraction started." xml:space="preserve">
+    <value>네이티브 리소스 추출을 시작했습니다.</value>
+  </data>
+  <data name="Loading race names from native EXD data..." xml:space="preserve">
+    <value>EXD 데이터에서 종족 이름을 불러오는 중...</value>
+  </data>
+  <data name="Loading tribe names from native EXD data..." xml:space="preserve">
+    <value>EXD 데이터에서 부족 이름을 불러오는 중...</value>
+  </data>
+  <data name="Loaded {0} race name row(s) from native EXD data." xml:space="preserve">
+    <value>EXD 데이터에서 종족 이름 {0}개를 불러왔습니다.</value>
+  </data>
+  <data name="Loaded {0} tribe name row(s) from native EXD data." xml:space="preserve">
+    <value>EXD 데이터에서 부족 이름 {0}개를 불러왔습니다.</value>
+  </data>
+  <data name="Extracting job icon {0}/{1} ({2})..." xml:space="preserve">
+    <value>직업 아이콘 {0}/{1} ({2}) 추출 중...</value>
+  </data>
+  <data name="Extracting map texture {0}/{1} ({2})..." xml:space="preserve">
+    <value>지도 텍스처 {0}/{1} ({2}) 추출 중...</value>
+  </data>
+  <data name="Generating race icon {0}/{1}..." xml:space="preserve">
+    <value>종족 아이콘 {0}/{1} 생성 중...</value>
+  </data>
+  <data name="Generating tribe icon {0}/{1}..." xml:space="preserve">
+    <value>부족 아이콘 {0}/{1} 생성 중...</value>
+  </data>
+  <data name="Native asset extraction {0}: {1} extracted, {2} failed." xml:space="preserve">
+    <value>네이티브 리소스 추출 {0}: 추출 {1}개, 실패 {2}개.</value>
+  </data>
+  <data name="Writing native asset extraction summary..." xml:space="preserve">
+    <value>네이티브 리소스 추출 요약을 기록하는 중...</value>
+  </data>
+  <data name="Native asset extraction failed: {0}" xml:space="preserve">
+    <value>네이티브 리소스 추출 실패: {0}</value>
+  </data>
+  <data name="Launching extractor with the current session plan." xml:space="preserve">
+    <value>현재 세션 계획으로 추출기를 시작합니다.</value>
+  </data>
+  <data name="Asset extraction started." xml:space="preserve">
+    <value>리소스 추출을 시작했습니다.</value>
+  </data>
+  <data name="Extractor finished." xml:space="preserve">
+    <value>추출을 완료했습니다.</value>
+  </data>
+  <data name="Extractor failed." xml:space="preserve">
+    <value>추출에 실패했습니다.</value>
+  </data>
+  <data name="Summary written to {0}" xml:space="preserve">
+    <value>요약을 {0}에 기록했습니다</value>
+  </data>
+  <data name="Failed {0} file(s). See {1}." xml:space="preserve">
+    <value>파일 {0}개 실패. {1} 참조.</value>
+  </data>
+  <data name="Extractor failed: {0}" xml:space="preserve">
+    <value>추출 실패: {0}</value>
+  </data>
+  <data name="No extracted asset summary found yet." xml:space="preserve">
+    <value>리소스 추출 요약이 아직 없습니다.</value>
+  </data>
+  <data name="Native asset extraction is already running." xml:space="preserve">
+    <value>네이티브 리소스 추출이 이미 실행 중입니다.</value>
+  </data>
+  <data name="Asset extraction is already running." xml:space="preserve">
+    <value>리소스 추출이 이미 실행 중입니다.</value>
+  </data>
+  <data name="Same-PC game path has not been captured yet." xml:space="preserve">
+    <value>이 PC의 게임 경로가 아직 수집되지 않았습니다.</value>
+  </data>
+  <data name="Extractor script not found: {0}" xml:space="preserve">
+    <value>추출 스크립트를 찾을 수 없음: {0}</value>
+  </data>
+  <data name="Last asset extraction status was {0}." xml:space="preserve">
+    <value>지난 리소스 추출 상태: {0}.</value>
+  </data>
+  <data name="Target client is not currently tracked." xml:space="preserve">
+    <value>대상 클라이언트가 현재 추적되지 않습니다.</value>
+  </data>
+  <data name="That client does not allow web text or slash commands." xml:space="preserve">
+    <value>이 클라이언트는 웹 텍스트 또는 명령을 허용하지 않습니다.</value>
+  </data>
+  <data name="That client does not allow web CCTV streaming." xml:space="preserve">
+    <value>이 클라이언트는 웹 CCTV를 허용하지 않습니다.</value>
+  </data>
+  <data name="That client does not allow web screenshot requests." xml:space="preserve">
+    <value>이 클라이언트는 웹 스크린샷 요청을 허용하지 않습니다.</value>
+  </data>
+  <data name="Text is empty." xml:space="preserve">
+    <value>텍스트가 비어 있습니다.</value>
+  </data>
+  <data name="Queued web text/slash command." xml:space="preserve">
+    <value>웹 텍스트/명령을 대기열에 추가했습니다.</value>
+  </data>
+  <data name="Queued CCTV frame request." xml:space="preserve">
+    <value>CCTV 프레임 요청을 대기열에 추가했습니다.</value>
+  </data>
+  <data name="Queued screenshot request." xml:space="preserve">
+    <value>스크린샷 요청을 대기열에 추가했습니다.</value>
+  </data>
+  <data name="Unsupported action type: {0}" xml:space="preserve">
+    <value>지원하지 않는 작업 유형: {0}</value>
+  </data>
+  <data name="Auto-extracting {0} for the current session." xml:space="preserve">
+    <value>현재 세션의 {0}을 자동으로 추출합니다.</value>
+  </data>
+  <data name="Race name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>종족 이름에 생성된 라벨 사용: {0}</value>
+  </data>
+  <data name="Tribe name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>부족 이름에 생성된 라벨 사용: {0}</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>찾을 수 없음</value>
+  </data>
+<data name="Server is already running." xml:space="preserve"><value>서버가 이미 실행 중입니다.</value></data>
+<data name="WSAStartup failed: {0}" xml:space="preserve"><value>WSAStartup 실패: {0}</value></data>
+<data name="socket() failed: {0}" xml:space="preserve"><value>socket() 실패: {0}</value></data>
+<data name="Bind host must be an IPv4 address such as 127.0.0.1 or 0.0.0.0." xml:space="preserve"><value>바인딩 주소는 127.0.0.1 또는 0.0.0.0과 같은 IPv4 주소여야 합니다.</value></data>
+<data name="bind() failed on {0} with {1}" xml:space="preserve"><value>{0}에서 bind() 실패: {1}</value></data>
+<data name="listen() failed: {0}" xml:space="preserve"><value>listen() 실패: {0}</value></data>
+<data name="Data folder path is empty." xml:space="preserve"><value>데이터 폴더 경로가 비어 있습니다.</value></data>
+<data name="Failed to create {0}: {1}" xml:space="preserve"><value>{0} 생성 실패: {1}</value></data>
+<data name="{0} is not a folder." xml:space="preserve"><value>{0}은(는) 폴더가 아닙니다.</value></data>
+  <data name="Yes" xml:space="preserve">
+    <value>예</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>아니요</value>
+  </data>
+  <data name="Operator View" xml:space="preserve">
+    <value>오퍼레이터 보기</value>
+  </data>
+  <data name="Select a client to monitor and interact" xml:space="preserve">
+    <value>모니터링하고 조작할 클라이언트를 선택하세요</value>
+  </data>
+  <data name="Command Center" xml:space="preserve">
+    <value>명령 센터</value>
+  </data>
+  <data name="Aggregated party command board" xml:space="preserve">
+    <value>통합 파티 명령 보드</value>
+  </data>
+  <data name="Party Overview" xml:space="preserve">
+    <value>파티 개요</value>
+  </data>
+  <data name="Active Members" xml:space="preserve">
+    <value>활성 멤버</value>
+  </data>
+  <data name="In Zone" xml:space="preserve">
+    <value>같은 지역</value>
+  </data>
+  <data name="Selected Entity" xml:space="preserve">
+    <value>선택한 대상</value>
+  </data>
+  <data name="Compare clients across zones and status" xml:space="preserve">
+    <value>지역 및 상태별 클라이언트 비교</value>
+  </data>
+  <data name="Window appearance" xml:space="preserve"><value>창 모양</value></data>
+  <data name="Compact visible on main window" xml:space="preserve"><value>메인 창에 간결 모드 전환 표시</value></data>
+  <data name="Language visible on main window" xml:space="preserve"><value>메인 창에 언어 선택 표시</value></data>
+  <data name="Transparency" xml:space="preserve"><value>투명도</value></data>
+  <data name="Opacity (%)" xml:space="preserve"><value>불투명도 (%)</value></data>
+  <data name="Auto-fade when unfocused" xml:space="preserve"><value>포커스를 잃으면 자동으로 흐리게 표시</value></data>
+  <data name="Unfocused opacity (%)" xml:space="preserve"><value>포커스가 없을 때 불투명도 (%)</value></data>
+  <data name="Unfocused delay (seconds)" xml:space="preserve"><value>포커스를 잃은 후 대기 시간 (초)</value></data>
+</root>

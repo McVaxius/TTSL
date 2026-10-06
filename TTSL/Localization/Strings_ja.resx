@@ -1,0 +1,1352 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <data name="Blue" xml:space="preserve">
+    <value>青</value>
+  </data>
+  <data name="Character" xml:space="preserve">
+    <value>キャラクター</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>色</value>
+  </data>
+  <data name="Compact mode" xml:space="preserve">
+    <value>コンパクトモード</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>コピー</value>
+  </data>
+  <data name="Copy Icon Guide Link" xml:space="preserve">
+    <value>アイコンガイドのリンクをコピー</value>
+  </data>
+  <data name="Custom RGB" xml:space="preserve">
+    <value>カスタム RGB</value>
+  </data>
+  <data name="Discord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>有効</value>
+  </data>
+  <data name="Job" xml:space="preserve">
+    <value>ジョブ</value>
+  </data>
+  <data name="Ko-fi" xml:space="preserve">
+    <value>Ko-fi</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="Loading UI fonts..." xml:space="preserve">
+    <value>UI フォントを読み込み中...</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>なし</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>有効</value>
+  </data>
+  <data name="Pink" xml:space="preserve">
+    <value>ピンク</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="Teal" xml:space="preserve">
+    <value>ティール</value>
+  </data>
+  <data name="UI fonts failed to load. See the plugin log." xml:space="preserve">
+    <value>UI フォントの読み込みに失敗しました。ログを確認してください。</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>アカウント</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>エリア</value>
+  </data>
+  <data name="Avg" xml:space="preserve">
+    <value>平均</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>戻る</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>キャンセル</value>
+  </data>
+  <data name="Cast" xml:space="preserve">
+    <value>詠唱</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>クライアント</value>
+  </data>
+  <data name="Combat" xml:space="preserve">
+    <value>戦闘</value>
+  </data>
+  <data name="Condition panel" xml:space="preserve">
+    <value>状態パネル</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="Copy Command" xml:space="preserve">
+    <value>コマンドをコピー</value>
+  </data>
+  <data name="Copy DLL Path" xml:space="preserve">
+    <value>DLL パスをコピー</value>
+  </data>
+  <data name="DTR Bar Enabled" xml:space="preserve">
+    <value>DTR バーを表示</value>
+  </data>
+  <data name="DTR Bar Mode" xml:space="preserve">
+    <value>DTR バーのモード</value>
+  </data>
+  <data name="DTR Icons (max 3 characters)" xml:space="preserve">
+    <value>DTR アイコン（最大3文字）</value>
+  </data>
+  <data name="DTR status entry" xml:space="preserve">
+    <value>DTR 状態表示</value>
+  </data>
+  <data name="Dead" xml:space="preserve">
+    <value>戦闘不能</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>無効</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>距離</value>
+  </data>
+  <data name="Download Native Server" xml:space="preserve">
+    <value>ネイティブサーバーをダウンロード</value>
+  </data>
+  <data name="Durability unavailable." xml:space="preserve">
+    <value>耐久度を取得できません。</value>
+  </data>
+  <data name="Duty" xml:space="preserve">
+    <value>コンテンツ</value>
+  </data>
+  <data name="Enable Thick Thighs Save Lives HUD" xml:space="preserve">
+    <value>Thick Thighs Save Lives HUD を有効化</value>
+  </data>
+  <data name="Enable plugin full-body fallback" xml:space="preserve">
+    <value>全身画像の代替取得を有効化</value>
+  </data>
+  <data name="Enumerate" xml:space="preserve">
+    <value>番号表示</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>装備</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>完了</value>
+  </data>
+  <data name="Icon Only" xml:space="preserve">
+    <value>アイコンのみ</value>
+  </data>
+  <data name="Icon+Text" xml:space="preserve">
+    <value>アイコン＋テキスト</value>
+  </data>
+  <data name="Krangle displayed names" xml:space="preserve">
+    <value>表示名を難読化</value>
+  </data>
+  <data name="Krangle displayed player names" xml:space="preserve">
+    <value>プレイヤー名を難読化</value>
+  </data>
+  <data name="Last OK" xml:space="preserve">
+    <value>最終成功</value>
+  </data>
+  <data name="Launch command" xml:space="preserve">
+    <value>起動コマンド</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>接続中</value>
+  </data>
+  <data name="Loaded DLL" xml:space="preserve">
+    <value>読み込まれた DLL</value>
+  </data>
+  <data name="Local + Web" xml:space="preserve">
+    <value>ローカル＋ウェブ</value>
+  </data>
+  <data name="Local HUD" xml:space="preserve">
+    <value>ローカル HUD</value>
+  </data>
+  <data name="Local player is not available yet." xml:space="preserve">
+    <value>ローカルプレイヤーはまだ利用できません。</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>最小</value>
+  </data>
+  <data name="Mount" xml:space="preserve">
+    <value>マウント</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>名前</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>次へ</value>
+  </data>
+  <data name="No party members detected." xml:space="preserve">
+    <value>パーティメンバーが見つかりません。</value>
+  </data>
+  <data name="Open Web HUD" xml:space="preserve">
+    <value>ウェブ HUD を開く</value>
+  </data>
+  <data name="Overlay" xml:space="preserve">
+    <value>オーバーレイ</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>パーティ</value>
+  </data>
+  <data name="Party Radar" xml:space="preserve">
+    <value>パーティレーダー</value>
+  </data>
+  <data name="Party Size" xml:space="preserve">
+    <value>パーティ人数</value>
+  </data>
+  <data name="Party status list" xml:space="preserve">
+    <value>パーティ状態一覧</value>
+  </data>
+  <data name="Position (X, Y, Z)" xml:space="preserve">
+    <value>位置（X, Y, Z）</value>
+  </data>
+  <data name="Publish failed" xml:space="preserve">
+    <value>送信失敗</value>
+  </data>
+  <data name="Queue" xml:space="preserve">
+    <value>待機列</value>
+  </data>
+  <data name="Remote HUD" xml:space="preserve">
+    <value>リモート HUD</value>
+  </data>
+  <data name="Remote HUD Server" xml:space="preserve">
+    <value>リモート HUD サーバー</value>
+  </data>
+  <data name="Remote server and review" xml:space="preserve">
+    <value>リモートサーバーと確認</value>
+  </data>
+  <data name="Repair summary" xml:space="preserve">
+    <value>修理情報</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>確認</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>サーバー</value>
+  </data>
+  <data name="Server URL" xml:space="preserve">
+    <value>サーバー URL</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>セットアップ</value>
+  </data>
+  <data name="Setup Wizard" xml:space="preserve">
+    <value>セットアップウィザード</value>
+  </data>
+  <data name="Show condition panel" xml:space="preserve">
+    <value>状態パネルを表示</value>
+  </data>
+  <data name="Show party radar" xml:space="preserve">
+    <value>パーティレーダーを表示</value>
+  </data>
+  <data name="Show party status list" xml:space="preserve">
+    <value>パーティ状態一覧を表示</value>
+  </data>
+  <data name="Show repair summary" xml:space="preserve">
+    <value>修理情報を表示</value>
+  </data>
+  <data name="Slots" xml:space="preserve">
+    <value>スロット</value>
+  </data>
+  <data name="Snapshot" xml:space="preserve">
+    <value>スナップショット</value>
+  </data>
+  <data name="Text Only" xml:space="preserve">
+    <value>テキストのみ</value>
+  </data>
+  <data name="Update Cadence" xml:space="preserve">
+    <value>更新間隔</value>
+  </data>
+  <data name="Use Local Default" xml:space="preserve">
+    <value>ローカルの既定値を使用</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>待機中</value>
+  </data>
+  <data name="Web Text" xml:space="preserve">
+    <value>ウェブテキスト</value>
+  </data>
+  <data name="Web Viewer Policy" xml:space="preserve">
+    <value>ウェブ表示の権限</value>
+  </data>
+  <data name="Web only" xml:space="preserve">
+    <value>ウェブのみ</value>
+  </data>
+  <data name="Bind host" xml:space="preserve">
+    <value>バインドホスト</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>ポート</value>
+  </data>
+  <data name="Stale seconds" xml:space="preserve">
+    <value>期限切れ秒数</value>
+  </data>
+  <data name="Start Server" xml:space="preserve">
+    <value>サーバーを起動</value>
+  </data>
+  <data name="Stop Server" xml:space="preserve">
+    <value>サーバーを停止</value>
+  </data>
+  <data name="Open HUD" xml:space="preserve">
+    <value>HUD を開く</value>
+  </data>
+  <data name="Screenshots" xml:space="preserve">
+    <value>スクリーンショット</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>キャッシュ</value>
+  </data>
+  <data name="Extracted" xml:space="preserve">
+    <value>展開済み</value>
+  </data>
+  <data name="Copy URL" xml:space="preserve">
+    <value>URL をコピー</value>
+  </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>診断</value>
+  </data>
+  <data name="Clear Stale" xml:space="preserve">
+    <value>期限切れを削除</value>
+  </data>
+  <data name="Clear Cache" xml:space="preserve">
+    <value>キャッシュを削除</value>
+  </data>
+  <data name="Extract Assets" xml:space="preserve">
+    <value>アセットを展開</value>
+  </data>
+  <data name="Data folder" xml:space="preserve">
+    <value>データフォルダー</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>参照</value>
+  </data>
+  <data name="Open Data" xml:space="preserve">
+    <value>データを開く</value>
+  </data>
+  <data name="Reset Default" xml:space="preserve">
+    <value>既定値に戻す</value>
+  </data>
+  <data name="Server running" xml:space="preserve">
+    <value>サーバー稼働中</value>
+  </data>
+  <data name="Server stopped" xml:space="preserve">
+    <value>サーバー停止中</value>
+  </data>
+  <data name="Active clients" xml:space="preserve">
+    <value>アクティブクライアント</value>
+  </data>
+  <data name="Runtime log" xml:space="preserve">
+    <value>実行ログ</value>
+  </data>
+  <data name="Server configuration" xml:space="preserve">
+    <value>サーバー設定</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>操作</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>概要</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>マップ</value>
+  </data>
+  <data name="Threat" xml:space="preserve">
+    <value>敵視</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>オペレーター</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>コマンド</value>
+  </data>
+  <data name="Matrix" xml:space="preserve">
+    <value>マトリックス</value>
+  </data>
+  <data name="Classic" xml:space="preserve">
+    <value>クラシック</value>
+  </data>
+  <data name="Show Details" xml:space="preserve">
+    <value>詳細を表示</value>
+  </data>
+  <data name="Hide Details" xml:space="preserve">
+    <value>詳細を隠す</value>
+  </data>
+  <data name="Remote Monitor + Command Relay" xml:space="preserve">
+    <value>リモートモニターとコマンド中継</value>
+  </data>
+  <data name="Remote HUD and command relay" xml:space="preserve">
+    <value>リモート HUD とコマンド中継</value>
+  </data>
+  <data name="Send Text" xml:space="preserve">
+    <value>テキストを送信</value>
+  </data>
+  <data name="Request Screenshot" xml:space="preserve">
+    <value>スクリーンショットを要求</value>
+  </data>
+  <data name="Last Screenshot" xml:space="preserve">
+    <value>最新スクリーンショット</value>
+  </data>
+  <data name="Last update" xml:space="preserve">
+    <value>最終更新</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>期限切れ</value>
+  </data>
+  <data name="Disconnected" xml:space="preserve">
+    <value>未接続</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>オンライン</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>オフライン</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>待機</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>不明</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>準備完了</value>
+  </data>
+  <data name="Allow web viewer CCTV mode" xml:space="preserve">
+    <value>ウェブ CCTV を許可</value>
+  </data>
+  <data name="Allow web viewer screenshot requests" xml:space="preserve">
+    <value>ウェブからのスクリーンショット要求を許可</value>
+  </data>
+  <data name="Allow web viewer text and slash commands" xml:space="preserve">
+    <value>ウェブのテキストとスラッシュコマンドを許可</value>
+  </data>
+  <data name="Combat radar height (yalms)" xml:space="preserve">
+    <value>戦闘中のレーダー高さ（ヤルム）</value>
+  </data>
+  <data name="Combat radar width (yalms)" xml:space="preserve">
+    <value>戦闘中のレーダー幅（ヤルム）</value>
+  </data>
+  <data name="Travel radar height (yalms)" xml:space="preserve">
+    <value>非戦闘時のレーダー高さ（ヤルム）</value>
+  </data>
+  <data name="Travel radar width (yalms)" xml:space="preserve">
+    <value>非戦闘時のレーダー幅（ヤルム）</value>
+  </data>
+  <data name="Radar box size (px)" xml:space="preserve">
+    <value>レーダーサイズ（px）</value>
+  </data>
+  <data name="Fast position interval (ms)" xml:space="preserve">
+    <value>位置更新間隔（ms）</value>
+  </data>
+  <data name="Full snapshot interval (ms)" xml:space="preserve">
+    <value>全情報の更新間隔（ms）</value>
+  </data>
+  <data name="Python launch command" xml:space="preserve">
+    <value>Python 起動コマンド</value>
+  </data>
+  <data name="Publish HUD snapshots to remote server" xml:space="preserve">
+    <value>HUD 情報をリモートサーバーに送信</value>
+  </data>
+  <data name="Enumerate party members for radar labels" xml:space="preserve">
+    <value>レーダーラベルをパーティ番号にする</value>
+  </data>
+  <data name="Display size of the local HUD radar box." xml:space="preserve">
+    <value>ローカル HUD のレーダー表示サイズ。</value>
+  </data>
+  <data name="Show TTSL status in the server info bar." xml:space="preserve">
+    <value>サーバー情報バーに TTSL 状態を表示。</value>
+  </data>
+  <data name="Show or hide the server-info bar entry for TTSL." xml:space="preserve">
+    <value>サーバー情報バーの TTSL 項目を表示または非表示。</value>
+  </data>
+  <data name="Obfuscate displayed player names for screenshots." xml:space="preserve">
+    <value>スクリーンショット用にプレイヤー名を難読化。</value>
+  </data>
+  <data name="Use party slot numbers on the radar." xml:space="preserve">
+    <value>レーダーにパーティスロット番号を表示。</value>
+  </data>
+  <data name="Open the guided local/web HUD setup." xml:space="preserve">
+    <value>ローカル／ウェブ HUD の設定ウィザードを開く。</value>
+  </data>
+  <data name="Open the Python remote HUD in your default browser." xml:space="preserve">
+    <value>既定のブラウザーでリモート HUD を開く。</value>
+  </data>
+  <data name="Guided local HUD and web publisher setup" xml:space="preserve">
+    <value>ローカル HUD とウェブ送信のガイド設定</value>
+  </data>
+  <data name="Copies the best local server-launch command TTSL could resolve from this install." xml:space="preserve">
+    <value>TTSL がこのインストールから取得したローカル起動コマンドをコピー。</value>
+  </data>
+  <data name="Copies the Lodestone blog link with suggested glyphs." xml:space="preserve">
+    <value>推奨グリフの Lodestone ブログリンクをコピー。</value>
+  </data>
+  <data name="Customize the glyphs used when TTSL is on or off." xml:space="preserve">
+    <value>TTSL 有効／無効時のグリフを設定。</value>
+  </data>
+  <data name="Where should TTSL show your HUD?" xml:space="preserve">
+    <value>TTSL HUD をどこに表示しますか？</value>
+  </data>
+  <data name="Choose the local HUD details you want ready" xml:space="preserve">
+    <value>ローカル HUD の表示項目を選択</value>
+  </data>
+  <data name="These choices also control which sections are included when local HUD data is published." xml:space="preserve">
+    <value>この選択はローカル HUD の送信項目にも適用されます。</value>
+  </data>
+  <data name="Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are." xml:space="preserve">
+    <value>初期モードを選択します。ここに表示された設定だけを変更し、ウェブ権限、更新間隔、レーダーサイズ、アイコン、ラベルは保持します。</value>
+  </data>
+  <data name="Show the in-game TTSL window without publishing to the web server." xml:space="preserve">
+    <value>ウェブに送信せずゲーム内 TTSL ウィンドウを表示。</value>
+  </data>
+  <data name="Show the in-game TTSL window and publish snapshots to the configured web server." xml:space="preserve">
+    <value>ゲーム内 TTSL を表示し、設定済みサーバーに情報を送信。</value>
+  </data>
+  <data name="Publish snapshots to the web server while keeping the in-game HUD hidden." xml:space="preserve">
+    <value>ゲーム内 HUD を隠してウェブサーバーに情報を送信。</value>
+  </data>
+  <data name="Confirm the web server address and copy the existing launch command if you need to start the local server." xml:space="preserve">
+    <value>ウェブサーバーのアドレスを確認し、必要ならローカル起動コマンドをコピー。</value>
+  </data>
+  <data name="Local HUD mode does not publish snapshots. The existing remote URL is preserved for later." xml:space="preserve">
+    <value>ローカル HUD モードは送信しません。既存のリモート URL は保持されます。</value>
+  </data>
+  <data name="The active account changed. Reopen the wizard and review that account's settings." xml:space="preserve">
+    <value>アクティブアカウントが変更されました。ウィザードを開き直して設定を確認してください。</value>
+  </data>
+  <data name="Step {0} of 3" xml:space="preserve">
+    <value>ステップ {0} / 3</value>
+  </data>
+  <data name="Preview: {0}" xml:space="preserve">
+    <value>プレビュー：{0}</value>
+  </data>
+  <data name="Current account ID: {0}" xml:space="preserve">
+    <value>現在のアカウント ID：{0}</value>
+  </data>
+  <data name="Publisher: {0}" xml:space="preserve">
+    <value>送信状態：{0}</value>
+  </data>
+  <data name="Last error: {0}" xml:space="preserve">
+    <value>最新エラー：{0}</value>
+  </data>
+  <data name="Enabled Icon" xml:space="preserve">
+    <value>有効時のアイコン</value>
+  </data>
+  <data name="Disabled Icon" xml:space="preserve">
+    <value>無効時のアイコン</value>
+  </data>
+  <data name="Age" xml:space="preserve">
+    <value>経過時間</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>閉じる</value>
+  </data>
+  <data name="Command View" xml:space="preserve">
+    <value>コマンド表示</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>接続済み</value>
+  </data>
+  <data name="Dist" xml:space="preserve">
+    <value>距離</value>
+  </data>
+  <data name="Enmity" xml:space="preserve">
+    <value>敵視</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>フロー</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>フォーカス</value>
+  </data>
+  <data name="Game path" xml:space="preserve">
+    <value>ゲームパス</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>高</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>ホスト</value>
+  </data>
+  <data name="Inspector" xml:space="preserve">
+    <value>インスペクター</value>
+  </data>
+  <data name="Last Screenshot Sent" xml:space="preserve">
+    <value>最後に送信したスクリーンショット</value>
+  </data>
+  <data name="Loose Clients" xml:space="preserve">
+    <value>グループ外クライアント</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>低</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>中</value>
+  </data>
+  <data name="Minimap" xml:space="preserve">
+    <value>ミニマップ</value>
+  </data>
+  <data name="No combat telemetry captured." xml:space="preserve">
+    <value>戦闘データはまだ取得されていません。</value>
+  </data>
+  <data name="No party data captured yet." xml:space="preserve">
+    <value>パーティデータはまだ取得されていません。</value>
+  </data>
+  <data name="Party Surface" xml:space="preserve">
+    <value>パーティ表示</value>
+  </data>
+  <data name="Refresh failed" xml:space="preserve">
+    <value>更新失敗</value>
+  </data>
+  <data name="Situation" xml:space="preserve">
+    <value>状況</value>
+  </data>
+  <data name="Slot" xml:space="preserve">
+    <value>スロット</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="Surface Matrix" xml:space="preserve">
+    <value>表示マトリックス</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>種類</value>
+  </data>
+  <data name="Vitals" xml:space="preserve">
+    <value>基本情報</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>エリア</value>
+  </data>
+  <data name="Asset plan unavailable." xml:space="preserve">
+    <value>アセット計画を取得できません。</value>
+  </data>
+  <data name="Extraction status unavailable." xml:space="preserve">
+    <value>展開状態を取得できません。</value>
+  </data>
+  <data name="Awaiting the first CCTV frame from the client." xml:space="preserve">
+    <value>クライアントからの最初の CCTV フレームを待機中。</value>
+  </data>
+  <data name="CCTV frames appear here after the first live capture." xml:space="preserve">
+    <value>最初のライブ取得後に CCTV フレームが表示されます。</value>
+  </data>
+  <data name="CCTV is not allowed for this client." xml:space="preserve">
+    <value>このクライアントでは CCTV が許可されていません。</value>
+  </data>
+  <data name="CCTV uses rolling game-window captures and replaces the map pane until closed." xml:space="preserve">
+    <value>CCTV は閉じるまでゲームウィンドウの連続取得でマップを置き換えます。</value>
+  </data>
+  <data name="Clients not currently represented inside an aggregate party surface." xml:space="preserve">
+    <value>集約パーティに含まれていないクライアント。</value>
+  </data>
+  <data name="Open the screenshot folder on the TTSL server host." xml:space="preserve">
+    <value>TTSL サーバーホストのスクリーンショットフォルダーを開く。</value>
+  </data>
+  <data name="Plain text goes to /echo. Slash commands like /sit run verbatim" xml:space="preserve">
+    <value>テキストは /echo に送信され、/sit などのコマンドはそのまま実行されます。</value>
+  </data>
+  <data name="Select a client or aggregate party surface to inspect the detail pane." xml:space="preserve">
+    <value>クライアントまたは集約パーティを選択して詳細を表示。</value>
+  </data>
+  <data name="The tracked client does not currently expose target or hostile data." xml:space="preserve">
+    <value>このクライアントは現在ターゲットや敵のデータを提供していません。</value>
+  </data>
+  <data name="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV." xml:space="preserve">
+    <value>このクライアントはウェブからのテキスト、コマンド、スクリーンショット、CCTV を許可していません。</value>
+  </data>
+  <data name="DTR" xml:space="preserve">
+    <value>DTR</value>
+  </data>
+  <data name="Krangle" xml:space="preserve">
+    <value>Krangle</value>
+  </data>
+  <data name="CCTV" xml:space="preserve">
+    <value>CCTV</value>
+  </data>
+  <data name="HUD" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="HP" xml:space="preserve">
+    <value>HP</value>
+  </data>
+  <data name="MP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="FB" xml:space="preserve">
+    <value>FB</value>
+  </data>
+  <data name="CMD" xml:space="preserve">
+    <value>CMD</value>
+  </data>
+  <data name="SS" xml:space="preserve">
+    <value>SS</value>
+  </data>
+  <data name="SSF" xml:space="preserve">
+    <value>SSF</value>
+  </data>
+  <data name="Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets." xml:space="preserve">
+    <value>低・中・高品質のライブ映像でマップを置き換えることを許可。</value>
+  </data>
+  <data name="Captures the current FFXIV game-window client area and uploads it to the Python server." xml:space="preserve">
+    <value>FFXIV のゲームウィンドウ領域を取得して Python サーバーに送信。</value>
+  </data>
+  <data name="Clients are grouped by incoming account ID and character on the server page." xml:space="preserve">
+    <value>サーバーページでは受信したアカウント ID とキャラクターでグループ化。</value>
+  </data>
+  <data name="Default view is 20y x 20y in combat and 50y x 50y out of combat." xml:space="preserve">
+    <value>既定：戦闘中は20 × 20ヤルム、非戦闘時は50 × 50ヤルム。</value>
+  </data>
+  <data name="Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0." xml:space="preserve">
+    <value>LAN 表示を使用するにはコピーしたコマンドの --host 127.0.0.1 を --host 0.0.0.0 に変更。</value>
+  </data>
+  <data name="For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first." xml:space="preserve">
+    <value>データ・アイコンの展開には、Python モニターと同じ PC のクライアントを先に接続。</value>
+  </data>
+  <data name="Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable." xml:space="preserve">
+    <value>既定は無効。Lodestone の全身画像がない場合に限り CharacterInspect のプレビュー取得を要求。</value>
+  </data>
+  <data name="Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim." xml:space="preserve">
+    <value>テキストは [TTSL Web] 付きで /echo に送信。スラッシュから始まる入力はそのまま送信。</value>
+  </data>
+  <data name="Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache." xml:space="preserve">
+    <value>ウェブテキストは [TTSL Web] 付きで /echo に送信。スラッシュ入力はそのまま。未追跡パーティメンバーの画像は送信元クライアントで取得し、CCTV は同じクライアントの連続フレームキャッシュを使用。</value>
+  </data>
+  <data name="Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser." xml:space="preserve">
+    <value>複数クライアントを1つのブラウザーで表示するため、ローカル HUD を Python サーバーへ送信。</value>
+  </data>
+  <data name="TTSL settings are now stored per account ID once a live account is detected." xml:space="preserve">
+    <value>アクティブアカウント検出後、TTSL 設定はアカウント ID ごとに保存。</value>
+  </data>
+  <data name="The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar." xml:space="preserve">
+    <value>ウェブ HUD 上部のツールバーで表示サイズと戦闘／移動時のヤルム範囲を変更できます。</value>
+  </data>
+  <data name="The server will cache the first same-PC game path it sees for the rest of that monitoring session." xml:space="preserve">
+    <value>サーバーは最初に検出した同じ PC のゲームパスを、この監視セッション中保持します。</value>
+  </data>
+  <data name="Showing {0:F0}y x {1:F0}y ({2})." xml:space="preserve">
+    <value>表示範囲：{0:F0} × {1:F0}ヤルム（{2}）。</value>
+  </data>
+  <data name="Travel" xml:space="preserve"><value>移動中</value></data>
+  <data name="Shot" xml:space="preserve">
+    <value>スクリーンショット</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>モード</value>
+  </data>
+  <data name="Krangle names" xml:space="preserve">
+    <value>名前を難読化</value>
+  </data>
+  <data name="DTR entry" xml:space="preserve">
+    <value>DTR 項目</value>
+  </data>
+  <data name="Mode: {0}" xml:space="preserve">
+    <value>モード: {0}</value>
+  </data>
+  <data name="Condition panel: {0}" xml:space="preserve">
+    <value>状態パネル: {0}</value>
+  </data>
+  <data name="Repair summary: {0}" xml:space="preserve">
+    <value>修理情報: {0}</value>
+  </data>
+  <data name="Party status: {0}" xml:space="preserve">
+    <value>パーティ状態一覧: {0}</value>
+  </data>
+  <data name="Party radar: {0}" xml:space="preserve">
+    <value>パーティレーダー: {0}</value>
+  </data>
+  <data name="Krangle names: {0}" xml:space="preserve">
+    <value>名前を難読化: {0}</value>
+  </data>
+  <data name="DTR entry: {0}" xml:space="preserve">
+    <value>DTR 項目: {0}</value>
+  </data>
+  <data name="Server: {0}" xml:space="preserve">
+    <value>サーバー: {0}</value>
+  </data>
+  <data name="Release asset: latestServer.zip" xml:space="preserve">
+    <value>リリースファイル：latestServer.zip</value>
+  </data>
+  <data name="(?)" xml:space="preserve">
+    <value>(?)</value>
+  </data>
+  <data name="TTSL " xml:space="preserve">
+    <value>TTSL </value>
+  </data>
+  <data name="In duty" xml:space="preserve">
+    <value>コンテンツ中</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>待機列中</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>利用不可</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>ロック中</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>テキスト</value>
+  </data>
+  <data name="Screens" xml:space="preserve">
+    <value>スクリーンショット</value>
+  </data>
+  <data name="Telemetry" xml:space="preserve">
+    <value>テレメトリー</value>
+  </data>
+  <data name="Unknown race" xml:space="preserve">
+    <value>種族不明</value>
+  </data>
+  <data name="Party Leader" xml:space="preserve">
+    <value>パーティリーダー</value>
+  </data>
+  <data name="Party Role" xml:space="preserve">
+    <value>パーティ内の役割</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>クライアント</value>
+  </data>
+  <data name="Asset plan pending." xml:space="preserve">
+    <value>アセット計画を待機中。</value>
+  </data>
+  <data name="Extraction idle." xml:space="preserve">
+    <value>展開待機中。</value>
+  </data>
+  <data name="Extracting..." xml:space="preserve">
+    <value>展開中...</value>
+  </data>
+  <data name="Waiting for clients..." xml:space="preserve">
+    <value>クライアントを待機中...</value>
+  </data>
+  <data name="No updates yet." xml:space="preserve">
+    <value>まだ更新されていません。</value>
+  </data>
+  <data name="All tracked clients are stale or disconnected." xml:space="preserve">
+    <value>すべての追跡クライアントは期限切れまたは未接続。</value>
+  </data>
+  <data name="No aggregate party surfaces are available right now, so command view is showing compact client cards." xml:space="preserve">
+    <value>集約パーティがないため、コンパクトなクライアントカードを表示。</value>
+  </data>
+  <data name="Aggregate parties are disabled. Enable the toggle above to unlock the full party command board." xml:space="preserve">
+    <value>パーティ集約は無効です。上の切り替えで完全なパーティコマンドボードを有効化。</value>
+  </data>
+  <data name="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane." xml:space="preserve">
+    <value>テキストは [TTSL Web] 付きで /echo に送信。スラッシュ入力はそのまま。SS はキャッシュ画像を1回送信し、CCTV はマップ部分にライブ映像を表示。</value>
+  </data>
+  <data name="SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client." xml:space="preserve">
+    <value>SS と CMD は追跡中のメンバーを直接操作。CCTV は閉じるまでマップを置き換えます。未追跡メンバーのボタンは該当クライアントを追跡するまで無効。</value>
+  </data>
+  <data name="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback." xml:space="preserve">
+    <value>未追跡メンバーにも HP、MP、位置、レベル、ジョブがあります。Lodestone のポートレートは本人のワールドまたは代替として送信元のワールドで取得。</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor." xml:space="preserve">
+    <value>まだ接続されたクライアントはありません。サーバーを起動し、TTSL の URL を設定してリモート送信を有効化。展開には同じ PC のクライアントが必要。</value>
+  </data>
+  <data name="Data folder is already active:" xml:space="preserve">
+    <value>データフォルダーは既に有効：</value>
+  </data>
+  <data name="Data folder saved for next launch:" xml:space="preserve">
+    <value>次回起動用のデータフォルダーを保存：</value>
+  </data>
+  <data name="Restart TTSL Native Server to use it. Current session keeps using:" xml:space="preserve">
+    <value>適用するには TTSL Native Server を再起動。現在のセッションは以下を使用：</value>
+  </data>
+  <data name="Failed to register TTSL native server window class." xml:space="preserve">
+    <value>TTSL のウィンドウクラス登録に失敗。</value>
+  </data>
+  <data name="Failed to create TTSL native server window." xml:space="preserve">
+    <value>TTSL のウィンドウ作成に失敗。</value>
+  </data>
+  <data name="Click to toggle the HUD." xml:space="preserve">
+    <value>クリックして HUD を切り替え。</value>
+  </data>
+  <data name="Text Only: 'TTSL: On/Off'&#10;Icon+Text: '&lt;icon&gt; TTSL'&#10;Icon Only: '&lt;icon&gt;'" xml:space="preserve">
+    <value>テキストのみ: 'TTSL: On/Off'
+アイコン＋テキスト: '&lt;icon&gt; TTSL'
+アイコンのみ: '&lt;icon&gt;'</value>
+  </data>
+  <data name="Busy" xml:space="preserve">
+    <value>処理中</value>
+  </data>
+  <data name="Current target" xml:space="preserve">
+    <value>現在のターゲット</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>未接続</value>
+  </data>
+  <data name="Extra" xml:space="preserve">
+    <value>追加</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>展開</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>ラベル</value>
+  </data>
+  <data name="Lookup" xml:space="preserve">
+    <value>検索</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>不足</value>
+  </data>
+  <data name="Monitored" xml:space="preserve">
+    <value>追跡中</value>
+  </data>
+  <data name="No current target" xml:space="preserve">
+    <value>現在のターゲットなし</value>
+  </data>
+  <data name="No radar data" xml:space="preserve">
+    <value>レーダーデータなし</value>
+  </data>
+  <data name="No repair data" xml:space="preserve">
+    <value>修理データなし</value>
+  </data>
+  <data name="No tracked target" xml:space="preserve">
+    <value>追跡対象なし</value>
+  </data>
+  <data name="Not casting" xml:space="preserve">
+    <value>詠唱なし</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>パス</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>一時停止</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>権限</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>修理</value>
+  </data>
+  <data name="Solo" xml:space="preserve">
+    <value>ソロ</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>送信元</value>
+  </data>
+  <data name="Source host" xml:space="preserve">
+    <value>送信元ホスト</value>
+  </data>
+  <data name="Stranger" xml:space="preserve">
+    <value>未追跡</value>
+  </data>
+  <data name="Strangers" xml:space="preserve">
+    <value>未追跡メンバー</value>
+  </data>
+  <data name="Submitting" xml:space="preserve">
+    <value>送信中</value>
+  </data>
+  <data name="Targeting you" xml:space="preserve">
+    <value>自分をターゲット中</value>
+  </data>
+  <data name="Texture" xml:space="preserve">
+    <value>テクスチャ</value>
+  </data>
+  <data name="Tracked" xml:space="preserve">
+    <value>追跡中</value>
+  </data>
+  <data name="Tracked client" xml:space="preserve">
+    <value>追跡クライアント</value>
+  </data>
+  <data name="Unknown host" xml:space="preserve">
+    <value>ホスト不明</value>
+  </data>
+  <data name="Unknown time" xml:space="preserve">
+    <value>時刻不明</value>
+  </data>
+  <data name="Unknown zone" xml:space="preserve">
+    <value>エリア不明</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>表示</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>表示中</value>
+  </data>
+  <data name="Remote Control" xml:space="preserve">
+    <value>リモート操作</value>
+  </data>
+  <data name="Field Map" xml:space="preserve">
+    <value>エリアマップ</value>
+  </data>
+  <data name="Source Minimap" xml:space="preserve">
+    <value>送信元ミニマップ</value>
+  </data>
+  <data name="Aggregate parties" xml:space="preserve">
+    <value>パーティを集約</value>
+  </data>
+  <data name="Krangle names/account IDs" xml:space="preserve">
+    <value>名前・アカウント ID を難読化</value>
+  </data>
+  <data name="Krangle enemy names" xml:space="preserve">
+    <value>敵の名前を難読化</value>
+  </data>
+  <data name="Show stale/disconnected" xml:space="preserve">
+    <value>期限切れ・未接続を表示</value>
+  </data>
+  <data name="Icons" xml:space="preserve">
+    <value>アイコン</value>
+  </data>
+  <data name="Total HP" xml:space="preserve">
+    <value>合計 HP</value>
+  </data>
+  <data name="Total MP" xml:space="preserve">
+    <value>合計 MP</value>
+  </data>
+  <data name="Party Members" xml:space="preserve">
+    <value>パーティメンバー</value>
+  </data>
+  <data name="Waiting for local player" xml:space="preserve">
+    <value>ローカルプレイヤーを待機中</value>
+  </data>
+  <data name="Connected to {0}" xml:space="preserve">
+    <value>{0} に接続</value>
+  </data>
+  <data name="Retrying in {0}s" xml:space="preserve">
+    <value>{0}秒後に再試行</value>
+  </data>
+  <data name="Box px" xml:space="preserve">
+    <value>レーダーサイズ（px）</value>
+  </data>
+  <data name="Combat W" xml:space="preserve">
+    <value>戦闘中のレーダー幅（ヤルム）</value>
+  </data>
+  <data name="Combat H" xml:space="preserve">
+    <value>戦闘中のレーダー高さ（ヤルム）</value>
+  </data>
+  <data name="Travel W" xml:space="preserve">
+    <value>非戦闘時のレーダー幅（ヤルム）</value>
+  </data>
+  <data name="Travel H" xml:space="preserve">
+    <value>非戦闘時のレーダー高さ（ヤルム）</value>
+  </data>
+  <data name="Aggregate-party stranger actions route through the source client." xml:space="preserve">
+    <value>未追跡のパーティメンバーの操作は送信元クライアント経由。</value>
+  </data>
+  <data name="Extraction started." xml:space="preserve">
+    <value>展開を開始。</value>
+  </data>
+  <data name="Map texture not extracted yet." xml:space="preserve">
+    <value>マップテクスチャはまだ展開されていません。</value>
+  </data>
+  <data name="No map data captured yet." xml:space="preserve">
+    <value>マップデータはまだ取得されていません。</value>
+  </data>
+  <data name="Opened screenshot folder on the server host." xml:space="preserve">
+    <value>サーバーホストのスクリーンショットフォルダーを開きました。</value>
+  </data>
+  <data name="Party telemetry + Lodestone lookup" xml:space="preserve">
+    <value>パーティ情報＋Lodestone 検索</value>
+  </data>
+  <data name="Queued remote action." xml:space="preserve">
+    <value>リモート操作を待機列に追加。</value>
+  </data>
+  <data name="Screenshot requests are not allowed for this client." xml:space="preserve">
+    <value>このクライアントはスクリーンショット要求を許可していません。</value>
+  </data>
+  <data name="Source Remote Control" xml:space="preserve">
+    <value>送信元リモート操作</value>
+  </data>
+  <data name="Web text or slash commands are not allowed for this client." xml:space="preserve">
+    <value>このクライアントはウェブテキストやコマンドを許可していません。</value>
+  </data>
+  <data name="same-PC game path not captured yet" xml:space="preserve">
+    <value>同じ PC のゲームパスは未取得</value>
+  </data>
+  <data name="see server log" xml:space="preserve">
+    <value>サーバーログを参照</value>
+  </data>
+  <data name="Scroll down to &quot;The Dumpster Fire&quot; channel to discuss issues / suggestions for specific plugins." xml:space="preserve">
+    <value>各プラグインの問題や提案は、下の "The Dumpster Fire" チャンネルへ。</value>
+  </data>
+  <data name="Failed to open screenshot folder: {0}" xml:space="preserve">
+    <value>スクリーンショットフォルダーを開けません：{0}</value>
+  </data>
+  <data name="Extraction request failed: {0}" xml:space="preserve">
+    <value>展開要求に失敗：{0}</value>
+  </data>
+  <data name="Remote action failed: {0}" xml:space="preserve">
+    <value>リモート操作に失敗：{0}</value>
+  </data>
+  <data name="Last update {0} · {1}" xml:space="preserve">
+    <value>最終更新 {0} · {1}</value>
+  </data>
+  <data name="Stranger source locked to first monitored client: {0} · Connected {1}" xml:space="preserve">
+    <value>未追跡メンバーの送信元は最初の追跡クライアントに固定：{0} · 接続 {1}</value>
+  </data>
+  <data name="{0} clients · {1} live · {2} stale/disconnected" xml:space="preserve">
+    <value>{0} クライアント · {1} 接続中 · {2} 期限切れ／未接続</value>
+  </data>
+  <data name="Generated {0} · stale after {1}s · {2}" xml:space="preserve">
+    <value>生成 {0} · {1}秒後に期限切れ · {2}</value>
+  </data>
+  <data name="Last CCTV Frame" xml:space="preserve">
+    <value>最新 CCTV フレーム</value>
+  </data>
+  <data name="Close CCTV for {0}" xml:space="preserve">
+    <value>{0} の CCTV を閉じる</value>
+  </data>
+  <data name="Replace the map pane with live CCTV for {0}" xml:space="preserve">
+    <value>マップを {0} のライブ CCTV で置き換える</value>
+  </data>
+  <data name="Request a screenshot from {0}" xml:space="preserve">
+    <value>{0} にスクリーンショットを要求</value>
+  </data>
+  <data name="Open a command prompt for {0}" xml:space="preserve">
+    <value>{0} のコマンド入力を開く</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor." xml:space="preserve">
+    <value>まだ接続されたクライアントはありません。サーバーを起動し、TTSL の URL を設定してリモート送信を有効化。展開には同じ PC のクライアントが必要。</value>
+  </data>
+  <data name="Select TTSL Native Server data folder" xml:space="preserve">
+    <value>TTSL Native Server のデータフォルダーを選択</value>
+  </data>
+  <data name="Invalid data folder: {0}" xml:space="preserve">
+    <value>無効なデータフォルダー: {0}</value>
+  </data>
+  <data name="Party groups" xml:space="preserve">
+    <value>パーティグループ</value>
+  </data>
+  <data name="Clan" xml:space="preserve">
+    <value>部族</value>
+  </data>
+  <data name="Race" xml:space="preserve">
+    <value>種族</value>
+  </data>
+  <data name="Working..." xml:space="preserve">
+    <value>処理中...</value>
+  </data>
+  <data name="Targeting party member {0}" xml:space="preserve">
+    <value>パーティメンバー {0} をターゲット</value>
+  </data>
+  <data name="Live CCTV for {0}" xml:space="preserve">
+    <value>{0} のライブ CCTV</value>
+  </data>
+  <data name="Send text or slash command to {0}" xml:space="preserve">
+    <value>{0} にテキストまたはスラッシュコマンドを送信</value>
+  </data>
+  <data name="Targeting {0}" xml:space="preserve">
+    <value>ターゲット: {0}</value>
+  </data>
+  <data name="Lodestone body image for {0}" xml:space="preserve">
+    <value>{0} の Lodestone 全身画像</value>
+  </data>
+  <data name="Party telemetry available · Lodestone {0} · Direct actions disabled." xml:space="preserve">
+    <value>パーティ情報あり · Lodestone {0} · 直接操作は無効。</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>失敗</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>待機中</value>
+  </data>
+  <data name="Refreshing" xml:space="preserve">
+    <value>更新中</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>一部完了</value>
+  </data>
+  <data name="Unresolved" xml:space="preserve">
+    <value>未解決</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>完全</value>
+  </data>
+  <data name="Ally" xml:space="preserve">
+    <value>味方</value>
+  </data>
+  <data name="Hostile" xml:space="preserve">
+    <value>敵</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>交戦中</value>
+  </data>
+  <data name="{0} live" xml:space="preserve">
+    <value>{0} オンライン</value>
+  </data>
+  <data name="Plugin fallback ready" xml:space="preserve">
+    <value>プラグインの代替画像が準備完了</value>
+  </data>
+  <data name="Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix." xml:space="preserve">
+    <value>4～12クライアント用の4つの表示：従来のカード、操作パネル、パーティ指令、一覧表。</value>
+  </data>
+  <data name="Native asset extraction started." xml:space="preserve">
+    <value>ネイティブアセット抽出を開始しました。</value>
+  </data>
+  <data name="Loading race names from native EXD data..." xml:space="preserve">
+    <value>EXDデータから種族名を読み込み中...</value>
+  </data>
+  <data name="Loading tribe names from native EXD data..." xml:space="preserve">
+    <value>EXDデータから部族名を読み込み中...</value>
+  </data>
+  <data name="Loaded {0} race name row(s) from native EXD data." xml:space="preserve">
+    <value>EXDデータから種族名を{0}件読み込みました。</value>
+  </data>
+  <data name="Loaded {0} tribe name row(s) from native EXD data." xml:space="preserve">
+    <value>EXDデータから部族名を{0}件読み込みました。</value>
+  </data>
+  <data name="Extracting job icon {0}/{1} ({2})..." xml:space="preserve">
+    <value>ジョブアイコン{0}/{1}（{2}）を抽出中...</value>
+  </data>
+  <data name="Extracting map texture {0}/{1} ({2})..." xml:space="preserve">
+    <value>マップテクスチャ{0}/{1}（{2}）を抽出中...</value>
+  </data>
+  <data name="Generating race icon {0}/{1}..." xml:space="preserve">
+    <value>種族アイコン{0}/{1}を生成中...</value>
+  </data>
+  <data name="Generating tribe icon {0}/{1}..." xml:space="preserve">
+    <value>部族アイコン{0}/{1}を生成中...</value>
+  </data>
+  <data name="Native asset extraction {0}: {1} extracted, {2} failed." xml:space="preserve">
+    <value>ネイティブアセット抽出{0}：抽出{1}件、失敗{2}件。</value>
+  </data>
+  <data name="Writing native asset extraction summary..." xml:space="preserve">
+    <value>ネイティブアセット抽出の概要を書き込み中...</value>
+  </data>
+  <data name="Native asset extraction failed: {0}" xml:space="preserve">
+    <value>ネイティブアセット抽出に失敗：{0}</value>
+  </data>
+  <data name="Launching extractor with the current session plan." xml:space="preserve">
+    <value>現在のセッション計画で抽出を起動しています。</value>
+  </data>
+  <data name="Asset extraction started." xml:space="preserve">
+    <value>アセット抽出を開始しました。</value>
+  </data>
+  <data name="Extractor finished." xml:space="preserve">
+    <value>抽出が完了しました。</value>
+  </data>
+  <data name="Extractor failed." xml:space="preserve">
+    <value>抽出に失敗しました。</value>
+  </data>
+  <data name="Summary written to {0}" xml:space="preserve">
+    <value>概要を{0}に書き込みました</value>
+  </data>
+  <data name="Failed {0} file(s). See {1}." xml:space="preserve">
+    <value>{0}件のファイルで失敗。{1}を参照。</value>
+  </data>
+  <data name="Extractor failed: {0}" xml:space="preserve">
+    <value>抽出に失敗：{0}</value>
+  </data>
+  <data name="No extracted asset summary found yet." xml:space="preserve">
+    <value>アセット抽出の概要はまだありません。</value>
+  </data>
+  <data name="Native asset extraction is already running." xml:space="preserve">
+    <value>ネイティブアセット抽出は実行中です。</value>
+  </data>
+  <data name="Asset extraction is already running." xml:space="preserve">
+    <value>アセット抽出は実行中です。</value>
+  </data>
+  <data name="Same-PC game path has not been captured yet." xml:space="preserve">
+    <value>このPCのゲームパスはまだ取得されていません。</value>
+  </data>
+  <data name="Extractor script not found: {0}" xml:space="preserve">
+    <value>抽出スクリプトが見つかりません：{0}</value>
+  </data>
+  <data name="Last asset extraction status was {0}." xml:space="preserve">
+    <value>前回のアセット抽出状態：{0}。</value>
+  </data>
+  <data name="Target client is not currently tracked." xml:space="preserve">
+    <value>対象クライアントは現在追跡されていません。</value>
+  </data>
+  <data name="That client does not allow web text or slash commands." xml:space="preserve">
+    <value>このクライアントはウェブからのテキストやコマンドを許可していません。</value>
+  </data>
+  <data name="That client does not allow web CCTV streaming." xml:space="preserve">
+    <value>このクライアントはウェブCCTVを許可していません。</value>
+  </data>
+  <data name="That client does not allow web screenshot requests." xml:space="preserve">
+    <value>このクライアントはウェブからのスクリーンショット要求を許可していません。</value>
+  </data>
+  <data name="Text is empty." xml:space="preserve">
+    <value>テキストが空です。</value>
+  </data>
+  <data name="Queued web text/slash command." xml:space="preserve">
+    <value>ウェブのテキスト/コマンドをキューに追加しました。</value>
+  </data>
+  <data name="Queued CCTV frame request." xml:space="preserve">
+    <value>CCTVフレーム要求をキューに追加しました。</value>
+  </data>
+  <data name="Queued screenshot request." xml:space="preserve">
+    <value>スクリーンショット要求をキューに追加しました。</value>
+  </data>
+  <data name="Unsupported action type: {0}" xml:space="preserve">
+    <value>未対応の操作種別：{0}</value>
+  </data>
+  <data name="Auto-extracting {0} for the current session." xml:space="preserve">
+    <value>現在のセッション用に{0}を自動抽出しています。</value>
+  </data>
+  <data name="Race name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>種族名には生成したラベルを使用：{0}</value>
+  </data>
+  <data name="Tribe name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>部族名には生成したラベルを使用：{0}</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>見つかりません</value>
+  </data>
+<data name="Server is already running." xml:space="preserve"><value>サーバーは既に起動しています。</value></data>
+<data name="WSAStartup failed: {0}" xml:space="preserve"><value>WSAStartup に失敗しました: {0}</value></data>
+<data name="socket() failed: {0}" xml:space="preserve"><value>socket() に失敗しました: {0}</value></data>
+<data name="Bind host must be an IPv4 address such as 127.0.0.1 or 0.0.0.0." xml:space="preserve"><value>バインド先には 127.0.0.1 や 0.0.0.0 などの IPv4 アドレスを指定してください。</value></data>
+<data name="bind() failed on {0} with {1}" xml:space="preserve"><value>{0} の bind() に失敗しました: {1}</value></data>
+<data name="listen() failed: {0}" xml:space="preserve"><value>listen() に失敗しました: {0}</value></data>
+<data name="Data folder path is empty." xml:space="preserve"><value>データフォルダーのパスが空です。</value></data>
+<data name="Failed to create {0}: {1}" xml:space="preserve"><value>{0} を作成できません: {1}</value></data>
+<data name="{0} is not a folder." xml:space="preserve"><value>{0} はフォルダーではありません。</value></data>
+  <data name="Yes" xml:space="preserve">
+    <value>はい</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>いいえ</value>
+  </data>
+  <data name="Operator View" xml:space="preserve">
+    <value>オペレータービュー</value>
+  </data>
+  <data name="Select a client to monitor and interact" xml:space="preserve">
+    <value>監視・操作するクライアントを選択</value>
+  </data>
+  <data name="Command Center" xml:space="preserve">
+    <value>コマンドセンター</value>
+  </data>
+  <data name="Aggregated party command board" xml:space="preserve">
+    <value>集約パーティのコマンドボード</value>
+  </data>
+  <data name="Party Overview" xml:space="preserve">
+    <value>パーティ概要</value>
+  </data>
+  <data name="Active Members" xml:space="preserve">
+    <value>アクティブメンバー</value>
+  </data>
+  <data name="In Zone" xml:space="preserve">
+    <value>同じエリア</value>
+  </data>
+  <data name="Selected Entity" xml:space="preserve">
+    <value>選択中の対象</value>
+  </data>
+  <data name="Compare clients across zones and status" xml:space="preserve">
+    <value>クライアントをエリアと状態で比較</value>
+  </data>
+  <data name="Window appearance" xml:space="preserve"><value>ウィンドウの外観</value></data>
+  <data name="Compact visible on main window" xml:space="preserve"><value>メインウィンドウにコンパクト切替を表示</value></data>
+  <data name="Language visible on main window" xml:space="preserve"><value>メインウィンドウに言語選択を表示</value></data>
+  <data name="Transparency" xml:space="preserve"><value>透明度</value></data>
+  <data name="Opacity (%)" xml:space="preserve"><value>不透明度 (%)</value></data>
+  <data name="Auto-fade when unfocused" xml:space="preserve"><value>フォーカスがないときに自動で薄くする</value></data>
+  <data name="Unfocused opacity (%)" xml:space="preserve"><value>非フォーカス時の不透明度 (%)</value></data>
+  <data name="Unfocused delay (seconds)" xml:space="preserve"><value>非フォーカス時の待機時間 (秒)</value></data>
+</root>

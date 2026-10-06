@@ -1,0 +1,1377 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Blue" xml:space="preserve">
+    <value>Xanh dương</value>
+  </data>
+  <data name="Character" xml:space="preserve">
+    <value>Nhân vật</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Màu sắc</value>
+  </data>
+  <data name="Compact mode" xml:space="preserve">
+    <value>Chế độ gọn</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Sao chép</value>
+  </data>
+  <data name="Copy Icon Guide Link" xml:space="preserve">
+    <value>Sao chép liên kết hướng dẫn biểu tượng</value>
+  </data>
+  <data name="Custom RGB" xml:space="preserve">
+    <value>RGB tùy chỉnh</value>
+  </data>
+  <data name="Discord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Đã bật</value>
+  </data>
+  <data name="Job" xml:space="preserve">
+    <value>Nghề</value>
+  </data>
+  <data name="Ko-fi" xml:space="preserve">
+    <value>Ko-fi</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Ngôn ngữ</value>
+  </data>
+  <data name="Loading UI fonts..." xml:space="preserve">
+    <value>Đang tải phông chữ giao diện...</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Không có</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Tắt</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Bật</value>
+  </data>
+  <data name="Pink" xml:space="preserve">
+    <value>Hồng</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Cài đặt</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>Trạng thái</value>
+  </data>
+  <data name="Teal" xml:space="preserve">
+    <value>Xanh ngọc</value>
+  </data>
+  <data name="UI fonts failed to load. See the plugin log." xml:space="preserve">
+    <value>Không tải được phông chữ giao diện. Xem nhật ký plugin.</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Tài khoản</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>Khu vực</value>
+  </data>
+  <data name="Avg" xml:space="preserve">
+    <value>Trung bình</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Quay lại</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Hủy</value>
+  </data>
+  <data name="Cast" xml:space="preserve">
+    <value>Niệm phép</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Combat" xml:space="preserve">
+    <value>chiến đấu</value>
+  </data>
+  <data name="Condition panel" xml:space="preserve">
+    <value>Bảng điều kiện</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>Điều kiện</value>
+  </data>
+  <data name="Copy Command" xml:space="preserve">
+    <value>Sao chép lệnh</value>
+  </data>
+  <data name="Copy DLL Path" xml:space="preserve">
+    <value>Sao chép đường dẫn DLL</value>
+  </data>
+  <data name="DTR Bar Enabled" xml:space="preserve">
+    <value>Bật thanh DTR</value>
+  </data>
+  <data name="DTR Bar Mode" xml:space="preserve">
+    <value>Chế độ thanh DTR</value>
+  </data>
+  <data name="DTR Icons (max 3 characters)" xml:space="preserve">
+    <value>Biểu tượng DTR (tối đa 3 ký tự)</value>
+  </data>
+  <data name="DTR status entry" xml:space="preserve">
+    <value>Mục trạng thái DTR</value>
+  </data>
+  <data name="Dead" xml:space="preserve">
+    <value>Đã chết</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Đã tắt</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>Khoảng cách</value>
+  </data>
+  <data name="Download Native Server" xml:space="preserve">
+    <value>Tải máy chủ gốc</value>
+  </data>
+  <data name="Durability unavailable." xml:space="preserve">
+    <value>Không có dữ liệu độ bền.</value>
+  </data>
+  <data name="Duty" xml:space="preserve">
+    <value>Nhiệm vụ</value>
+  </data>
+  <data name="Enable Thick Thighs Save Lives HUD" xml:space="preserve">
+    <value>Bật HUD Thick Thighs Save Lives</value>
+  </data>
+  <data name="Enable plugin full-body fallback" xml:space="preserve">
+    <value>Bật ảnh toàn thân dự phòng từ plugin</value>
+  </data>
+  <data name="Enumerate" xml:space="preserve">
+    <value>Đánh số</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>Trang bị</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Hoàn tất</value>
+  </data>
+  <data name="Icon Only" xml:space="preserve">
+    <value>Chỉ biểu tượng</value>
+  </data>
+  <data name="Icon+Text" xml:space="preserve">
+    <value>Biểu tượng + văn bản</value>
+  </data>
+  <data name="Krangle displayed names" xml:space="preserve">
+    <value>Krangle tên hiển thị</value>
+  </data>
+  <data name="Krangle displayed player names" xml:space="preserve">
+    <value>Krangle tên người chơi hiển thị</value>
+  </data>
+  <data name="Last OK" xml:space="preserve">
+    <value>Lần thành công cuối</value>
+  </data>
+  <data name="Launch command" xml:space="preserve">
+    <value>Lệnh khởi chạy</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Trực tiếp</value>
+  </data>
+  <data name="Loaded DLL" xml:space="preserve">
+    <value>DLL đã tải</value>
+  </data>
+  <data name="Local + Web" xml:space="preserve">
+    <value>Cục bộ + Web</value>
+  </data>
+  <data name="Local HUD" xml:space="preserve">
+    <value>HUD cục bộ</value>
+  </data>
+  <data name="Local player is not available yet." xml:space="preserve">
+    <value>Chưa có người chơi cục bộ.</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>Tối thiểu</value>
+  </data>
+  <data name="Mount" xml:space="preserve">
+    <value>Thú cưỡi</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Tên</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Tiếp theo</value>
+  </data>
+  <data name="No party members detected." xml:space="preserve">
+    <value>Không phát hiện thành viên nhóm.</value>
+  </data>
+  <data name="Open Web HUD" xml:space="preserve">
+    <value>Mở HUD Web</value>
+  </data>
+  <data name="Overlay" xml:space="preserve">
+    <value>Lớp phủ</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>Nhóm</value>
+  </data>
+  <data name="Party Radar" xml:space="preserve">
+    <value>Radar nhóm</value>
+  </data>
+  <data name="Party Size" xml:space="preserve">
+    <value>Số thành viên nhóm</value>
+  </data>
+  <data name="Party status list" xml:space="preserve">
+    <value>Danh sách trạng thái nhóm</value>
+  </data>
+  <data name="Position (X, Y, Z)" xml:space="preserve">
+    <value>Vị trí (X, Y, Z)</value>
+  </data>
+  <data name="Publish failed" xml:space="preserve">
+    <value>Đăng thất bại</value>
+  </data>
+  <data name="Queue" xml:space="preserve">
+    <value>Hàng đợi</value>
+  </data>
+  <data name="Remote HUD" xml:space="preserve">
+    <value>HUD từ xa</value>
+  </data>
+  <data name="Remote HUD Server" xml:space="preserve">
+    <value>Máy chủ HUD từ xa</value>
+  </data>
+  <data name="Remote server and review" xml:space="preserve">
+    <value>Máy chủ từ xa và xem lại</value>
+  </data>
+  <data name="Repair summary" xml:space="preserve">
+    <value>Tóm tắt sửa chữa</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>Xem lại</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Máy chủ</value>
+  </data>
+  <data name="Server URL" xml:space="preserve">
+    <value>URL máy chủ</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>Thiết lập</value>
+  </data>
+  <data name="Setup Wizard" xml:space="preserve">
+    <value>Trình hướng dẫn thiết lập</value>
+  </data>
+  <data name="Show condition panel" xml:space="preserve">
+    <value>Hiện bảng điều kiện</value>
+  </data>
+  <data name="Show party radar" xml:space="preserve">
+    <value>Hiện radar nhóm</value>
+  </data>
+  <data name="Show party status list" xml:space="preserve">
+    <value>Hiện danh sách trạng thái nhóm</value>
+  </data>
+  <data name="Show repair summary" xml:space="preserve">
+    <value>Hiện tóm tắt sửa chữa</value>
+  </data>
+  <data name="Slots" xml:space="preserve">
+    <value>Ô</value>
+  </data>
+  <data name="Snapshot" xml:space="preserve">
+    <value>Ảnh dữ liệu</value>
+  </data>
+  <data name="Text Only" xml:space="preserve">
+    <value>Chỉ văn bản</value>
+  </data>
+  <data name="Update Cadence" xml:space="preserve">
+    <value>Nhịp cập nhật</value>
+  </data>
+  <data name="Use Local Default" xml:space="preserve">
+    <value>Dùng mặc định cục bộ</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>Đang chờ</value>
+  </data>
+  <data name="Web Text" xml:space="preserve">
+    <value>Văn bản Web</value>
+  </data>
+  <data name="Web Viewer Policy" xml:space="preserve">
+    <value>Quyền người xem Web</value>
+  </data>
+  <data name="Web only" xml:space="preserve">
+    <value>Chỉ Web</value>
+  </data>
+  <data name="Bind host" xml:space="preserve">
+    <value>Địa chỉ lắng nghe</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Cổng</value>
+  </data>
+  <data name="Stale seconds" xml:space="preserve">
+    <value>Số giây để cũ</value>
+  </data>
+  <data name="Start Server" xml:space="preserve">
+    <value>Khởi động máy chủ</value>
+  </data>
+  <data name="Stop Server" xml:space="preserve">
+    <value>Dừng máy chủ</value>
+  </data>
+  <data name="Open HUD" xml:space="preserve">
+    <value>Mở HUD</value>
+  </data>
+  <data name="Screenshots" xml:space="preserve">
+    <value>Ảnh chụp màn hình</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>Bộ nhớ đệm</value>
+  </data>
+  <data name="Extracted" xml:space="preserve">
+    <value>Đã trích xuất</value>
+  </data>
+  <data name="Copy URL" xml:space="preserve">
+    <value>Sao chép URL</value>
+  </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>Chẩn đoán</value>
+  </data>
+  <data name="Clear Stale" xml:space="preserve">
+    <value>Xóa client cũ</value>
+  </data>
+  <data name="Clear Cache" xml:space="preserve">
+    <value>Xóa bộ nhớ đệm</value>
+  </data>
+  <data name="Extract Assets" xml:space="preserve">
+    <value>Trích xuất tài nguyên</value>
+  </data>
+  <data name="Data folder" xml:space="preserve">
+    <value>Thư mục dữ liệu</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Duyệt</value>
+  </data>
+  <data name="Open Data" xml:space="preserve">
+    <value>Mở dữ liệu</value>
+  </data>
+  <data name="Reset Default" xml:space="preserve">
+    <value>Khôi phục mặc định</value>
+  </data>
+  <data name="Server running" xml:space="preserve">
+    <value>Máy chủ đang chạy</value>
+  </data>
+  <data name="Server stopped" xml:space="preserve">
+    <value>Máy chủ đã dừng</value>
+  </data>
+  <data name="Active clients" xml:space="preserve">
+    <value>Client hoạt động</value>
+  </data>
+  <data name="Runtime log" xml:space="preserve">
+    <value>Nhật ký chạy</value>
+  </data>
+  <data name="Server configuration" xml:space="preserve">
+    <value>Cấu hình máy chủ</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Thao tác</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Tóm tắt</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>Bản đồ</value>
+  </data>
+  <data name="Threat" xml:space="preserve">
+    <value>Mối đe dọa</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>Điều hành</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Lệnh</value>
+  </data>
+  <data name="Matrix" xml:space="preserve">
+    <value>Ma trận</value>
+  </data>
+  <data name="Classic" xml:space="preserve">
+    <value>Cổ điển</value>
+  </data>
+  <data name="Show Details" xml:space="preserve">
+    <value>Hiện chi tiết</value>
+  </data>
+  <data name="Hide Details" xml:space="preserve">
+    <value>Ẩn chi tiết</value>
+  </data>
+  <data name="Remote Monitor + Command Relay" xml:space="preserve">
+    <value>Giám sát từ xa + chuyển tiếp lệnh</value>
+  </data>
+  <data name="Remote HUD and command relay" xml:space="preserve">
+    <value>HUD từ xa và chuyển tiếp lệnh</value>
+  </data>
+  <data name="Send Text" xml:space="preserve">
+    <value>Gửi văn bản</value>
+  </data>
+  <data name="Request Screenshot" xml:space="preserve">
+    <value>Yêu cầu ảnh chụp</value>
+  </data>
+  <data name="Last Screenshot" xml:space="preserve">
+    <value>Ảnh chụp cuối</value>
+  </data>
+  <data name="Last update" xml:space="preserve">
+    <value>Cập nhật cuối</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>Cũ</value>
+  </data>
+  <data name="Disconnected" xml:space="preserve">
+    <value>Đã ngắt kết nối</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>Trực tuyến</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>Ngoại tuyến</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>Rảnh</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Không rõ</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Sẵn sàng</value>
+  </data>
+  <data name="Allow web viewer CCTV mode" xml:space="preserve">
+    <value>Cho phép người xem Web dùng CCTV</value>
+  </data>
+  <data name="Allow web viewer screenshot requests" xml:space="preserve">
+    <value>Cho phép người xem Web yêu cầu ảnh chụp</value>
+  </data>
+  <data name="Allow web viewer text and slash commands" xml:space="preserve">
+    <value>Cho phép người xem Web gửi văn bản và lệnh slash</value>
+  </data>
+  <data name="Combat radar height (yalms)" xml:space="preserve">
+    <value>Chiều cao radar chiến đấu (yalm)</value>
+  </data>
+  <data name="Combat radar width (yalms)" xml:space="preserve">
+    <value>Chiều rộng radar chiến đấu (yalm)</value>
+  </data>
+  <data name="Travel radar height (yalms)" xml:space="preserve">
+    <value>Chiều cao radar di chuyển (yalm)</value>
+  </data>
+  <data name="Travel radar width (yalms)" xml:space="preserve">
+    <value>Chiều rộng radar di chuyển (yalm)</value>
+  </data>
+  <data name="Radar box size (px)" xml:space="preserve">
+    <value>Kích thước radar (px)</value>
+  </data>
+  <data name="Fast position interval (ms)" xml:space="preserve">
+    <value>Chu kỳ vị trí nhanh (ms)</value>
+  </data>
+  <data name="Full snapshot interval (ms)" xml:space="preserve">
+    <value>Chu kỳ ảnh dữ liệu đầy đủ (ms)</value>
+  </data>
+  <data name="Python launch command" xml:space="preserve">
+    <value>Lệnh khởi chạy Python</value>
+  </data>
+  <data name="Publish HUD snapshots to remote server" xml:space="preserve">
+    <value>Đăng ảnh dữ liệu HUD lên máy chủ từ xa</value>
+  </data>
+  <data name="Enumerate party members for radar labels" xml:space="preserve">
+    <value>Đánh số thành viên nhóm trên radar</value>
+  </data>
+  <data name="Display size of the local HUD radar box." xml:space="preserve">
+    <value>Kích thước hiển thị radar HUD cục bộ.</value>
+  </data>
+  <data name="Show TTSL status in the server info bar." xml:space="preserve">
+    <value>Hiện trạng thái TTSL trên thanh thông tin máy chủ.</value>
+  </data>
+  <data name="Show or hide the server-info bar entry for TTSL." xml:space="preserve">
+    <value>Hiện hoặc ẩn mục TTSL trên thanh thông tin máy chủ.</value>
+  </data>
+  <data name="Obfuscate displayed player names for screenshots." xml:space="preserve">
+    <value>Làm mờ tên người chơi hiển thị khi chụp màn hình.</value>
+  </data>
+  <data name="Use party slot numbers on the radar." xml:space="preserve">
+    <value>Dùng số ô thành viên trên radar.</value>
+  </data>
+  <data name="Open the guided local/web HUD setup." xml:space="preserve">
+    <value>Mở hướng dẫn thiết lập HUD cục bộ/Web.</value>
+  </data>
+  <data name="Open the Python remote HUD in your default browser." xml:space="preserve">
+    <value>Mở HUD Python từ xa trong trình duyệt mặc định.</value>
+  </data>
+  <data name="Guided local HUD and web publisher setup" xml:space="preserve">
+    <value>Hướng dẫn thiết lập HUD cục bộ và đăng lên Web</value>
+  </data>
+  <data name="Copies the best local server-launch command TTSL could resolve from this install." xml:space="preserve">
+    <value>Sao chép lệnh khởi chạy máy chủ cục bộ phù hợp nhất mà TTSL tìm được từ bản cài đặt này.</value>
+  </data>
+  <data name="Copies the Lodestone blog link with suggested glyphs." xml:space="preserve">
+    <value>Sao chép liên kết blog Lodestone với ký hiệu gợi ý.</value>
+  </data>
+  <data name="Customize the glyphs used when TTSL is on or off." xml:space="preserve">
+    <value>Tùy chỉnh ký hiệu khi TTSL bật hoặc tắt.</value>
+  </data>
+  <data name="Where should TTSL show your HUD?" xml:space="preserve">
+    <value>TTSL nên hiển thị HUD ở đâu?</value>
+  </data>
+  <data name="Choose the local HUD details you want ready" xml:space="preserve">
+    <value>Chọn chi tiết HUD cục bộ cần chuẩn bị</value>
+  </data>
+  <data name="These choices also control which sections are included when local HUD data is published." xml:space="preserve">
+    <value>Các lựa chọn này cũng quyết định phần được đưa vào khi đăng dữ liệu HUD cục bộ.</value>
+  </data>
+  <data name="Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are." xml:space="preserve">
+    <value>Chọn chế độ ban đầu. Trình hướng dẫn chỉ đổi các cài đặt hiện ở đây; quyền Web nâng cao, chu kỳ làm mới, kích thước radar, biểu tượng và nhãn giữ nguyên.</value>
+  </data>
+  <data name="Show the in-game TTSL window without publishing to the web server." xml:space="preserve">
+    <value>Hiện cửa sổ TTSL trong game mà không đăng lên máy chủ Web.</value>
+  </data>
+  <data name="Show the in-game TTSL window and publish snapshots to the configured web server." xml:space="preserve">
+    <value>Hiện cửa sổ TTSL trong game và đăng ảnh dữ liệu lên máy chủ Web đã cấu hình.</value>
+  </data>
+  <data name="Publish snapshots to the web server while keeping the in-game HUD hidden." xml:space="preserve">
+    <value>Đăng ảnh dữ liệu lên máy chủ Web và ẩn HUD trong game.</value>
+  </data>
+  <data name="Confirm the web server address and copy the existing launch command if you need to start the local server." xml:space="preserve">
+    <value>Xác nhận địa chỉ máy chủ Web và sao chép lệnh khởi chạy có sẵn nếu cần khởi động máy chủ cục bộ.</value>
+  </data>
+  <data name="Local HUD mode does not publish snapshots. The existing remote URL is preserved for later." xml:space="preserve">
+    <value>Chế độ HUD cục bộ không đăng ảnh dữ liệu. URL từ xa hiện có được giữ lại để dùng sau.</value>
+  </data>
+  <data name="The active account changed. Reopen the wizard and review that account&apos;s settings." xml:space="preserve">
+    <value>Tài khoản hoạt động đã đổi. Mở lại trình hướng dẫn và xem cài đặt tài khoản đó.</value>
+  </data>
+  <data name="Step {0} of 3" xml:space="preserve">
+    <value>Bước {0} trên 3</value>
+  </data>
+  <data name="Preview: {0}" xml:space="preserve">
+    <value>Xem trước: {0}</value>
+  </data>
+  <data name="Current account ID: {0}" xml:space="preserve">
+    <value>ID tài khoản hiện tại: {0}</value>
+  </data>
+  <data name="Publisher: {0}" xml:space="preserve">
+    <value>Đăng dữ liệu: {0}</value>
+  </data>
+  <data name="Last error: {0}" xml:space="preserve">
+    <value>Lỗi cuối: {0}</value>
+  </data>
+  <data name="Enabled Icon" xml:space="preserve">
+    <value>Biểu tượng bật</value>
+  </data>
+  <data name="Disabled Icon" xml:space="preserve">
+    <value>Biểu tượng tắt</value>
+  </data>
+  <data name="Age" xml:space="preserve">
+    <value>Tuổi dữ liệu</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Đóng</value>
+  </data>
+  <data name="Command View" xml:space="preserve">
+    <value>Chế độ lệnh</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>Đã kết nối</value>
+  </data>
+  <data name="Dist" xml:space="preserve">
+    <value>K/cách</value>
+  </data>
+  <data name="Enmity" xml:space="preserve">
+    <value>Thù địch</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Luồng</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>Tập trung</value>
+  </data>
+  <data name="Game path" xml:space="preserve">
+    <value>Đường dẫn game</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>Cao</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Host</value>
+  </data>
+  <data name="Inspector" xml:space="preserve">
+    <value>Chi tiết</value>
+  </data>
+  <data name="Last Screenshot Sent" xml:space="preserve">
+    <value>Ảnh chụp gửi cuối</value>
+  </data>
+  <data name="Loose Clients" xml:space="preserve">
+    <value>Client ngoài nhóm</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Thấp</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Vừa</value>
+  </data>
+  <data name="Minimap" xml:space="preserve">
+    <value>Bản đồ nhỏ</value>
+  </data>
+  <data name="No combat telemetry captured." xml:space="preserve">
+    <value>Chưa có dữ liệu chiến đấu.</value>
+  </data>
+  <data name="No party data captured yet." xml:space="preserve">
+    <value>Chưa có dữ liệu nhóm.</value>
+  </data>
+  <data name="Party Surface" xml:space="preserve">
+    <value>Bảng nhóm</value>
+  </data>
+  <data name="Refresh failed" xml:space="preserve">
+    <value>Làm mới thất bại</value>
+  </data>
+  <data name="Situation" xml:space="preserve">
+    <value>Tình huống</value>
+  </data>
+  <data name="Slot" xml:space="preserve">
+    <value>Ô</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Trạng thái</value>
+  </data>
+  <data name="Surface Matrix" xml:space="preserve">
+    <value>Ma trận bảng</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Loại</value>
+  </data>
+  <data name="Vitals" xml:space="preserve">
+    <value>Sinh lực</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>Vùng</value>
+  </data>
+  <data name="Asset plan unavailable." xml:space="preserve">
+    <value>Không có kế hoạch tài nguyên.</value>
+  </data>
+  <data name="Extraction status unavailable." xml:space="preserve">
+    <value>Không có trạng thái trích xuất.</value>
+  </data>
+  <data name="Awaiting the first CCTV frame from the client." xml:space="preserve">
+    <value>Đang chờ khung CCTV đầu tiên từ client.</value>
+  </data>
+  <data name="CCTV frames appear here after the first live capture." xml:space="preserve">
+    <value>Khung CCTV xuất hiện sau lần chụp trực tiếp đầu tiên.</value>
+  </data>
+  <data name="CCTV is not allowed for this client." xml:space="preserve">
+    <value>Client này không cho phép CCTV.</value>
+  </data>
+  <data name="CCTV uses rolling game-window captures and replaces the map pane until closed." xml:space="preserve">
+    <value>CCTV dùng ảnh cửa sổ game liên tục và thay thế ô bản đồ cho đến khi đóng.</value>
+  </data>
+  <data name="Clients not currently represented inside an aggregate party surface." xml:space="preserve">
+    <value>Client chưa có trong bảng nhóm tổng hợp.</value>
+  </data>
+  <data name="Open the screenshot folder on the TTSL server host." xml:space="preserve">
+    <value>Mở thư mục ảnh chụp trên host máy chủ TTSL.</value>
+  </data>
+  <data name="Plain text goes to /echo. Slash commands like /sit run verbatim" xml:space="preserve">
+    <value>Văn bản thường gửi đến /echo. Lệnh slash như /sit chạy nguyên văn</value>
+  </data>
+  <data name="Select a client or aggregate party surface to inspect the detail pane." xml:space="preserve">
+    <value>Chọn client hoặc bảng nhóm tổng hợp để xem chi tiết.</value>
+  </data>
+  <data name="The tracked client does not currently expose target or hostile data." xml:space="preserve">
+    <value>Client theo dõi hiện không cung cấp dữ liệu mục tiêu hay kẻ địch.</value>
+  </data>
+  <data name="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV." xml:space="preserve">
+    <value>Client này hiện không cho phép Web kích hoạt văn bản, lệnh slash, ảnh chụp hoặc CCTV.</value>
+  </data>
+  <data name="DTR" xml:space="preserve">
+    <value>DTR</value>
+  </data>
+  <data name="Krangle" xml:space="preserve">
+    <value>Krangle</value>
+  </data>
+  <data name="CCTV" xml:space="preserve">
+    <value>CCTV</value>
+  </data>
+  <data name="HUD" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="HP" xml:space="preserve">
+    <value>HP</value>
+  </data>
+  <data name="MP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="FB" xml:space="preserve">
+    <value>FB</value>
+  </data>
+  <data name="CMD" xml:space="preserve">
+    <value>CMD</value>
+  </data>
+  <data name="SS" xml:space="preserve">
+    <value>SS</value>
+  </data>
+  <data name="SSF" xml:space="preserve">
+    <value>SSF</value>
+  </data>
+  <data name="Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets." xml:space="preserve">
+    <value>Cho phép HUD trình duyệt thay ô bản đồ bằng hình trực tiếp liên tục với mức chụp thấp, vừa hoặc cao.</value>
+  </data>
+  <data name="Captures the current FFXIV game-window client area and uploads it to the Python server." xml:space="preserve">
+    <value>Chụp vùng client cửa sổ FFXIV hiện tại và tải lên máy chủ Python.</value>
+  </data>
+  <data name="Clients are grouped by incoming account ID and character on the server page." xml:space="preserve">
+    <value>Client được nhóm theo ID tài khoản và nhân vật nhận được trên trang máy chủ.</value>
+  </data>
+  <data name="Default view is 20y x 20y in combat and 50y x 50y out of combat." xml:space="preserve">
+    <value>Khung mặc định là 20y x 20y trong chiến đấu và 50y x 50y ngoài chiến đấu.</value>
+  </data>
+  <data name="Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0." xml:space="preserve">
+    <value>Sửa lệnh đã sao chép để cho người xem LAN: đổi --host 127.0.0.1 thành --host 0.0.0.0.</value>
+  </data>
+  <data name="For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first." xml:space="preserve">
+    <value>Để trích xuất bảng/biểu tượng sau này, phải có ít nhất một client trên cùng PC với bộ giám sát Python kết nối trước.</value>
+  </data>
+  <data name="Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable." xml:space="preserve">
+    <value>Mặc định tắt. Khi bật, HUD Web chỉ có thể yêu cầu client dùng ảnh xem trước CharacterInspect làm dự phòng nếu không có ảnh toàn thân Lodestone.</value>
+  </data>
+  <data name="Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim." xml:space="preserve">
+    <value>Văn bản thường gửi đến /echo với tiền tố [TTSL Web]. Dữ liệu bắt đầu bằng slash gửi nguyên văn.</value>
+  </data>
+  <data name="Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache." xml:space="preserve">
+    <value>Văn bản Web thường có tiền tố [TTSL Web]. Dữ liệu slash gửi nguyên văn; nút ảnh chụp dùng client tải lên/nguồn cho thành viên lạ của nhóm tổng hợp, CCTV dùng bộ đệm khung liên tục cùng client.</value>
+  </data>
+  <data name="Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser." xml:space="preserve">
+    <value>Gửi ảnh dữ liệu HUD cục bộ lên máy chủ mini Python để xem nhiều client trong một trình duyệt.</value>
+  </data>
+  <data name="TTSL settings are now stored per account ID once a live account is detected." xml:space="preserve">
+    <value>Cài đặt TTSL hiện lưu theo ID tài khoản khi phát hiện tài khoản đang hoạt động.</value>
+  </data>
+  <data name="The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar." xml:space="preserve">
+    <value>HUD trình duyệt hiện có nút kích thước hộp và khoảng radar chiến đấu/di chuyển ở thanh trên.</value>
+  </data>
+  <data name="The server will cache the first same-PC game path it sees for the rest of that monitoring session." xml:space="preserve">
+    <value>Máy chủ giữ đường dẫn game cùng PC đầu tiên thấy được cho phần còn lại của phiên giám sát.</value>
+  </data>
+  <data name="Showing {0:F0}y x {1:F0}y ({2})." xml:space="preserve">
+    <value>Hiển thị {0:F0}y x {1:F0}y ({2}).</value>
+  </data>
+  <data name="Travel" xml:space="preserve">
+    <value>Di chuyển</value>
+  </data>
+  <data name="Shot" xml:space="preserve">
+    <value>Ảnh</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Chế độ</value>
+  </data>
+  <data name="Krangle names" xml:space="preserve">
+    <value>Krangle tên</value>
+  </data>
+  <data name="DTR entry" xml:space="preserve">
+    <value>Mục DTR</value>
+  </data>
+  <data name="Mode: {0}" xml:space="preserve">
+    <value>Chế độ: {0}</value>
+  </data>
+  <data name="Condition panel: {0}" xml:space="preserve">
+    <value>Bảng điều kiện: {0}</value>
+  </data>
+  <data name="Repair summary: {0}" xml:space="preserve">
+    <value>Tóm tắt sửa chữa: {0}</value>
+  </data>
+  <data name="Party status: {0}" xml:space="preserve">
+    <value>Danh sách trạng thái nhóm: {0}</value>
+  </data>
+  <data name="Party radar: {0}" xml:space="preserve">
+    <value>Radar nhóm: {0}</value>
+  </data>
+  <data name="Krangle names: {0}" xml:space="preserve">
+    <value>Krangle tên: {0}</value>
+  </data>
+  <data name="DTR entry: {0}" xml:space="preserve">
+    <value>Mục DTR: {0}</value>
+  </data>
+  <data name="Server: {0}" xml:space="preserve">
+    <value>Máy chủ: {0}</value>
+  </data>
+  <data name="Release asset: latestServer.zip" xml:space="preserve">
+    <value>Tài nguyên phát hành: latestServer.zip</value>
+  </data>
+  <data name="(?)" xml:space="preserve">
+    <value>(?)</value>
+  </data>
+  <data name="TTSL " xml:space="preserve">
+    <value>TTSL </value>
+  </data>
+  <data name="In duty" xml:space="preserve">
+    <value>Trong nhiệm vụ</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>Trong hàng đợi</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Không có</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>Đã khóa</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Văn bản</value>
+  </data>
+  <data name="Screens" xml:space="preserve">
+    <value>Ảnh chụp</value>
+  </data>
+  <data name="Telemetry" xml:space="preserve">
+    <value>Dữ liệu đo</value>
+  </data>
+  <data name="Unknown race" xml:space="preserve">
+    <value>Không rõ chủng tộc</value>
+  </data>
+  <data name="Party Leader" xml:space="preserve">
+    <value>Trưởng nhóm</value>
+  </data>
+  <data name="Party Role" xml:space="preserve">
+    <value>Vai trò nhóm</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>Client</value>
+  </data>
+  <data name="Asset plan pending." xml:space="preserve">
+    <value>Đang chờ kế hoạch tài nguyên.</value>
+  </data>
+  <data name="Extraction idle." xml:space="preserve">
+    <value>Trích xuất rảnh.</value>
+  </data>
+  <data name="Extracting..." xml:space="preserve">
+    <value>Đang trích xuất...</value>
+  </data>
+  <data name="Waiting for clients..." xml:space="preserve">
+    <value>Đang chờ client...</value>
+  </data>
+  <data name="No updates yet." xml:space="preserve">
+    <value>Chưa có cập nhật.</value>
+  </data>
+  <data name="All tracked clients are stale or disconnected." xml:space="preserve">
+    <value>Tất cả client theo dõi đã cũ hoặc ngắt kết nối.</value>
+  </data>
+  <data name="No aggregate party surfaces are available right now, so command view is showing compact client cards." xml:space="preserve">
+    <value>Hiện không có bảng nhóm tổng hợp, nên chế độ lệnh đang hiện thẻ client gọn.</value>
+  </data>
+  <data name="Aggregate parties are disabled. Enable the toggle above to unlock the full party command board." xml:space="preserve">
+    <value>Nhóm tổng hợp bị tắt. Bật nút phía trên để mở toàn bộ bảng lệnh nhóm.</value>
+  </data>
+  <data name="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane." xml:space="preserve">
+    <value>Văn bản thường có tiền tố [TTSL Web]. Dữ liệu slash gửi nguyên văn. SS gửi một ảnh chụp lưu đệm, còn CCTV phát hình trực tiếp liên tục trong ô bản đồ.</value>
+  </data>
+  <data name="SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client." xml:space="preserve">
+    <value>SS và CMD nhắm trực tiếp thành viên được giám sát. CCTV thay ô bản đồ đến khi đóng. Nút thành viên lạ vẫn hiện nhưng bị tắt đến khi ô đó có client theo dõi.</value>
+  </data>
+  <data name="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback." xml:space="preserve">
+    <value>Thành viên lạ đã có HP, MP, vị trí, cấp và nghề từ nhóm. Ảnh Lodestone được tìm nền theo thế giới của thành viên đó, hoặc thế giới client nguồn làm dự phòng.</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor." xml:space="preserve">
+    <value>Chưa có client kết nối. Khởi động máy chủ, trỏ TTSL đến đó rồi bật đăng từ xa. Trích xuất bảng/biểu tượng sau này cần ít nhất một client cùng PC với bộ giám sát gốc này.</value>
+  </data>
+  <data name="Data folder is already active:" xml:space="preserve">
+    <value>Thư mục dữ liệu đã hoạt động:</value>
+  </data>
+  <data name="Data folder saved for next launch:" xml:space="preserve">
+    <value>Thư mục dữ liệu đã lưu cho lần chạy sau:</value>
+  </data>
+  <data name="Restart TTSL Native Server to use it. Current session keeps using:" xml:space="preserve">
+    <value>Khởi động lại TTSL Native Server để dùng. Phiên hiện tại tiếp tục dùng:</value>
+  </data>
+  <data name="Failed to register TTSL native server window class." xml:space="preserve">
+    <value>Không đăng ký được lớp cửa sổ máy chủ TTSL gốc.</value>
+  </data>
+  <data name="Failed to create TTSL native server window." xml:space="preserve">
+    <value>Không tạo được cửa sổ máy chủ TTSL gốc.</value>
+  </data>
+  <data name="Click to toggle the HUD." xml:space="preserve">
+    <value>Nhấp để bật/tắt HUD.</value>
+  </data>
+  <data name="Text Only: &apos;TTSL: On/Off&apos;&#10;Icon+Text: &apos;&lt;icon&gt; TTSL&apos;&#10;Icon Only: &apos;&lt;icon&gt;&apos;" xml:space="preserve">
+    <value>Chỉ văn bản: &apos;TTSL: Bật/Tắt&apos;
+Biểu tượng + văn bản: &apos;&lt;icon&gt; TTSL&apos;
+Chỉ biểu tượng: &apos;&lt;icon&gt;&apos;</value>
+  </data>
+  <data name="Busy" xml:space="preserve">
+    <value>Bận</value>
+  </data>
+  <data name="Current target" xml:space="preserve">
+    <value>Mục tiêu hiện tại</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>Ngắt</value>
+  </data>
+  <data name="Extra" xml:space="preserve">
+    <value>Thêm</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>Trích xuất</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>Nhãn</value>
+  </data>
+  <data name="Lookup" xml:space="preserve">
+    <value>Tra cứu</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>Thiếu</value>
+  </data>
+  <data name="Monitored" xml:space="preserve">
+    <value>Đang giám sát</value>
+  </data>
+  <data name="No current target" xml:space="preserve">
+    <value>Không có mục tiêu hiện tại</value>
+  </data>
+  <data name="No radar data" xml:space="preserve">
+    <value>Không có dữ liệu radar</value>
+  </data>
+  <data name="No repair data" xml:space="preserve">
+    <value>Không có dữ liệu sửa chữa</value>
+  </data>
+  <data name="No tracked target" xml:space="preserve">
+    <value>Không có mục tiêu theo dõi</value>
+  </data>
+  <data name="Not casting" xml:space="preserve">
+    <value>Không niệm phép</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>Đường dẫn</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>Tạm dừng</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>Quyền</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Vị trí</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>Sửa chữa</value>
+  </data>
+  <data name="Solo" xml:space="preserve">
+    <value>Solo</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Nguồn</value>
+  </data>
+  <data name="Source host" xml:space="preserve">
+    <value>Host nguồn</value>
+  </data>
+  <data name="Stranger" xml:space="preserve">
+    <value>Thành viên lạ</value>
+  </data>
+  <data name="Strangers" xml:space="preserve">
+    <value>Thành viên lạ</value>
+  </data>
+  <data name="Submitting" xml:space="preserve">
+    <value>Đang gửi</value>
+  </data>
+  <data name="Targeting you" xml:space="preserve">
+    <value>Đang nhắm bạn</value>
+  </data>
+  <data name="Texture" xml:space="preserve">
+    <value>Kết cấu</value>
+  </data>
+  <data name="Tracked" xml:space="preserve">
+    <value>Đang theo dõi</value>
+  </data>
+  <data name="Tracked client" xml:space="preserve">
+    <value>Client theo dõi</value>
+  </data>
+  <data name="Unknown host" xml:space="preserve">
+    <value>Không rõ host</value>
+  </data>
+  <data name="Unknown time" xml:space="preserve">
+    <value>Không rõ thời gian</value>
+  </data>
+  <data name="Unknown zone" xml:space="preserve">
+    <value>Không rõ vùng</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>Chế độ xem</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>Hiện</value>
+  </data>
+  <data name="Remote Control" xml:space="preserve">
+    <value>Điều khiển từ xa</value>
+  </data>
+  <data name="Field Map" xml:space="preserve">
+    <value>Bản đồ khu vực</value>
+  </data>
+  <data name="Source Minimap" xml:space="preserve">
+    <value>Bản đồ nhỏ nguồn</value>
+  </data>
+  <data name="Aggregate parties" xml:space="preserve">
+    <value>Nhóm tổng hợp</value>
+  </data>
+  <data name="Krangle names/account IDs" xml:space="preserve">
+    <value>Krangle tên/ID tài khoản</value>
+  </data>
+  <data name="Krangle enemy names" xml:space="preserve">
+    <value>Krangle tên kẻ địch</value>
+  </data>
+  <data name="Show stale/disconnected" xml:space="preserve">
+    <value>Hiện cũ/ngắt kết nối</value>
+  </data>
+  <data name="Icons" xml:space="preserve">
+    <value>Biểu tượng</value>
+  </data>
+  <data name="Total HP" xml:space="preserve">
+    <value>Tổng HP</value>
+  </data>
+  <data name="Total MP" xml:space="preserve">
+    <value>Tổng MP</value>
+  </data>
+  <data name="Party Members" xml:space="preserve">
+    <value>Thành viên nhóm</value>
+  </data>
+  <data name="Waiting for local player" xml:space="preserve">
+    <value>Đang chờ người chơi cục bộ</value>
+  </data>
+  <data name="Connected to {0}" xml:space="preserve">
+    <value>Đã kết nối đến {0}</value>
+  </data>
+  <data name="Retrying in {0}s" xml:space="preserve">
+    <value>Thử lại sau {0}s</value>
+  </data>
+  <data name="Box px" xml:space="preserve">
+    <value>Kích thước radar (px)</value>
+  </data>
+  <data name="Combat W" xml:space="preserve">
+    <value>Chiều rộng radar chiến đấu (yalm)</value>
+  </data>
+  <data name="Combat H" xml:space="preserve">
+    <value>Chiều cao radar chiến đấu (yalm)</value>
+  </data>
+  <data name="Travel W" xml:space="preserve">
+    <value>Chiều rộng radar di chuyển (yalm)</value>
+  </data>
+  <data name="Travel H" xml:space="preserve">
+    <value>Chiều cao radar di chuyển (yalm)</value>
+  </data>
+  <data name="Aggregate-party stranger actions route through the source client." xml:space="preserve">
+    <value>Thao tác thành viên lạ của nhóm tổng hợp đi qua client nguồn.</value>
+  </data>
+  <data name="Extraction started." xml:space="preserve">
+    <value>Đã bắt đầu trích xuất.</value>
+  </data>
+  <data name="Map texture not extracted yet." xml:space="preserve">
+    <value>Chưa trích xuất kết cấu bản đồ.</value>
+  </data>
+  <data name="No map data captured yet." xml:space="preserve">
+    <value>Chưa có dữ liệu bản đồ.</value>
+  </data>
+  <data name="Opened screenshot folder on the server host." xml:space="preserve">
+    <value>Đã mở thư mục ảnh chụp trên host máy chủ.</value>
+  </data>
+  <data name="Party telemetry + Lodestone lookup" xml:space="preserve">
+    <value>Dữ liệu nhóm + tra cứu Lodestone</value>
+  </data>
+  <data name="Queued remote action." xml:space="preserve">
+    <value>Đã xếp hàng thao tác từ xa.</value>
+  </data>
+  <data name="Screenshot requests are not allowed for this client." xml:space="preserve">
+    <value>Client này không cho phép yêu cầu ảnh chụp.</value>
+  </data>
+  <data name="Source Remote Control" xml:space="preserve">
+    <value>Điều khiển từ xa nguồn</value>
+  </data>
+  <data name="Web text or slash commands are not allowed for this client." xml:space="preserve">
+    <value>Client này không cho phép văn bản Web hoặc lệnh slash.</value>
+  </data>
+  <data name="same-PC game path not captured yet" xml:space="preserve">
+    <value>chưa có đường dẫn game cùng PC</value>
+  </data>
+  <data name="see server log" xml:space="preserve">
+    <value>xem nhật ký máy chủ</value>
+  </data>
+  <data name="Scroll down to &quot;The Dumpster Fire&quot; channel to discuss issues / suggestions for specific plugins." xml:space="preserve">
+    <value>Kéo xuống kênh &quot;The Dumpster Fire&quot; để thảo luận lỗi / đề xuất cho các plugin cụ thể.</value>
+  </data>
+  <data name="Failed to open screenshot folder: {0}" xml:space="preserve">
+    <value>Không mở được thư mục ảnh chụp: {0}</value>
+  </data>
+  <data name="Extraction request failed: {0}" xml:space="preserve">
+    <value>Yêu cầu trích xuất thất bại: {0}</value>
+  </data>
+  <data name="Remote action failed: {0}" xml:space="preserve">
+    <value>Thao tác từ xa thất bại: {0}</value>
+  </data>
+  <data name="Last update {0} · {1}" xml:space="preserve">
+    <value>Cập nhật cuối {0} · {1}</value>
+  </data>
+  <data name="Stranger source locked to first monitored client: {0} · Connected {1}" xml:space="preserve">
+    <value>Nguồn thành viên lạ khóa vào client giám sát đầu tiên: {0} · Kết nối {1}</value>
+  </data>
+  <data name="{0} clients · {1} live · {2} stale/disconnected" xml:space="preserve">
+    <value>{0} client · {1} trực tiếp · {2} cũ/ngắt kết nối</value>
+  </data>
+  <data name="Generated {0} · stale after {1}s · {2}" xml:space="preserve">
+    <value>Tạo lúc {0} · cũ sau {1}s · {2}</value>
+  </data>
+  <data name="Last CCTV Frame" xml:space="preserve">
+    <value>Khung CCTV cuối</value>
+  </data>
+  <data name="Close CCTV for {0}" xml:space="preserve">
+    <value>Đóng CCTV của {0}</value>
+  </data>
+  <data name="Replace the map pane with live CCTV for {0}" xml:space="preserve">
+    <value>Thay ô bản đồ bằng CCTV trực tiếp của {0}</value>
+  </data>
+  <data name="Request a screenshot from {0}" xml:space="preserve">
+    <value>Yêu cầu ảnh chụp từ {0}</value>
+  </data>
+  <data name="Open a command prompt for {0}" xml:space="preserve">
+    <value>Mở hộp nhập lệnh cho {0}</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor." xml:space="preserve">
+    <value>Chưa có client kết nối. Khởi động máy chủ, trỏ TTSL đến đó rồi bật đăng từ xa. Trích xuất bảng/biểu tượng sau này cần ít nhất một client cùng PC với bộ giám sát Python này.</value>
+  </data>
+  <data name="Select TTSL Native Server data folder" xml:space="preserve">
+    <value>Chọn thư mục dữ liệu TTSL Native Server</value>
+  </data>
+  <data name="Invalid data folder: {0}" xml:space="preserve">
+    <value>Thư mục dữ liệu không hợp lệ: {0}</value>
+  </data>
+  <data name="Party groups" xml:space="preserve">
+    <value>Nhóm</value>
+  </data>
+  <data name="Clan" xml:space="preserve">
+    <value>Bộ tộc</value>
+  </data>
+  <data name="Race" xml:space="preserve">
+    <value>Chủng tộc</value>
+  </data>
+  <data name="Working..." xml:space="preserve">
+    <value>Đang xử lý...</value>
+  </data>
+  <data name="Targeting party member {0}" xml:space="preserve">
+    <value>Đang nhắm thành viên nhóm {0}</value>
+  </data>
+  <data name="Live CCTV for {0}" xml:space="preserve">
+    <value>CCTV trực tiếp của {0}</value>
+  </data>
+  <data name="Send text or slash command to {0}" xml:space="preserve">
+    <value>Gửi văn bản hoặc lệnh slash đến {0}</value>
+  </data>
+  <data name="Targeting {0}" xml:space="preserve">
+    <value>Đang nhắm {0}</value>
+  </data>
+  <data name="Lodestone body image for {0}" xml:space="preserve">
+    <value>Ảnh toàn thân Lodestone của {0}</value>
+  </data>
+  <data name="Party telemetry available · Lodestone {0} · Direct actions disabled." xml:space="preserve">
+    <value>Có dữ liệu nhóm · Lodestone {0} · Thao tác trực tiếp bị tắt.</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Thất bại</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Đang chờ</value>
+  </data>
+  <data name="Refreshing" xml:space="preserve">
+    <value>Đang làm mới</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>Một phần</value>
+  </data>
+  <data name="Unresolved" xml:space="preserve">
+    <value>Chưa giải quyết</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>Đầy đủ</value>
+  </data>
+  <data name="Ally" xml:space="preserve">
+    <value>Đồng minh</value>
+  </data>
+  <data name="Hostile" xml:space="preserve">
+    <value>Kẻ địch</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>Đang giao chiến</value>
+  </data>
+  <data name="{0} live" xml:space="preserve">
+    <value>{0} trực tiếp</value>
+  </data>
+  <data name="Plugin fallback ready" xml:space="preserve">
+    <value>Ảnh dự phòng plugin sẵn sàng</value>
+  </data>
+  <data name="Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix." xml:space="preserve">
+    <value>Bốn bố cục cho 4-12 client: thẻ cổ điển, bảng điều hành, bảng lệnh nhóm và ma trận dày.</value>
+  </data>
+  <data name="Native asset extraction started." xml:space="preserve">
+    <value>Đã bắt đầu trích xuất tài nguyên gốc.</value>
+  </data>
+  <data name="Loading race names from native EXD data..." xml:space="preserve">
+    <value>Đang tải tên chủng tộc từ dữ liệu EXD gốc...</value>
+  </data>
+  <data name="Loading tribe names from native EXD data..." xml:space="preserve">
+    <value>Đang tải tên bộ tộc từ dữ liệu EXD gốc...</value>
+  </data>
+  <data name="Loaded {0} race name row(s) from native EXD data." xml:space="preserve">
+    <value>Đã tải {0} dòng tên chủng tộc từ EXD gốc.</value>
+  </data>
+  <data name="Loaded {0} tribe name row(s) from native EXD data." xml:space="preserve">
+    <value>Đã tải {0} dòng tên bộ tộc từ EXD gốc.</value>
+  </data>
+  <data name="Extracting job icon {0}/{1} ({2})..." xml:space="preserve">
+    <value>Đang trích xuất biểu tượng nghề {0}/{1} ({2})...</value>
+  </data>
+  <data name="Extracting map texture {0}/{1} ({2})..." xml:space="preserve">
+    <value>Đang trích xuất kết cấu bản đồ {0}/{1} ({2})...</value>
+  </data>
+  <data name="Generating race icon {0}/{1}..." xml:space="preserve">
+    <value>Đang tạo biểu tượng chủng tộc {0}/{1}...</value>
+  </data>
+  <data name="Generating tribe icon {0}/{1}..." xml:space="preserve">
+    <value>Đang tạo biểu tượng bộ tộc {0}/{1}...</value>
+  </data>
+  <data name="Native asset extraction {0}: {1} extracted, {2} failed." xml:space="preserve">
+    <value>Trích xuất tài nguyên gốc {0}: đã trích xuất {1}, thất bại {2}.</value>
+  </data>
+  <data name="Writing native asset extraction summary..." xml:space="preserve">
+    <value>Đang ghi tóm tắt trích xuất tài nguyên gốc...</value>
+  </data>
+  <data name="Native asset extraction failed: {0}" xml:space="preserve">
+    <value>Trích xuất tài nguyên gốc thất bại: {0}</value>
+  </data>
+  <data name="Launching extractor with the current session plan." xml:space="preserve">
+    <value>Đang khởi chạy công cụ trích xuất theo kế hoạch phiên hiện tại.</value>
+  </data>
+  <data name="Asset extraction started." xml:space="preserve">
+    <value>Đã bắt đầu trích xuất tài nguyên.</value>
+  </data>
+  <data name="Extractor finished." xml:space="preserve">
+    <value>Công cụ trích xuất đã hoàn tất.</value>
+  </data>
+  <data name="Extractor failed." xml:space="preserve">
+    <value>Công cụ trích xuất thất bại.</value>
+  </data>
+  <data name="Summary written to {0}" xml:space="preserve">
+    <value>Đã ghi tóm tắt vào {0}</value>
+  </data>
+  <data name="Failed {0} file(s). See {1}." xml:space="preserve">
+    <value>Thất bại {0} tệp. Xem {1}.</value>
+  </data>
+  <data name="Extractor failed: {0}" xml:space="preserve">
+    <value>Công cụ trích xuất thất bại: {0}</value>
+  </data>
+  <data name="No extracted asset summary found yet." xml:space="preserve">
+    <value>Chưa tìm thấy tóm tắt tài nguyên đã trích xuất.</value>
+  </data>
+  <data name="Native asset extraction is already running." xml:space="preserve">
+    <value>Trích xuất tài nguyên gốc đang chạy.</value>
+  </data>
+  <data name="Asset extraction is already running." xml:space="preserve">
+    <value>Trích xuất tài nguyên đang chạy.</value>
+  </data>
+  <data name="Same-PC game path has not been captured yet." xml:space="preserve">
+    <value>Chưa có đường dẫn game cùng PC.</value>
+  </data>
+  <data name="Extractor script not found: {0}" xml:space="preserve">
+    <value>Không tìm thấy script trích xuất: {0}</value>
+  </data>
+  <data name="Last asset extraction status was {0}." xml:space="preserve">
+    <value>Trạng thái trích xuất tài nguyên cuối là {0}.</value>
+  </data>
+  <data name="Target client is not currently tracked." xml:space="preserve">
+    <value>Client mục tiêu hiện không được theo dõi.</value>
+  </data>
+  <data name="That client does not allow web text or slash commands." xml:space="preserve">
+    <value>Client đó không cho phép văn bản Web hay lệnh slash.</value>
+  </data>
+  <data name="That client does not allow web CCTV streaming." xml:space="preserve">
+    <value>Client đó không cho phép phát CCTV Web.</value>
+  </data>
+  <data name="That client does not allow web screenshot requests." xml:space="preserve">
+    <value>Client đó không cho phép yêu cầu ảnh chụp Web.</value>
+  </data>
+  <data name="Text is empty." xml:space="preserve">
+    <value>Văn bản trống.</value>
+  </data>
+  <data name="Queued web text/slash command." xml:space="preserve">
+    <value>Đã xếp hàng văn bản/lệnh slash Web.</value>
+  </data>
+  <data name="Queued CCTV frame request." xml:space="preserve">
+    <value>Đã xếp hàng yêu cầu khung CCTV.</value>
+  </data>
+  <data name="Queued screenshot request." xml:space="preserve">
+    <value>Đã xếp hàng yêu cầu ảnh chụp.</value>
+  </data>
+  <data name="Unsupported action type: {0}" xml:space="preserve">
+    <value>Loại thao tác không hỗ trợ: {0}</value>
+  </data>
+  <data name="Auto-extracting {0} for the current session." xml:space="preserve">
+    <value>Đang tự trích xuất {0} cho phiên hiện tại.</value>
+  </data>
+  <data name="Race name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Tra cứu tên chủng tộc dùng nhãn tạo sẵn: {0}</value>
+  </data>
+  <data name="Tribe name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Tra cứu tên bộ tộc dùng nhãn tạo sẵn: {0}</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>Không tìm thấy</value>
+  </data>
+  <data name="Server is already running." xml:space="preserve">
+    <value>Máy chủ đang chạy.</value>
+  </data>
+  <data name="WSAStartup failed: {0}" xml:space="preserve">
+    <value>WSAStartup thất bại: {0}</value>
+  </data>
+  <data name="socket() failed: {0}" xml:space="preserve">
+    <value>socket() thất bại: {0}</value>
+  </data>
+  <data name="Bind host must be an IPv4 address such as 127.0.0.1 or 0.0.0.0." xml:space="preserve">
+    <value>Địa chỉ lắng nghe phải là IPv4 như 127.0.0.1 hoặc 0.0.0.0.</value>
+  </data>
+  <data name="bind() failed on {0} with {1}" xml:space="preserve">
+    <value>bind() thất bại tại {0} với {1}</value>
+  </data>
+  <data name="listen() failed: {0}" xml:space="preserve">
+    <value>listen() thất bại: {0}</value>
+  </data>
+  <data name="Data folder path is empty." xml:space="preserve">
+    <value>Đường dẫn thư mục dữ liệu trống.</value>
+  </data>
+  <data name="Failed to create {0}: {1}" xml:space="preserve">
+    <value>Không tạo được {0}: {1}</value>
+  </data>
+  <data name="{0} is not a folder." xml:space="preserve">
+    <value>{0} không phải thư mục.</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Có</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Không</value>
+  </data>
+  <data name="Operator View" xml:space="preserve">
+    <value>Chế độ người điều hành</value>
+  </data>
+  <data name="Select a client to monitor and interact" xml:space="preserve">
+    <value>Chọn một máy khách để theo dõi và tương tác</value>
+  </data>
+  <data name="Command Center" xml:space="preserve">
+    <value>Trung tâm lệnh</value>
+  </data>
+  <data name="Aggregated party command board" xml:space="preserve">
+    <value>Bảng lệnh cho các tổ đội đã tổng hợp</value>
+  </data>
+  <data name="Party Overview" xml:space="preserve">
+    <value>Tổng quan tổ đội</value>
+  </data>
+  <data name="Active Members" xml:space="preserve">
+    <value>Thành viên đang hoạt động</value>
+  </data>
+  <data name="In Zone" xml:space="preserve">
+    <value>Trong khu vực</value>
+  </data>
+  <data name="Selected Entity" xml:space="preserve">
+    <value>Đối tượng đã chọn</value>
+  </data>
+  <data name="Compare clients across zones and status" xml:space="preserve">
+    <value>So sánh máy khách theo khu vực và trạng thái</value>
+  </data>
+  <data name="Window appearance" xml:space="preserve"><value>Giao diện cửa sổ</value></data>
+  <data name="Compact visible on main window" xml:space="preserve"><value>Hiển thị chế độ gọn trên cửa sổ chính</value></data>
+  <data name="Language visible on main window" xml:space="preserve"><value>Hiển thị lựa chọn ngôn ngữ trên cửa sổ chính</value></data>
+  <data name="Transparency" xml:space="preserve"><value>Độ trong suốt</value></data>
+  <data name="Opacity (%)" xml:space="preserve"><value>Độ đục (%)</value></data>
+  <data name="Auto-fade when unfocused" xml:space="preserve"><value>Tự giảm độ đục khi mất tiêu điểm</value></data>
+  <data name="Unfocused opacity (%)" xml:space="preserve"><value>Độ đục khi mất tiêu điểm (%)</value></data>
+  <data name="Unfocused delay (seconds)" xml:space="preserve"><value>Độ trễ khi mất tiêu điểm (giây)</value></data>
+</root>
+

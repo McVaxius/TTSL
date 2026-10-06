@@ -1,4 +1,5 @@
 using System;
+using TTSL.Ui;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui.Dtr;
 using Dalamud.Game.Text.SeStringHandling;
@@ -32,7 +33,9 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IGameGui GameGui { get; private set; } = null!;
     [PluginService] internal static IDtrBar DtrBar { get; private set; } = null!;
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
+    [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
 
+    internal TtslAppearance Appearance { get; }
     public Configuration Configuration { get; }
     public readonly WindowSystem WindowSystem = new(PluginInfo.InternalName);
     public MainWindow MainWindow { get; }
@@ -49,6 +52,7 @@ public sealed class Plugin : IDalamudPlugin
     {
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         MigrateConfiguration();
+        Appearance = new(this);
         RemoteHudPublisher = new RemoteHudPublisherService(this);
 
         MainWindow = new MainWindow(this);
@@ -64,7 +68,7 @@ public sealed class Plugin : IDalamudPlugin
             HelpMessage = "Thick Thighs Save Lives: /ttsl [config|setup|wizard|guide|toggle|ws|j]"
         });
 
-        PluginInterface.UiBuilder.Draw += WindowSystem.Draw;
+        PluginInterface.UiBuilder.Draw += DrawUi;
         PluginInterface.UiBuilder.OpenMainUi += ToggleMainUi;
         PluginInterface.UiBuilder.OpenConfigUi += ToggleConfigUi;
         Framework.Update += OnFrameworkUpdate;
@@ -78,7 +82,7 @@ public sealed class Plugin : IDalamudPlugin
     public void Dispose()
     {
         Framework.Update -= OnFrameworkUpdate;
-        PluginInterface.UiBuilder.Draw -= WindowSystem.Draw;
+        PluginInterface.UiBuilder.Draw -= DrawUi;
         PluginInterface.UiBuilder.OpenMainUi -= ToggleMainUi;
         PluginInterface.UiBuilder.OpenConfigUi -= ToggleConfigUi;
 
@@ -88,10 +92,13 @@ public sealed class Plugin : IDalamudPlugin
         ConfigWindow.Dispose();
         SetupWizardWindow.Dispose();
         dtrEntry?.Remove();
+        Appearance.Dispose();
 
         CommandManager.RemoveHandler(PluginInfo.Command);
         Log.Information("===TTSL unloaded!===");
     }
+
+    private void DrawUi() => Appearance.Draw(WindowSystem);
 
     public void SaveConfiguration()
     {
@@ -241,17 +248,20 @@ public sealed class Plugin : IDalamudPlugin
         var iconEnabled = string.IsNullOrEmpty(Configuration.DtrIconEnabled) ? "\uE0BB" : Configuration.DtrIconEnabled;
         var iconDisabled = string.IsNullOrEmpty(Configuration.DtrIconDisabled) ? "\uE0BC" : Configuration.DtrIconDisabled;
         var icon = Configuration.OverlayEnabled ? iconEnabled : iconDisabled;
-        var status = Configuration.OverlayEnabled ? "On" : "Off";
+        var status = Appearance.NativeLabel(Configuration.OverlayEnabled ? "On" : "Off");
         dtrEntry.Text = Configuration.DtrBarMode switch
         {
             1 => new SeString(new TextPayload($"{icon} TTSL")),
             2 => new SeString(new TextPayload(icon)),
             _ => new SeString(new TextPayload($"TTSL: {status}")),
         };
-        dtrEntry.Tooltip = new SeString(new TextPayload($"{PluginInfo.DisplayName} {status}. Click to toggle the HUD."));
+        dtrEntry.Tooltip = new SeString(new TextPayload($"{PluginInfo.DisplayName} {status}. {Appearance.NativeLabel("Click to toggle the HUD.")}"));
     }
 
     public string GetTerritoryName(uint territoryId)
+        => GetResolvedTerritoryName(territoryId) ?? $"Territory {territoryId}";
+
+    internal string? GetResolvedTerritoryName(uint territoryId)
     {
         try
         {
@@ -268,7 +278,7 @@ public sealed class Plugin : IDalamudPlugin
             Log.Debug(ex, "[TTSL] Failed to resolve territory name for {TerritoryId}.", territoryId);
         }
 
-        return $"Territory {territoryId}";
+        return null;
     }
 
     public unsafe (int? MinCondition, int AverageCondition, int EquippedCount) GetRepairSummary()

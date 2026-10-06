@@ -1,0 +1,1388 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <data name="Blue" xml:space="preserve">
+    <value>नीला</value>
+  </data>
+  <data name="Character" xml:space="preserve">
+    <value>कैरेक्टर</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>रंग</value>
+  </data>
+  <data name="Compact mode" xml:space="preserve">
+    <value>संक्षिप्त मोड</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>कॉपी करें</value>
+  </data>
+  <data name="Copy Icon Guide Link" xml:space="preserve">
+    <value>आइकन गाइड लिंक कॉपी करें</value>
+  </data>
+  <data name="Custom RGB" xml:space="preserve">
+    <value>कस्टम RGB</value>
+  </data>
+  <data name="Discord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>चालू</value>
+  </data>
+  <data name="Job" xml:space="preserve">
+    <value>जॉब</value>
+  </data>
+  <data name="Ko-fi" xml:space="preserve">
+    <value>Ko-fi</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>भाषा</value>
+  </data>
+  <data name="Loading UI fonts..." xml:space="preserve">
+    <value>UI फ़ॉन्ट लोड हो रहे हैं...</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>कोई नहीं</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>बंद</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>चालू</value>
+  </data>
+  <data name="Pink" xml:space="preserve">
+    <value>गुलाबी</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>सेटिंग</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>स्थिति</value>
+  </data>
+  <data name="Teal" xml:space="preserve">
+    <value>नीलहरित</value>
+  </data>
+  <data name="UI fonts failed to load. See the plugin log." xml:space="preserve">
+    <value>UI फ़ॉन्ट लोड नहीं हुए। प्लगइन लॉग देखें।</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>खाता</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>क्षेत्र</value>
+  </data>
+  <data name="Avg" xml:space="preserve">
+    <value>औसत</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>पीछे</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>रद्द करें</value>
+  </data>
+  <data name="Cast" xml:space="preserve">
+    <value>कास्ट</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>क्लाइंट</value>
+  </data>
+  <data name="Combat" xml:space="preserve">
+    <value>लड़ाई</value>
+  </data>
+  <data name="Condition panel" xml:space="preserve">
+    <value>कंडीशन पैनल</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>कंडीशन</value>
+  </data>
+  <data name="Copy Command" xml:space="preserve">
+    <value>कमांड कॉपी करें</value>
+  </data>
+  <data name="Copy DLL Path" xml:space="preserve">
+    <value>DLL पथ कॉपी करें</value>
+  </data>
+  <data name="DTR Bar Enabled" xml:space="preserve">
+    <value>DTR बार चालू</value>
+  </data>
+  <data name="DTR Bar Mode" xml:space="preserve">
+    <value>DTR बार मोड</value>
+  </data>
+  <data name="DTR Icons (max 3 characters)" xml:space="preserve">
+    <value>DTR आइकन (अधिकतम 3 अक्षर)</value>
+  </data>
+  <data name="DTR status entry" xml:space="preserve">
+    <value>DTR स्थिति प्रविष्टि</value>
+  </data>
+  <data name="Dead" xml:space="preserve">
+    <value>मृत</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>बंद</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>दूरी</value>
+  </data>
+  <data name="Download Native Server" xml:space="preserve">
+    <value>नेटिव सर्वर डाउनलोड करें</value>
+  </data>
+  <data name="Durability unavailable." xml:space="preserve">
+    <value>टिकाऊपन उपलब्ध नहीं है।</value>
+  </data>
+  <data name="Duty" xml:space="preserve">
+    <value>ड्यूटी</value>
+  </data>
+  <data name="Enable Thick Thighs Save Lives HUD" xml:space="preserve">
+    <value>Thick Thighs Save Lives HUD चालू करें</value>
+  </data>
+  <data name="Enable plugin full-body fallback" xml:space="preserve">
+    <value>प्लगइन का फुल-बॉडी फ़ॉलबैक चालू करें</value>
+  </data>
+  <data name="Enumerate" xml:space="preserve">
+    <value>सूची बनाएँ</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>उपकरण</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>समाप्त करें</value>
+  </data>
+  <data name="Icon Only" xml:space="preserve">
+    <value>केवल आइकन</value>
+  </data>
+  <data name="Icon+Text" xml:space="preserve">
+    <value>आइकन और टेक्स्ट</value>
+  </data>
+  <data name="Krangle displayed names" xml:space="preserve">
+    <value>दिखाए गए नाम छिपाएँ</value>
+  </data>
+  <data name="Krangle displayed player names" xml:space="preserve">
+    <value>दिखाए गए खिलाड़ी नाम छिपाएँ</value>
+  </data>
+  <data name="Last OK" xml:space="preserve">
+    <value>पिछली सफलता</value>
+  </data>
+  <data name="Launch command" xml:space="preserve">
+    <value>लॉन्च कमांड</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>लाइव</value>
+  </data>
+  <data name="Loaded DLL" xml:space="preserve">
+    <value>लोड किया DLL</value>
+  </data>
+  <data name="Local + Web" xml:space="preserve">
+    <value>स्थानीय और वेब</value>
+  </data>
+  <data name="Local HUD" xml:space="preserve">
+    <value>स्थानीय HUD</value>
+  </data>
+  <data name="Local player is not available yet." xml:space="preserve">
+    <value>स्थानीय खिलाड़ी अभी उपलब्ध नहीं है।</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>न्यूनतम</value>
+  </data>
+  <data name="Mount" xml:space="preserve">
+    <value>माउंट</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>नाम</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>आगे</value>
+  </data>
+  <data name="No party members detected." xml:space="preserve">
+    <value>पार्टी सदस्य नहीं मिले।</value>
+  </data>
+  <data name="Open Web HUD" xml:space="preserve">
+    <value>वेब HUD खोलें</value>
+  </data>
+  <data name="Overlay" xml:space="preserve">
+    <value>ओवरले</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>पार्टी</value>
+  </data>
+  <data name="Party Radar" xml:space="preserve">
+    <value>पार्टी रडार</value>
+  </data>
+  <data name="Party Size" xml:space="preserve">
+    <value>पार्टी का आकार</value>
+  </data>
+  <data name="Party status list" xml:space="preserve">
+    <value>पार्टी स्थिति सूची</value>
+  </data>
+  <data name="Position (X, Y, Z)" xml:space="preserve">
+    <value>स्थिति (X, Y, Z)</value>
+  </data>
+  <data name="Publish failed" xml:space="preserve">
+    <value>प्रकाशन असफल</value>
+  </data>
+  <data name="Queue" xml:space="preserve">
+    <value>कतार</value>
+  </data>
+  <data name="Remote HUD" xml:space="preserve">
+    <value>दूरस्थ HUD</value>
+  </data>
+  <data name="Remote HUD Server" xml:space="preserve">
+    <value>दूरस्थ HUD सर्वर</value>
+  </data>
+  <data name="Remote server and review" xml:space="preserve">
+    <value>दूरस्थ सर्वर और समीक्षा</value>
+  </data>
+  <data name="Repair summary" xml:space="preserve">
+    <value>मरम्मत सारांश</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>समीक्षा</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>सर्वर</value>
+  </data>
+  <data name="Server URL" xml:space="preserve">
+    <value>सर्वर URL</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>सेटअप</value>
+  </data>
+  <data name="Setup Wizard" xml:space="preserve">
+    <value>सेटअप विज़ार्ड</value>
+  </data>
+  <data name="Show condition panel" xml:space="preserve">
+    <value>कंडीशन पैनल दिखाएँ</value>
+  </data>
+  <data name="Show party radar" xml:space="preserve">
+    <value>पार्टी रडार दिखाएँ</value>
+  </data>
+  <data name="Show party status list" xml:space="preserve">
+    <value>पार्टी स्थिति सूची दिखाएँ</value>
+  </data>
+  <data name="Show repair summary" xml:space="preserve">
+    <value>मरम्मत सारांश दिखाएँ</value>
+  </data>
+  <data name="Slots" xml:space="preserve">
+    <value>स्लॉट</value>
+  </data>
+  <data name="Snapshot" xml:space="preserve">
+    <value>स्नैपशॉट</value>
+  </data>
+  <data name="Text Only" xml:space="preserve">
+    <value>केवल टेक्स्ट</value>
+  </data>
+  <data name="Update Cadence" xml:space="preserve">
+    <value>अपडेट अंतराल</value>
+  </data>
+  <data name="Use Local Default" xml:space="preserve">
+    <value>स्थानीय डिफ़ॉल्ट उपयोग करें</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>प्रतीक्षा</value>
+  </data>
+  <data name="Web Text" xml:space="preserve">
+    <value>वेब टेक्स्ट</value>
+  </data>
+  <data name="Web Viewer Policy" xml:space="preserve">
+    <value>वेब व्यूअर नीति</value>
+  </data>
+  <data name="Web only" xml:space="preserve">
+    <value>केवल वेब</value>
+  </data>
+  <data name="Bind host" xml:space="preserve">
+    <value>बाइंड होस्ट</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>पोर्ट</value>
+  </data>
+  <data name="Stale seconds" xml:space="preserve">
+    <value>पुराना मानने के सेकंड</value>
+  </data>
+  <data name="Start Server" xml:space="preserve">
+    <value>सर्वर शुरू करें</value>
+  </data>
+  <data name="Stop Server" xml:space="preserve">
+    <value>सर्वर रोकें</value>
+  </data>
+  <data name="Open HUD" xml:space="preserve">
+    <value>HUD खोलें</value>
+  </data>
+  <data name="Screenshots" xml:space="preserve">
+    <value>स्क्रीनशॉट</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>कैश</value>
+  </data>
+  <data name="Extracted" xml:space="preserve">
+    <value>निकाला गया</value>
+  </data>
+  <data name="Copy URL" xml:space="preserve">
+    <value>URL कॉपी करें</value>
+  </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>निदान</value>
+  </data>
+  <data name="Clear Stale" xml:space="preserve">
+    <value>पुरानी प्रविष्टियाँ साफ़ करें</value>
+  </data>
+  <data name="Clear Cache" xml:space="preserve">
+    <value>कैश साफ़ करें</value>
+  </data>
+  <data name="Extract Assets" xml:space="preserve">
+    <value>एसेट निकालें</value>
+  </data>
+  <data name="Data folder" xml:space="preserve">
+    <value>डेटा फ़ोल्डर</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>ब्राउज़ करें</value>
+  </data>
+  <data name="Open Data" xml:space="preserve">
+    <value>डेटा खोलें</value>
+  </data>
+  <data name="Reset Default" xml:space="preserve">
+    <value>डिफ़ॉल्ट रीसेट करें</value>
+  </data>
+  <data name="Server running" xml:space="preserve">
+    <value>सर्वर चल रहा है</value>
+  </data>
+  <data name="Server stopped" xml:space="preserve">
+    <value>सर्वर रुका है</value>
+  </data>
+  <data name="Active clients" xml:space="preserve">
+    <value>सक्रिय क्लाइंट</value>
+  </data>
+  <data name="Runtime log" xml:space="preserve">
+    <value>रनटाइम लॉग</value>
+  </data>
+  <data name="Server configuration" xml:space="preserve">
+    <value>सर्वर कॉन्फ़िगरेशन</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>कार्रवाइयाँ</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>सारांश</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>नक्शा</value>
+  </data>
+  <data name="Threat" xml:space="preserve">
+    <value>ख़तरा</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>ऑपरेटर</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>कमांड</value>
+  </data>
+  <data name="Matrix" xml:space="preserve">
+    <value>मैट्रिक्स</value>
+  </data>
+  <data name="Classic" xml:space="preserve">
+    <value>क्लासिक</value>
+  </data>
+  <data name="Show Details" xml:space="preserve">
+    <value>विवरण दिखाएँ</value>
+  </data>
+  <data name="Hide Details" xml:space="preserve">
+    <value>विवरण छिपाएँ</value>
+  </data>
+  <data name="Remote Monitor + Command Relay" xml:space="preserve">
+    <value>दूरस्थ निगरानी और कमांड रिले</value>
+  </data>
+  <data name="Remote HUD and command relay" xml:space="preserve">
+    <value>दूरस्थ HUD और कमांड रिले</value>
+  </data>
+  <data name="Send Text" xml:space="preserve">
+    <value>टेक्स्ट भेजें</value>
+  </data>
+  <data name="Request Screenshot" xml:space="preserve">
+    <value>स्क्रीनशॉट माँगें</value>
+  </data>
+  <data name="Last Screenshot" xml:space="preserve">
+    <value>पिछला स्क्रीनशॉट</value>
+  </data>
+  <data name="Last update" xml:space="preserve">
+    <value>पिछला अपडेट</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>पुराना</value>
+  </data>
+  <data name="Disconnected" xml:space="preserve">
+    <value>डिस्कनेक्ट</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>ऑनलाइन</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>ऑफ़लाइन</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>निष्क्रिय</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>अज्ञात</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>तैयार</value>
+  </data>
+  <data name="Allow web viewer CCTV mode" xml:space="preserve">
+    <value>वेब व्यूअर CCTV मोड की अनुमति दें</value>
+  </data>
+  <data name="Allow web viewer screenshot requests" xml:space="preserve">
+    <value>वेब व्यूअर स्क्रीनशॉट अनुरोधों की अनुमति दें</value>
+  </data>
+  <data name="Allow web viewer text and slash commands" xml:space="preserve">
+    <value>वेब व्यूअर टेक्स्ट और स्लैश कमांड की अनुमति दें</value>
+  </data>
+  <data name="Combat radar height (yalms)" xml:space="preserve">
+    <value>लड़ाई रडार की ऊँचाई (yalms)</value>
+  </data>
+  <data name="Combat radar width (yalms)" xml:space="preserve">
+    <value>लड़ाई रडार की चौड़ाई (yalms)</value>
+  </data>
+  <data name="Travel radar height (yalms)" xml:space="preserve">
+    <value>यात्रा रडार की ऊँचाई (yalms)</value>
+  </data>
+  <data name="Travel radar width (yalms)" xml:space="preserve">
+    <value>यात्रा रडार की चौड़ाई (yalms)</value>
+  </data>
+  <data name="Radar box size (px)" xml:space="preserve">
+    <value>रडार बॉक्स का आकार (px)</value>
+  </data>
+  <data name="Fast position interval (ms)" xml:space="preserve">
+    <value>तेज़ स्थिति अपडेट अंतराल (ms)</value>
+  </data>
+  <data name="Full snapshot interval (ms)" xml:space="preserve">
+    <value>पूरा स्नैपशॉट अंतराल (ms)</value>
+  </data>
+  <data name="Python launch command" xml:space="preserve">
+    <value>Python लॉन्च कमांड</value>
+  </data>
+  <data name="Publish HUD snapshots to remote server" xml:space="preserve">
+    <value>HUD स्नैपशॉट दूरस्थ सर्वर पर प्रकाशित करें</value>
+  </data>
+  <data name="Enumerate party members for radar labels" xml:space="preserve">
+    <value>रडार लेबल के लिए पार्टी सदस्यों की सूची बनाएँ</value>
+  </data>
+  <data name="Display size of the local HUD radar box." xml:space="preserve">
+    <value>स्थानीय HUD रडार बॉक्स का डिस्प्ले आकार।</value>
+  </data>
+  <data name="Show TTSL status in the server info bar." xml:space="preserve">
+    <value>सर्वर जानकारी बार में TTSL स्थिति दिखाएँ।</value>
+  </data>
+  <data name="Show or hide the server-info bar entry for TTSL." xml:space="preserve">
+    <value>TTSL की सर्वर जानकारी बार प्रविष्टि दिखाएँ या छिपाएँ।</value>
+  </data>
+  <data name="Obfuscate displayed player names for screenshots." xml:space="preserve">
+    <value>स्क्रीनशॉट के लिए दिखाए गए खिलाड़ी नाम छिपाएँ।</value>
+  </data>
+  <data name="Use party slot numbers on the radar." xml:space="preserve">
+    <value>रडार पर पार्टी स्लॉट नंबर उपयोग करें।</value>
+  </data>
+  <data name="Open the guided local/web HUD setup." xml:space="preserve">
+    <value>निर्देशित स्थानीय/वेब HUD सेटअप खोलें।</value>
+  </data>
+  <data name="Open the Python remote HUD in your default browser." xml:space="preserve">
+    <value>अपने डिफ़ॉल्ट ब्राउज़र में Python दूरस्थ HUD खोलें।</value>
+  </data>
+  <data name="Guided local HUD and web publisher setup" xml:space="preserve">
+    <value>निर्देशित स्थानीय HUD और वेब प्रकाशक सेटअप</value>
+  </data>
+  <data name="Copies the best local server-launch command TTSL could resolve from this install." xml:space="preserve">
+    <value>इस इंस्टॉलेशन से TTSL को मिला सबसे अच्छा स्थानीय सर्वर लॉन्च कमांड कॉपी करता है।</value>
+  </data>
+  <data name="Copies the Lodestone blog link with suggested glyphs." xml:space="preserve">
+    <value>सुझाए गए ग्लिफ़ वाला Lodestone ब्लॉग लिंक कॉपी करता है।</value>
+  </data>
+  <data name="Customize the glyphs used when TTSL is on or off." xml:space="preserve">
+    <value>TTSL चालू या बंद होने पर उपयोग किए ग्लिफ़ बदलें।</value>
+  </data>
+  <data name="Where should TTSL show your HUD?" xml:space="preserve">
+    <value>TTSL आपका HUD कहाँ दिखाए?</value>
+  </data>
+  <data name="Choose the local HUD details you want ready" xml:space="preserve">
+    <value>वे स्थानीय HUD विवरण चुनें जिन्हें तैयार रखना है</value>
+  </data>
+  <data name="These choices also control which sections are included when local HUD data is published." xml:space="preserve">
+    <value>ये विकल्प स्थानीय HUD डेटा प्रकाशित करते समय शामिल अनुभाग भी नियंत्रित करते हैं।</value>
+  </data>
+  <data name="Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are." xml:space="preserve">
+    <value>शुरुआती मोड चुनें। विज़ार्ड केवल यहाँ दिखाई सेटिंग बदलता है; उन्नत वेब अनुमतियाँ, अपडेट अंतराल, रडार आकार, आइकन और लेबल वैसे ही रहते हैं।</value>
+  </data>
+  <data name="Show the in-game TTSL window without publishing to the web server." xml:space="preserve">
+    <value>वेब सर्वर पर प्रकाशित किए बिना गेम में TTSL विंडो दिखाएँ।</value>
+  </data>
+  <data name="Show the in-game TTSL window and publish snapshots to the configured web server." xml:space="preserve">
+    <value>गेम में TTSL विंडो दिखाएँ और सेट किए वेब सर्वर पर स्नैपशॉट प्रकाशित करें।</value>
+  </data>
+  <data name="Publish snapshots to the web server while keeping the in-game HUD hidden." xml:space="preserve">
+    <value>गेम HUD छिपा रखते हुए वेब सर्वर पर स्नैपशॉट प्रकाशित करें।</value>
+  </data>
+  <data name="Confirm the web server address and copy the existing launch command if you need to start the local server." xml:space="preserve">
+    <value>वेब सर्वर का पता जाँचें और स्थानीय सर्वर शुरू करना हो तो मौजूदा लॉन्च कमांड कॉपी करें।</value>
+  </data>
+  <data name="Local HUD mode does not publish snapshots. The existing remote URL is preserved for later." xml:space="preserve">
+    <value>स्थानीय HUD मोड स्नैपशॉट प्रकाशित नहीं करता। मौजूदा दूरस्थ URL बाद के लिए सुरक्षित है।</value>
+  </data>
+  <data name="The active account changed. Reopen the wizard and review that account's settings." xml:space="preserve">
+    <value>सक्रिय खाता बदल गया। विज़ार्ड फिर खोलें और उस खाते की सेटिंग की समीक्षा करें।</value>
+  </data>
+  <data name="Step {0} of 3" xml:space="preserve">
+    <value>चरण {0}, कुल 3</value>
+  </data>
+  <data name="Preview: {0}" xml:space="preserve">
+    <value>प्रीव्यू: {0}</value>
+  </data>
+  <data name="Current account ID: {0}" xml:space="preserve">
+    <value>वर्तमान खाता ID: {0}</value>
+  </data>
+  <data name="Publisher: {0}" xml:space="preserve">
+    <value>प्रकाशक: {0}</value>
+  </data>
+  <data name="Last error: {0}" xml:space="preserve">
+    <value>पिछली त्रुटि: {0}</value>
+  </data>
+  <data name="Enabled Icon" xml:space="preserve">
+    <value>चालू आइकन</value>
+  </data>
+  <data name="Disabled Icon" xml:space="preserve">
+    <value>बंद आइकन</value>
+  </data>
+  <data name="Age" xml:space="preserve">
+    <value>उम्र</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>बंद करें</value>
+  </data>
+  <data name="Command View" xml:space="preserve">
+    <value>कमांड दृश्य</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>जुड़ा हुआ</value>
+  </data>
+  <data name="Dist" xml:space="preserve">
+    <value>दूरी</value>
+  </data>
+  <data name="Enmity" xml:space="preserve">
+    <value>एनमिटी</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>प्रवाह</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>फ़ोकस</value>
+  </data>
+  <data name="Game path" xml:space="preserve">
+    <value>गेम पथ</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>ऊँचा</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>होस्ट</value>
+  </data>
+  <data name="Inspector" xml:space="preserve">
+    <value>निरीक्षक</value>
+  </data>
+  <data name="Last Screenshot Sent" xml:space="preserve">
+    <value>भेजा गया पिछला स्क्रीनशॉट</value>
+  </data>
+  <data name="Loose Clients" xml:space="preserve">
+    <value>अलग क्लाइंट</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>कम</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>मध्यम</value>
+  </data>
+  <data name="Minimap" xml:space="preserve">
+    <value>मिनिमैप</value>
+  </data>
+  <data name="No combat telemetry captured." xml:space="preserve">
+    <value>लड़ाई टेलीमेट्री रिकॉर्ड नहीं हुई।</value>
+  </data>
+  <data name="No party data captured yet." xml:space="preserve">
+    <value>पार्टी डेटा अभी रिकॉर्ड नहीं हुआ।</value>
+  </data>
+  <data name="Party Surface" xml:space="preserve">
+    <value>पार्टी सतह</value>
+  </data>
+  <data name="Refresh failed" xml:space="preserve">
+    <value>ताज़ा करना असफल</value>
+  </data>
+  <data name="Situation" xml:space="preserve">
+    <value>परिस्थिति</value>
+  </data>
+  <data name="Slot" xml:space="preserve">
+    <value>स्लॉट</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>स्थिति</value>
+  </data>
+  <data name="Surface Matrix" xml:space="preserve">
+    <value>सतह मैट्रिक्स</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>प्रकार</value>
+  </data>
+  <data name="Vitals" xml:space="preserve">
+    <value>जीवन संकेत</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>ज़ोन</value>
+  </data>
+  <data name="Asset plan unavailable." xml:space="preserve">
+    <value>एसेट योजना उपलब्ध नहीं है।</value>
+  </data>
+  <data name="Extraction status unavailable." xml:space="preserve">
+    <value>निकालने की स्थिति उपलब्ध नहीं है।</value>
+  </data>
+  <data name="Awaiting the first CCTV frame from the client." xml:space="preserve">
+    <value>क्लाइंट के पहले CCTV फ़्रेम की प्रतीक्षा।</value>
+  </data>
+  <data name="CCTV frames appear here after the first live capture." xml:space="preserve">
+    <value>पहले लाइव कैप्चर के बाद CCTV फ़्रेम यहाँ दिखाई देंगे।</value>
+  </data>
+  <data name="CCTV is not allowed for this client." xml:space="preserve">
+    <value>इस क्लाइंट के लिए CCTV की अनुमति नहीं है।</value>
+  </data>
+  <data name="CCTV uses rolling game-window captures and replaces the map pane until closed." xml:space="preserve">
+    <value>CCTV लगातार गेम विंडो कैप्चर उपयोग करता है और बंद होने तक नक्शा पैनल बदल देता है।</value>
+  </data>
+  <data name="Clients not currently represented inside an aggregate party surface." xml:space="preserve">
+    <value>वे क्लाइंट जो अभी संयुक्त पार्टी सतह में शामिल नहीं हैं।</value>
+  </data>
+  <data name="Open the screenshot folder on the TTSL server host." xml:space="preserve">
+    <value>TTSL सर्वर होस्ट पर स्क्रीनशॉट फ़ोल्डर खोलें।</value>
+  </data>
+  <data name="Plain text goes to /echo. Slash commands like /sit run verbatim" xml:space="preserve">
+    <value>सादा टेक्स्ट /echo में जाता है। /sit जैसे स्लैश कमांड ठीक वैसे ही चलते हैं</value>
+  </data>
+  <data name="Select a client or aggregate party surface to inspect the detail pane." xml:space="preserve">
+    <value>विवरण पैनल देखने के लिए क्लाइंट या संयुक्त पार्टी सतह चुनें।</value>
+  </data>
+  <data name="The tracked client does not currently expose target or hostile data." xml:space="preserve">
+    <value>ट्रैक किया क्लाइंट अभी लक्ष्य या शत्रु डेटा उपलब्ध नहीं कराता।</value>
+  </data>
+  <data name="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV." xml:space="preserve">
+    <value>यह क्लाइंट अभी वेब से भेजे टेक्स्ट, स्लैश कमांड, स्क्रीनशॉट या CCTV की अनुमति नहीं दे रहा है।</value>
+  </data>
+  <data name="DTR" xml:space="preserve">
+    <value>DTR</value>
+  </data>
+  <data name="Krangle" xml:space="preserve">
+    <value>नाम छिपाना</value>
+  </data>
+  <data name="CCTV" xml:space="preserve">
+    <value>CCTV</value>
+  </data>
+  <data name="HUD" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="HP" xml:space="preserve">
+    <value>HP</value>
+  </data>
+  <data name="MP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="FB" xml:space="preserve">
+    <value>FB</value>
+  </data>
+  <data name="CMD" xml:space="preserve">
+    <value>CMD</value>
+  </data>
+  <data name="SS" xml:space="preserve">
+    <value>SS</value>
+  </data>
+  <data name="SSF" xml:space="preserve">
+    <value>SSF</value>
+  </data>
+  <data name="Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets." xml:space="preserve">
+    <value>वेब HUD को कम, मध्यम या ऊँची कैप्चर प्रीसेट के साथ नक्शा पैनल की जगह लगातार लाइव फ़ीड दिखाने देता है।</value>
+  </data>
+  <data name="Captures the current FFXIV game-window client area and uploads it to the Python server." xml:space="preserve">
+    <value>वर्तमान FFXIV गेम विंडो का क्लाइंट क्षेत्र कैप्चर करके Python सर्वर पर अपलोड करता है।</value>
+  </data>
+  <data name="Clients are grouped by incoming account ID and character on the server page." xml:space="preserve">
+    <value>सर्वर पेज पर क्लाइंट आने वाले खाता ID और कैरेक्टर के अनुसार समूहित होते हैं।</value>
+  </data>
+  <data name="Default view is 20y x 20y in combat and 50y x 50y out of combat." xml:space="preserve">
+    <value>डिफ़ॉल्ट दृश्य लड़ाई में 20y x 20y और लड़ाई से बाहर 50y x 50y है।</value>
+  </data>
+  <data name="Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0." xml:space="preserve">
+    <value>LAN दर्शकों के लिए कॉपी किया कमांड संपादित करें: --host 127.0.0.1 को --host 0.0.0.0 में बदलें।</value>
+  </data>
+  <data name="For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first." xml:space="preserve">
+    <value>बाद में शीट/आइकन निकालने के लिए Python मॉनिटर वाले PC का कम से कम एक क्लाइंट पहले जुड़े।</value>
+  </data>
+  <data name="Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable." xml:space="preserve">
+    <value>डिफ़ॉल्ट रूप से बंद। चालू होने पर वेब HUD इस क्लाइंट से CharacterInspect प्रीव्यू कैप्चर केवल तब फ़ॉलबैक के रूप में माँग सकता है जब Lodestone बॉडी आर्ट उपलब्ध न हो।</value>
+  </data>
+  <data name="Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim." xml:space="preserve">
+    <value>सादा टेक्स्ट [TTSL Web] प्रीफ़िक्स के साथ /echo में भेजा जाता है। स्लैश से शुरू इनपुट ठीक वैसे ही भेजा जाता है।</value>
+  </data>
+  <data name="Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache." xml:space="preserve">
+    <value>सादा वेब टेक्स्ट [TTSL Web] प्रीफ़िक्स के साथ इको होता है। स्लैश से शुरू इनपुट ठीक वैसे ही भेजा जाता है; स्क्रीनशॉट बटन संयुक्त पार्टी के अनजान सदस्य डेटा के लिए अपलोडर/स्रोत क्लाइंट उपयोग करते हैं, और CCTV उसी क्लाइंट के लगातार फ़्रेम कैश को उपयोग करता है।</value>
+  </data>
+  <data name="Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser." xml:space="preserve">
+    <value>स्थानीय HUD स्नैपशॉट Python मिनी सर्वर को भेजता है ताकि एक ब्राउज़र में कई क्लाइंट दिख सकें।</value>
+  </data>
+  <data name="TTSL settings are now stored per account ID once a live account is detected." xml:space="preserve">
+    <value>लाइव खाता मिलने पर TTSL सेटिंग अब खाता ID के अनुसार सहेजी जाती हैं।</value>
+  </data>
+  <data name="The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar." xml:space="preserve">
+    <value>ब्राउज़र HUD के ऊपरी टूलबार में अब लाइव बॉक्स आकार और लड़ाई/यात्रा yalm नियंत्रण हैं।</value>
+  </data>
+  <data name="The server will cache the first same-PC game path it sees for the rest of that monitoring session." xml:space="preserve">
+    <value>सर्वर मॉनिटरिंग सत्र के बाकी समय के लिए पहला दिखा उसी PC का गेम पथ कैश करेगा।</value>
+  </data>
+  <data name="Showing {0:F0}y x {1:F0}y ({2})." xml:space="preserve">
+    <value>{0:F0}y x {1:F0}y दिख रहा है ({2})।</value>
+  </data>
+  <data name="Travel" xml:space="preserve">
+    <value>यात्रा</value>
+  </data>
+  <data name="Shot" xml:space="preserve">
+    <value>कैप्चर</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>मोड</value>
+  </data>
+  <data name="Krangle names" xml:space="preserve">
+    <value>नाम छिपाएँ</value>
+  </data>
+  <data name="DTR entry" xml:space="preserve">
+    <value>DTR प्रविष्टि</value>
+  </data>
+  <data name="Mode: {0}" xml:space="preserve">
+    <value>मोड: {0}</value>
+  </data>
+  <data name="Condition panel: {0}" xml:space="preserve">
+    <value>कंडीशन पैनल: {0}</value>
+  </data>
+  <data name="Repair summary: {0}" xml:space="preserve">
+    <value>मरम्मत सारांश: {0}</value>
+  </data>
+  <data name="Party status: {0}" xml:space="preserve">
+    <value>पार्टी स्थिति सूची: {0}</value>
+  </data>
+  <data name="Party radar: {0}" xml:space="preserve">
+    <value>पार्टी रडार: {0}</value>
+  </data>
+  <data name="Krangle names: {0}" xml:space="preserve">
+    <value>नाम छिपाएँ: {0}</value>
+  </data>
+  <data name="DTR entry: {0}" xml:space="preserve">
+    <value>DTR प्रविष्टि: {0}</value>
+  </data>
+  <data name="Server: {0}" xml:space="preserve">
+    <value>सर्वर: {0}</value>
+  </data>
+  <data name="Release asset: latestServer.zip" xml:space="preserve">
+    <value>रिलीज़ एसेट: latestServer.zip</value>
+  </data>
+  <data name="(?)" xml:space="preserve">
+    <value>(?)</value>
+  </data>
+  <data name="TTSL " xml:space="preserve">
+    <value>TTSL </value>
+  </data>
+  <data name="In duty" xml:space="preserve">
+    <value>ड्यूटी में</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>कतार में</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>उपलब्ध नहीं</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>लॉक</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>टेक्स्ट</value>
+  </data>
+  <data name="Screens" xml:space="preserve">
+    <value>स्क्रीन</value>
+  </data>
+  <data name="Telemetry" xml:space="preserve">
+    <value>टेलीमेट्री</value>
+  </data>
+  <data name="Unknown race" xml:space="preserve">
+    <value>अज्ञात जाति</value>
+  </data>
+  <data name="Party Leader" xml:space="preserve">
+    <value>पार्टी लीडर</value>
+  </data>
+  <data name="Party Role" xml:space="preserve">
+    <value>पार्टी भूमिका</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>क्लाइंट</value>
+  </data>
+  <data name="Asset plan pending." xml:space="preserve">
+    <value>एसेट योजना लंबित है।</value>
+  </data>
+  <data name="Extraction idle." xml:space="preserve">
+    <value>एसेट निकालना निष्क्रिय है।</value>
+  </data>
+  <data name="Extracting..." xml:space="preserve">
+    <value>निकाला जा रहा है...</value>
+  </data>
+  <data name="Waiting for clients..." xml:space="preserve">
+    <value>क्लाइंट की प्रतीक्षा...</value>
+  </data>
+  <data name="No updates yet." xml:space="preserve">
+    <value>अभी कोई अपडेट नहीं।</value>
+  </data>
+  <data name="All tracked clients are stale or disconnected." xml:space="preserve">
+    <value>सभी ट्रैक किए क्लाइंट पुराने या डिस्कनेक्ट हैं।</value>
+  </data>
+  <data name="No aggregate party surfaces are available right now, so command view is showing compact client cards." xml:space="preserve">
+    <value>अभी कोई संयुक्त पार्टी सतह उपलब्ध नहीं है, इसलिए कमांड दृश्य संक्षिप्त क्लाइंट कार्ड दिखा रहा है।</value>
+  </data>
+  <data name="Aggregate parties are disabled. Enable the toggle above to unlock the full party command board." xml:space="preserve">
+    <value>संयुक्त पार्टियाँ बंद हैं। पूरा पार्टी कमांड बोर्ड खोलने के लिए ऊपर वाला टॉगल चालू करें।</value>
+  </data>
+  <data name="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane." xml:space="preserve">
+    <value>सादा टेक्स्ट [TTSL Web] प्रीफ़िक्स के साथ इको होता है। स्लैश से शुरू इनपुट ठीक वैसे ही भेजा जाता है। SS एक बार कैश किया स्क्रीनशॉट भेजता है, जबकि CCTV नक्शा पैनल में लगातार लाइव फ़ीड चलाता है।</value>
+  </data>
+  <data name="SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client." xml:space="preserve">
+    <value>SS और CMD निगरानी किए सदस्यों को सीधे लक्षित करते हैं। बंद होने तक CCTV नक्शा पैनल बदल देता है। अनजान सदस्यों के बटन दिखते रहते हैं, लेकिन उस स्लॉट का ट्रैक किया क्लाइंट मिलने तक बंद रहते हैं।</value>
+  </data>
+  <data name="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback." xml:space="preserve">
+    <value>अनजान सदस्यों में पार्टी HP, MP, स्थिति, स्तर और जॉब डेटा पहले से होते हैं। Lodestone पोर्ट्रेट पृष्ठभूमि में अनजान सदस्य के वर्ल्ड से लोड होते हैं; स्रोत क्लाइंट का वर्ल्ड फ़ॉलबैक है।</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor." xml:space="preserve">
+    <value>अभी कोई क्लाइंट जुड़ा नहीं है। सर्वर शुरू करें, TTSL को उसका पता दें और दूरस्थ प्रकाशन चालू करें। आगे शीट/आइकन निकालने के लिए इस नेटिव मॉनिटर वाले PC का कम से कम एक क्लाइंट चाहिए।</value>
+  </data>
+  <data name="Data folder is already active:" xml:space="preserve">
+    <value>डेटा फ़ोल्डर पहले से सक्रिय है:</value>
+  </data>
+  <data name="Data folder saved for next launch:" xml:space="preserve">
+    <value>अगले लॉन्च के लिए डेटा फ़ोल्डर सहेजा गया:</value>
+  </data>
+  <data name="Restart TTSL Native Server to use it. Current session keeps using:" xml:space="preserve">
+    <value>इसे उपयोग करने के लिए TTSL Native Server फिर शुरू करें। वर्तमान सत्र उपयोग कर रहा है:</value>
+  </data>
+  <data name="Failed to register TTSL native server window class." xml:space="preserve">
+    <value>TTSL नेटिव सर्वर विंडो क्लास पंजीकृत नहीं हुई।</value>
+  </data>
+  <data name="Failed to create TTSL native server window." xml:space="preserve">
+    <value>TTSL नेटिव सर्वर विंडो नहीं बनी।</value>
+  </data>
+  <data name="Click to toggle the HUD." xml:space="preserve">
+    <value>HUD टॉगल करने के लिए क्लिक करें।</value>
+  </data>
+  <data name="Text Only: 'TTSL: On/Off'&#10;Icon+Text: '&lt;icon&gt; TTSL'&#10;Icon Only: '&lt;icon&gt;'" xml:space="preserve">
+    <value>केवल टेक्स्ट: 'TTSL: On/Off'
+आइकन और टेक्स्ट: '&lt;icon&gt; TTSL'
+केवल आइकन: '&lt;icon&gt;'</value>
+  </data>
+  <data name="Busy" xml:space="preserve">
+    <value>व्यस्त</value>
+  </data>
+  <data name="Current target" xml:space="preserve">
+    <value>वर्तमान लक्ष्य</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>डिस्कनेक्ट</value>
+  </data>
+  <data name="Extra" xml:space="preserve">
+    <value>अतिरिक्त</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>निकालें</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>लेबल</value>
+  </data>
+  <data name="Lookup" xml:space="preserve">
+    <value>खोज</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>अनुपलब्ध</value>
+  </data>
+  <data name="Monitored" xml:space="preserve">
+    <value>निगरानी में</value>
+  </data>
+  <data name="No current target" xml:space="preserve">
+    <value>वर्तमान लक्ष्य नहीं</value>
+  </data>
+  <data name="No radar data" xml:space="preserve">
+    <value>रडार डेटा नहीं</value>
+  </data>
+  <data name="No repair data" xml:space="preserve">
+    <value>मरम्मत डेटा नहीं</value>
+  </data>
+  <data name="No tracked target" xml:space="preserve">
+    <value>ट्रैक किया लक्ष्य नहीं</value>
+  </data>
+  <data name="Not casting" xml:space="preserve">
+    <value>कास्ट नहीं कर रहा</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>पथ</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>रुका हुआ</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>नीति</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>स्थिति</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>मरम्मत</value>
+  </data>
+  <data name="Solo" xml:space="preserve">
+    <value>एकल</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>स्रोत</value>
+  </data>
+  <data name="Source host" xml:space="preserve">
+    <value>स्रोत होस्ट</value>
+  </data>
+  <data name="Stranger" xml:space="preserve">
+    <value>अनजान सदस्य</value>
+  </data>
+  <data name="Strangers" xml:space="preserve">
+    <value>अनजान सदस्य</value>
+  </data>
+  <data name="Submitting" xml:space="preserve">
+    <value>जमा हो रहा है</value>
+  </data>
+  <data name="Targeting you" xml:space="preserve">
+    <value>आपको लक्षित कर रहा है</value>
+  </data>
+  <data name="Texture" xml:space="preserve">
+    <value>टेक्सचर</value>
+  </data>
+  <data name="Tracked" xml:space="preserve">
+    <value>ट्रैक किया गया</value>
+  </data>
+  <data name="Tracked client" xml:space="preserve">
+    <value>ट्रैक किया क्लाइंट</value>
+  </data>
+  <data name="Unknown host" xml:space="preserve">
+    <value>अज्ञात होस्ट</value>
+  </data>
+  <data name="Unknown time" xml:space="preserve">
+    <value>अज्ञात समय</value>
+  </data>
+  <data name="Unknown zone" xml:space="preserve">
+    <value>अज्ञात ज़ोन</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>दृश्य</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>दिखाई दे रहा</value>
+  </data>
+  <data name="Remote Control" xml:space="preserve">
+    <value>दूरस्थ नियंत्रण</value>
+  </data>
+  <data name="Field Map" xml:space="preserve">
+    <value>क्षेत्र नक्शा</value>
+  </data>
+  <data name="Source Minimap" xml:space="preserve">
+    <value>स्रोत मिनिमैप</value>
+  </data>
+  <data name="Aggregate parties" xml:space="preserve">
+    <value>संयुक्त पार्टियाँ</value>
+  </data>
+  <data name="Krangle names/account IDs" xml:space="preserve">
+    <value>नाम/खाता ID छिपाएँ</value>
+  </data>
+  <data name="Krangle enemy names" xml:space="preserve">
+    <value>शत्रु नाम छिपाएँ</value>
+  </data>
+  <data name="Show stale/disconnected" xml:space="preserve">
+    <value>पुराने/डिस्कनेक्ट दिखाएँ</value>
+  </data>
+  <data name="Icons" xml:space="preserve">
+    <value>आइकन</value>
+  </data>
+  <data name="Total HP" xml:space="preserve">
+    <value>कुल HP</value>
+  </data>
+  <data name="Total MP" xml:space="preserve">
+    <value>कुल MP</value>
+  </data>
+  <data name="Party Members" xml:space="preserve">
+    <value>पार्टी सदस्य</value>
+  </data>
+  <data name="Waiting for local player" xml:space="preserve">
+    <value>स्थानीय खिलाड़ी की प्रतीक्षा</value>
+  </data>
+  <data name="Connected to {0}" xml:space="preserve">
+    <value>{0} से जुड़ा</value>
+  </data>
+  <data name="Retrying in {0}s" xml:space="preserve">
+    <value>{0}s में पुनःप्रयास</value>
+  </data>
+  <data name="Box px" xml:space="preserve">
+    <value>रडार बॉक्स का आकार (px)</value>
+  </data>
+  <data name="Combat W" xml:space="preserve">
+    <value>लड़ाई रडार की चौड़ाई (yalms)</value>
+  </data>
+  <data name="Combat H" xml:space="preserve">
+    <value>लड़ाई रडार की ऊँचाई (yalms)</value>
+  </data>
+  <data name="Travel W" xml:space="preserve">
+    <value>यात्रा रडार की चौड़ाई (yalms)</value>
+  </data>
+  <data name="Travel H" xml:space="preserve">
+    <value>यात्रा रडार की ऊँचाई (yalms)</value>
+  </data>
+  <data name="Aggregate-party stranger actions route through the source client." xml:space="preserve">
+    <value>संयुक्त पार्टी के अनजान सदस्यों की कार्रवाइयाँ स्रोत क्लाइंट से जाती हैं।</value>
+  </data>
+  <data name="Extraction started." xml:space="preserve">
+    <value>एसेट निकालना शुरू हुआ।</value>
+  </data>
+  <data name="Map texture not extracted yet." xml:space="preserve">
+    <value>नक्शा टेक्सचर अभी निकाला नहीं गया।</value>
+  </data>
+  <data name="No map data captured yet." xml:space="preserve">
+    <value>नक्शा डेटा अभी रिकॉर्ड नहीं हुआ।</value>
+  </data>
+  <data name="Opened screenshot folder on the server host." xml:space="preserve">
+    <value>सर्वर होस्ट पर स्क्रीनशॉट फ़ोल्डर खुला।</value>
+  </data>
+  <data name="Party telemetry + Lodestone lookup" xml:space="preserve">
+    <value>पार्टी टेलीमेट्री और Lodestone खोज</value>
+  </data>
+  <data name="Queued remote action." xml:space="preserve">
+    <value>दूरस्थ कार्रवाई कतार में गई।</value>
+  </data>
+  <data name="Screenshot requests are not allowed for this client." xml:space="preserve">
+    <value>इस क्लाइंट के लिए स्क्रीनशॉट अनुरोधों की अनुमति नहीं है।</value>
+  </data>
+  <data name="Source Remote Control" xml:space="preserve">
+    <value>स्रोत दूरस्थ नियंत्रण</value>
+  </data>
+  <data name="Web text or slash commands are not allowed for this client." xml:space="preserve">
+    <value>इस क्लाइंट के लिए वेब टेक्स्ट या स्लैश कमांड की अनुमति नहीं है।</value>
+  </data>
+  <data name="same-PC game path not captured yet" xml:space="preserve">
+    <value>उसी PC का गेम पथ अभी रिकॉर्ड नहीं हुआ</value>
+  </data>
+  <data name="see server log" xml:space="preserve">
+    <value>सर्वर लॉग देखें</value>
+  </data>
+  <data name="Scroll down to &quot;The Dumpster Fire&quot; channel to discuss issues / suggestions for specific plugins." xml:space="preserve">
+    <value>खास प्लगइन की समस्या या सुझाव पर चर्चा के लिए नीचे "The Dumpster Fire" चैनल तक स्क्रॉल करें।</value>
+  </data>
+  <data name="Failed to open screenshot folder: {0}" xml:space="preserve">
+    <value>स्क्रीनशॉट फ़ोल्डर नहीं खुला: {0}</value>
+  </data>
+  <data name="Extraction request failed: {0}" xml:space="preserve">
+    <value>एसेट निकालने का अनुरोध असफल: {0}</value>
+  </data>
+  <data name="Remote action failed: {0}" xml:space="preserve">
+    <value>दूरस्थ कार्रवाई असफल: {0}</value>
+  </data>
+  <data name="Last update {0} · {1}" xml:space="preserve">
+    <value>पिछला अपडेट {0} · {1}</value>
+  </data>
+  <data name="Stranger source locked to first monitored client: {0} · Connected {1}" xml:space="preserve">
+    <value>अनजान सदस्य का स्रोत पहले निगरानी क्लाइंट पर लॉक: {0} · जुड़ा {1}</value>
+  </data>
+  <data name="{0} clients · {1} live · {2} stale/disconnected" xml:space="preserve">
+    <value>{0} क्लाइंट · {1} लाइव · {2} पुराने/डिस्कनेक्ट</value>
+  </data>
+  <data name="Generated {0} · stale after {1}s · {2}" xml:space="preserve">
+    <value>बना {0} · {1}s के बाद पुराना · {2}</value>
+  </data>
+  <data name="Last CCTV Frame" xml:space="preserve">
+    <value>पिछला CCTV फ़्रेम</value>
+  </data>
+  <data name="Close CCTV for {0}" xml:space="preserve">
+    <value>{0} के लिए CCTV बंद करें</value>
+  </data>
+  <data name="Replace the map pane with live CCTV for {0}" xml:space="preserve">
+    <value>{0} की लाइव CCTV से नक्शा पैनल बदलें</value>
+  </data>
+  <data name="Request a screenshot from {0}" xml:space="preserve">
+    <value>{0} से स्क्रीनशॉट माँगें</value>
+  </data>
+  <data name="Open a command prompt for {0}" xml:space="preserve">
+    <value>{0} के लिए कमांड प्रॉम्प्ट खोलें</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor." xml:space="preserve">
+    <value>अभी कोई क्लाइंट जुड़ा नहीं है। सर्वर शुरू करें, TTSL को उसका पता दें और दूरस्थ प्रकाशन चालू करें। आगे शीट/आइकन निकालने के लिए इस Python मॉनिटर वाले PC का कम से कम एक क्लाइंट चाहिए।</value>
+  </data>
+  <data name="Select TTSL Native Server data folder" xml:space="preserve">
+    <value>TTSL Native Server डेटा फ़ोल्डर चुनें</value>
+  </data>
+  <data name="Invalid data folder: {0}" xml:space="preserve">
+    <value>अमान्य डेटा फ़ोल्डर: {0}</value>
+  </data>
+  <data name="Party groups" xml:space="preserve">
+    <value>पार्टी समूह</value>
+  </data>
+  <data name="Clan" xml:space="preserve">
+    <value>कबीला</value>
+  </data>
+  <data name="Race" xml:space="preserve">
+    <value>जाति</value>
+  </data>
+  <data name="Working..." xml:space="preserve">
+    <value>काम जारी है...</value>
+  </data>
+  <data name="Targeting party member {0}" xml:space="preserve">
+    <value>पार्टी सदस्य {0} को लक्षित कर रहा है</value>
+  </data>
+  <data name="Live CCTV for {0}" xml:space="preserve">
+    <value>{0} के लिए लाइव CCTV</value>
+  </data>
+  <data name="Send text or slash command to {0}" xml:space="preserve">
+    <value>{0} को टेक्स्ट या स्लैश कमांड भेजें</value>
+  </data>
+  <data name="Targeting {0}" xml:space="preserve">
+    <value>{0} को लक्षित कर रहा है</value>
+  </data>
+  <data name="Lodestone body image for {0}" xml:space="preserve">
+    <value>{0} का Lodestone बॉडी चित्र</value>
+  </data>
+  <data name="Party telemetry available · Lodestone {0} · Direct actions disabled." xml:space="preserve">
+    <value>पार्टी टेलीमेट्री उपलब्ध · Lodestone {0} · सीधी कार्रवाइयाँ बंद।</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>असफल</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>लंबित</value>
+  </data>
+  <data name="Refreshing" xml:space="preserve">
+    <value>ताज़ा हो रहा है</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>आंशिक</value>
+  </data>
+  <data name="Unresolved" xml:space="preserve">
+    <value>अनिर्धारित</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>पूरा</value>
+  </data>
+  <data name="Ally" xml:space="preserve">
+    <value>मित्र</value>
+  </data>
+  <data name="Hostile" xml:space="preserve">
+    <value>शत्रु</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>सक्रिय</value>
+  </data>
+  <data name="{0} live" xml:space="preserve">
+    <value>{0} लाइव</value>
+  </data>
+  <data name="Plugin fallback ready" xml:space="preserve">
+    <value>प्लगइन फ़ॉलबैक तैयार</value>
+  </data>
+  <data name="Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix." xml:space="preserve">
+    <value>4–12 क्लाइंट के लिए चार लेआउट: क्लासिक कार्ड, ऑपरेटर बोर्ड, पार्टी कमांड बोर्ड और संक्षिप्त मैट्रिक्स।</value>
+  </data>
+  <data name="Native asset extraction started." xml:space="preserve">
+    <value>नेटिव एसेट निकालना शुरू हुआ।</value>
+  </data>
+  <data name="Loading race names from native EXD data..." xml:space="preserve">
+    <value>नेटिव EXD डेटा से जाति नाम लोड हो रहे हैं...</value>
+  </data>
+  <data name="Loading tribe names from native EXD data..." xml:space="preserve">
+    <value>नेटिव EXD डेटा से कबीले के नाम लोड हो रहे हैं...</value>
+  </data>
+  <data name="Loaded {0} race name row(s) from native EXD data." xml:space="preserve">
+    <value>नेटिव EXD डेटा से {0} जाति नाम पंक्तियाँ लोड हुईं।</value>
+  </data>
+  <data name="Loaded {0} tribe name row(s) from native EXD data." xml:space="preserve">
+    <value>नेटिव EXD डेटा से {0} कबीले नाम पंक्तियाँ लोड हुईं।</value>
+  </data>
+  <data name="Extracting job icon {0}/{1} ({2})..." xml:space="preserve">
+    <value>जॉब आइकन {0}/{1} ({2}) निकाला जा रहा है...</value>
+  </data>
+  <data name="Extracting map texture {0}/{1} ({2})..." xml:space="preserve">
+    <value>नक्शा टेक्सचर {0}/{1} ({2}) निकाला जा रहा है...</value>
+  </data>
+  <data name="Generating race icon {0}/{1}..." xml:space="preserve">
+    <value>जाति आइकन {0}/{1} बन रहा है...</value>
+  </data>
+  <data name="Generating tribe icon {0}/{1}..." xml:space="preserve">
+    <value>कबीला आइकन {0}/{1} बन रहा है...</value>
+  </data>
+  <data name="Native asset extraction {0}: {1} extracted, {2} failed." xml:space="preserve">
+    <value>नेटिव एसेट निकालना {0}: {1} निकले, {2} असफल।</value>
+  </data>
+  <data name="Writing native asset extraction summary..." xml:space="preserve">
+    <value>नेटिव एसेट निकालने का सारांश लिखा जा रहा है...</value>
+  </data>
+  <data name="Native asset extraction failed: {0}" xml:space="preserve">
+    <value>नेटिव एसेट निकालना असफल: {0}</value>
+  </data>
+  <data name="Launching extractor with the current session plan." xml:space="preserve">
+    <value>वर्तमान सत्र योजना से एक्सट्रैक्टर शुरू हो रहा है।</value>
+  </data>
+  <data name="Asset extraction started." xml:space="preserve">
+    <value>एसेट निकालना शुरू हुआ।</value>
+  </data>
+  <data name="Extractor finished." xml:space="preserve">
+    <value>एक्सट्रैक्टर पूरा हुआ।</value>
+  </data>
+  <data name="Extractor failed." xml:space="preserve">
+    <value>एक्सट्रैक्टर असफल।</value>
+  </data>
+  <data name="Summary written to {0}" xml:space="preserve">
+    <value>सारांश {0} पर लिखा गया</value>
+  </data>
+  <data name="Failed {0} file(s). See {1}." xml:space="preserve">
+    <value>{0} फ़ाइलें असफल। {1} देखें।</value>
+  </data>
+  <data name="Extractor failed: {0}" xml:space="preserve">
+    <value>एक्सट्रैक्टर असफल: {0}</value>
+  </data>
+  <data name="No extracted asset summary found yet." xml:space="preserve">
+    <value>निकाले एसेट का सारांश अभी नहीं मिला।</value>
+  </data>
+  <data name="Native asset extraction is already running." xml:space="preserve">
+    <value>नेटिव एसेट निकालना पहले से चल रहा है।</value>
+  </data>
+  <data name="Asset extraction is already running." xml:space="preserve">
+    <value>एसेट निकालना पहले से चल रहा है।</value>
+  </data>
+  <data name="Same-PC game path has not been captured yet." xml:space="preserve">
+    <value>उसी PC का गेम पथ अभी रिकॉर्ड नहीं हुआ।</value>
+  </data>
+  <data name="Extractor script not found: {0}" xml:space="preserve">
+    <value>एक्सट्रैक्टर स्क्रिप्ट नहीं मिली: {0}</value>
+  </data>
+  <data name="Last asset extraction status was {0}." xml:space="preserve">
+    <value>एसेट निकालने की पिछली स्थिति {0} थी।</value>
+  </data>
+  <data name="Target client is not currently tracked." xml:space="preserve">
+    <value>लक्ष्य क्लाइंट अभी ट्रैक नहीं किया जा रहा है।</value>
+  </data>
+  <data name="That client does not allow web text or slash commands." xml:space="preserve">
+    <value>वह क्लाइंट वेब टेक्स्ट या स्लैश कमांड की अनुमति नहीं देता।</value>
+  </data>
+  <data name="That client does not allow web CCTV streaming." xml:space="preserve">
+    <value>वह क्लाइंट वेब CCTV स्ट्रीमिंग की अनुमति नहीं देता।</value>
+  </data>
+  <data name="That client does not allow web screenshot requests." xml:space="preserve">
+    <value>वह क्लाइंट वेब स्क्रीनशॉट अनुरोधों की अनुमति नहीं देता।</value>
+  </data>
+  <data name="Text is empty." xml:space="preserve">
+    <value>टेक्स्ट खाली है।</value>
+  </data>
+  <data name="Queued web text/slash command." xml:space="preserve">
+    <value>वेब टेक्स्ट/स्लैश कमांड कतार में गया।</value>
+  </data>
+  <data name="Queued CCTV frame request." xml:space="preserve">
+    <value>CCTV फ़्रेम अनुरोध कतार में गया।</value>
+  </data>
+  <data name="Queued screenshot request." xml:space="preserve">
+    <value>स्क्रीनशॉट अनुरोध कतार में गया।</value>
+  </data>
+  <data name="Unsupported action type: {0}" xml:space="preserve">
+    <value>असमर्थित कार्रवाई प्रकार: {0}</value>
+  </data>
+  <data name="Auto-extracting {0} for the current session." xml:space="preserve">
+    <value>वर्तमान सत्र के लिए {0} अपने आप निकाला जा रहा है।</value>
+  </data>
+  <data name="Race name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>जाति नाम खोज ने फ़ॉलबैक के रूप में बनाए लेबल उपयोग किए: {0}</value>
+  </data>
+  <data name="Tribe name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>कबीला नाम खोज ने फ़ॉलबैक के रूप में बनाए लेबल उपयोग किए: {0}</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>नहीं मिला</value>
+  </data>
+  <data name="Server is already running." xml:space="preserve">
+    <value>सर्वर पहले से चल रहा है।</value>
+  </data>
+  <data name="WSAStartup failed: {0}" xml:space="preserve">
+    <value>WSAStartup असफल: {0}</value>
+  </data>
+  <data name="socket() failed: {0}" xml:space="preserve">
+    <value>socket() असफल: {0}</value>
+  </data>
+  <data name="Bind host must be an IPv4 address such as 127.0.0.1 or 0.0.0.0." xml:space="preserve">
+    <value>बाइंड होस्ट 127.0.0.1 या 0.0.0.0 जैसा IPv4 पता होना चाहिए।</value>
+  </data>
+  <data name="bind() failed on {0} with {1}" xml:space="preserve">
+    <value>{0} पर bind() असफल: {1}</value>
+  </data>
+  <data name="listen() failed: {0}" xml:space="preserve">
+    <value>listen() असफल: {0}</value>
+  </data>
+  <data name="Data folder path is empty." xml:space="preserve">
+    <value>डेटा फ़ोल्डर पथ खाली है।</value>
+  </data>
+  <data name="Failed to create {0}: {1}" xml:space="preserve">
+    <value>{0} नहीं बना: {1}</value>
+  </data>
+  <data name="{0} is not a folder." xml:space="preserve">
+    <value>{0} फ़ोल्डर नहीं है।</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>हाँ</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>नहीं</value>
+  </data>
+  <data name="Operator View" xml:space="preserve">
+    <value>ऑपरेटर दृश्य</value>
+  </data>
+  <data name="Select a client to monitor and interact" xml:space="preserve">
+    <value>निगरानी और कार्रवाई के लिए क्लाइंट चुनें</value>
+  </data>
+  <data name="Command Center" xml:space="preserve">
+    <value>कमांड केंद्र</value>
+  </data>
+  <data name="Aggregated party command board" xml:space="preserve">
+    <value>संयुक्त पार्टी कमांड बोर्ड</value>
+  </data>
+  <data name="Party Overview" xml:space="preserve">
+    <value>पार्टी अवलोकन</value>
+  </data>
+  <data name="Active Members" xml:space="preserve">
+    <value>सक्रिय सदस्य</value>
+  </data>
+  <data name="In Zone" xml:space="preserve">
+    <value>ज़ोन में</value>
+  </data>
+  <data name="Selected Entity" xml:space="preserve">
+    <value>चुनी गई इकाई</value>
+  </data>
+  <data name="Compare clients across zones and status" xml:space="preserve">
+    <value>ज़ोन और स्थिति के अनुसार क्लाइंट की तुलना करें</value>
+  </data>
+  <data name="Window appearance" xml:space="preserve">
+    <value>विंडो की दिखावट</value>
+  </data>
+  <data name="Compact visible on main window" xml:space="preserve">
+    <value>मुख्य विंडो पर संक्षिप्त मोड दिखाएँ</value>
+  </data>
+  <data name="Language visible on main window" xml:space="preserve">
+    <value>मुख्य विंडो पर भाषा चयन दिखाएँ</value>
+  </data>
+  <data name="Transparency" xml:space="preserve">
+    <value>पारदर्शिता</value>
+  </data>
+  <data name="Opacity (%)" xml:space="preserve">
+    <value>अपारदर्शिता (%)</value>
+  </data>
+  <data name="Auto-fade when unfocused" xml:space="preserve">
+    <value>फ़ोकस हटने पर अपने आप हल्का करें</value>
+  </data>
+  <data name="Unfocused opacity (%)" xml:space="preserve">
+    <value>फ़ोकस हटने पर अपारदर्शिता (%)</value>
+  </data>
+  <data name="Unfocused delay (seconds)" xml:space="preserve">
+    <value>फ़ोकस हटने पर विलंब (सेकंड)</value>
+  </data>
+</root>

@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AethertekUI.Dalamud;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
@@ -8,6 +9,7 @@ namespace TTSL.Windows;
 
 public abstract class PositionedWindow : Window
 {
+    protected readonly MaterialWindowMotion WindowMotion = new();
     private Vector2? pendingWindowPosition;
     private bool pendingPositionConditionReset;
 
@@ -24,14 +26,17 @@ public abstract class PositionedWindow : Window
 
     public override void PreDraw()
     {
-        if (!pendingWindowPosition.HasValue)
-            return;
-
-        Position = pendingWindowPosition.Value;
-        PositionCondition = ImGuiCond.Always;
-        pendingWindowPosition = null;
-        pendingPositionConditionReset = true;
+        if (pendingWindowPosition.HasValue)
+        {
+            Position = pendingWindowPosition.Value;
+            PositionCondition = ImGuiCond.Always;
+            pendingWindowPosition = null;
+            pendingPositionConditionReset = true;
+        }
+        WindowMotion.Prepare(this, reducedMotion: false, roundedCorners: true);
     }
+
+    public override void PostDraw() => WindowMotion.Restore(this);
 
     protected void FinalizePendingWindowPlacement()
     {

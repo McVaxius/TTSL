@@ -1,0 +1,1352 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <data name="Blue" xml:space="preserve">
+    <value>Синий</value>
+  </data>
+  <data name="Character" xml:space="preserve">
+    <value>Персонаж</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Цвет</value>
+  </data>
+  <data name="Compact mode" xml:space="preserve">
+    <value>Компактный режим</value>
+  </data>
+  <data name="Copy" xml:space="preserve">
+    <value>Копировать</value>
+  </data>
+  <data name="Copy Icon Guide Link" xml:space="preserve">
+    <value>Копировать ссылку на руководство по значкам</value>
+  </data>
+  <data name="Custom RGB" xml:space="preserve">
+    <value>Свой RGB</value>
+  </data>
+  <data name="Discord" xml:space="preserve">
+    <value>Discord</value>
+  </data>
+  <data name="Enabled" xml:space="preserve">
+    <value>Включено</value>
+  </data>
+  <data name="Job" xml:space="preserve">
+    <value>Класс</value>
+  </data>
+  <data name="Ko-fi" xml:space="preserve">
+    <value>Ko-fi</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>Язык</value>
+  </data>
+  <data name="Loading UI fonts..." xml:space="preserve">
+    <value>Загрузка шрифтов...</value>
+  </data>
+  <data name="None" xml:space="preserve">
+    <value>Нет</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Выключено</value>
+  </data>
+  <data name="On" xml:space="preserve">
+    <value>Включено</value>
+  </data>
+  <data name="Pink" xml:space="preserve">
+    <value>Розовый</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="State" xml:space="preserve">
+    <value>Состояние</value>
+  </data>
+  <data name="Teal" xml:space="preserve">
+    <value>Бирюзовый</value>
+  </data>
+  <data name="UI fonts failed to load. See the plugin log." xml:space="preserve">
+    <value>Не удалось загрузить шрифты. См. журнал плагина.</value>
+  </data>
+  <data name="Account" xml:space="preserve">
+    <value>Учётная запись</value>
+  </data>
+  <data name="Area" xml:space="preserve">
+    <value>Зона</value>
+  </data>
+  <data name="Avg" xml:space="preserve">
+    <value>Среднее</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Назад</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
+  <data name="Cast" xml:space="preserve">
+    <value>Заклинание</value>
+  </data>
+  <data name="Client" xml:space="preserve">
+    <value>Клиент</value>
+  </data>
+  <data name="Combat" xml:space="preserve">
+    <value>бой</value>
+  </data>
+  <data name="Condition panel" xml:space="preserve">
+    <value>Панель состояний</value>
+  </data>
+  <data name="Conditions" xml:space="preserve">
+    <value>Состояния</value>
+  </data>
+  <data name="Copy Command" xml:space="preserve">
+    <value>Копировать команду</value>
+  </data>
+  <data name="Copy DLL Path" xml:space="preserve">
+    <value>Копировать путь DLL</value>
+  </data>
+  <data name="DTR Bar Enabled" xml:space="preserve">
+    <value>Показывать строку DTR</value>
+  </data>
+  <data name="DTR Bar Mode" xml:space="preserve">
+    <value>Режим строки DTR</value>
+  </data>
+  <data name="DTR Icons (max 3 characters)" xml:space="preserve">
+    <value>Значки DTR (до 3 символов)</value>
+  </data>
+  <data name="DTR status entry" xml:space="preserve">
+    <value>Состояние в строке DTR</value>
+  </data>
+  <data name="Dead" xml:space="preserve">
+    <value>Мёртв</value>
+  </data>
+  <data name="Disabled" xml:space="preserve">
+    <value>Отключено</value>
+  </data>
+  <data name="Distance" xml:space="preserve">
+    <value>Расстояние</value>
+  </data>
+  <data name="Download Native Server" xml:space="preserve">
+    <value>Скачать нативный сервер</value>
+  </data>
+  <data name="Durability unavailable." xml:space="preserve">
+    <value>Прочность недоступна.</value>
+  </data>
+  <data name="Duty" xml:space="preserve">
+    <value>Задание</value>
+  </data>
+  <data name="Enable Thick Thighs Save Lives HUD" xml:space="preserve">
+    <value>Включить HUD Thick Thighs Save Lives</value>
+  </data>
+  <data name="Enable plugin full-body fallback" xml:space="preserve">
+    <value>Включить резервный снимок тела</value>
+  </data>
+  <data name="Enumerate" xml:space="preserve">
+    <value>Нумерация</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>Снаряжение</value>
+  </data>
+  <data name="Finish" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Icon Only" xml:space="preserve">
+    <value>Только значок</value>
+  </data>
+  <data name="Icon+Text" xml:space="preserve">
+    <value>Значок+текст</value>
+  </data>
+  <data name="Krangle displayed names" xml:space="preserve">
+    <value>Скрывать отображаемые имена</value>
+  </data>
+  <data name="Krangle displayed player names" xml:space="preserve">
+    <value>Скрывать имена игроков</value>
+  </data>
+  <data name="Last OK" xml:space="preserve">
+    <value>Последний успех</value>
+  </data>
+  <data name="Launch command" xml:space="preserve">
+    <value>Команда запуска</value>
+  </data>
+  <data name="Live" xml:space="preserve">
+    <value>Активен</value>
+  </data>
+  <data name="Loaded DLL" xml:space="preserve">
+    <value>Загруженная DLL</value>
+  </data>
+  <data name="Local + Web" xml:space="preserve">
+    <value>Локально + веб</value>
+  </data>
+  <data name="Local HUD" xml:space="preserve">
+    <value>Локальный HUD</value>
+  </data>
+  <data name="Local player is not available yet." xml:space="preserve">
+    <value>Локальный игрок пока недоступен.</value>
+  </data>
+  <data name="Min" xml:space="preserve">
+    <value>Минимум</value>
+  </data>
+  <data name="Mount" xml:space="preserve">
+    <value>Верхом</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Имя</value>
+  </data>
+  <data name="Next" xml:space="preserve">
+    <value>Далее</value>
+  </data>
+  <data name="No party members detected." xml:space="preserve">
+    <value>Участники группы не найдены.</value>
+  </data>
+  <data name="Open Web HUD" xml:space="preserve">
+    <value>Открыть веб-HUD</value>
+  </data>
+  <data name="Overlay" xml:space="preserve">
+    <value>Наложение</value>
+  </data>
+  <data name="Party" xml:space="preserve">
+    <value>Группа</value>
+  </data>
+  <data name="Party Radar" xml:space="preserve">
+    <value>Радар группы</value>
+  </data>
+  <data name="Party Size" xml:space="preserve">
+    <value>Размер группы</value>
+  </data>
+  <data name="Party status list" xml:space="preserve">
+    <value>Список состояний группы</value>
+  </data>
+  <data name="Position (X, Y, Z)" xml:space="preserve">
+    <value>Позиция (X, Y, Z)</value>
+  </data>
+  <data name="Publish failed" xml:space="preserve">
+    <value>Ошибка отправки</value>
+  </data>
+  <data name="Queue" xml:space="preserve">
+    <value>Очередь</value>
+  </data>
+  <data name="Remote HUD" xml:space="preserve">
+    <value>Удалённый HUD</value>
+  </data>
+  <data name="Remote HUD Server" xml:space="preserve">
+    <value>Сервер удалённого HUD</value>
+  </data>
+  <data name="Remote server and review" xml:space="preserve">
+    <value>Удалённый сервер и проверка</value>
+  </data>
+  <data name="Repair summary" xml:space="preserve">
+    <value>Сводка ремонта</value>
+  </data>
+  <data name="Review" xml:space="preserve">
+    <value>Проверка</value>
+  </data>
+  <data name="Server" xml:space="preserve">
+    <value>Сервер</value>
+  </data>
+  <data name="Server URL" xml:space="preserve">
+    <value>URL сервера</value>
+  </data>
+  <data name="Setup" xml:space="preserve">
+    <value>Настройка</value>
+  </data>
+  <data name="Setup Wizard" xml:space="preserve">
+    <value>Мастер настройки</value>
+  </data>
+  <data name="Show condition panel" xml:space="preserve">
+    <value>Показывать состояния</value>
+  </data>
+  <data name="Show party radar" xml:space="preserve">
+    <value>Показывать радар группы</value>
+  </data>
+  <data name="Show party status list" xml:space="preserve">
+    <value>Показывать состояния группы</value>
+  </data>
+  <data name="Show repair summary" xml:space="preserve">
+    <value>Показывать сводку ремонта</value>
+  </data>
+  <data name="Slots" xml:space="preserve">
+    <value>Ячейки</value>
+  </data>
+  <data name="Snapshot" xml:space="preserve">
+    <value>Снимок</value>
+  </data>
+  <data name="Text Only" xml:space="preserve">
+    <value>Только текст</value>
+  </data>
+  <data name="Update Cadence" xml:space="preserve">
+    <value>Частота обновления</value>
+  </data>
+  <data name="Use Local Default" xml:space="preserve">
+    <value>Локальное значение</value>
+  </data>
+  <data name="Waiting" xml:space="preserve">
+    <value>Ожидание</value>
+  </data>
+  <data name="Web Text" xml:space="preserve">
+    <value>Веб-текст</value>
+  </data>
+  <data name="Web Viewer Policy" xml:space="preserve">
+    <value>Разрешения веб-просмотра</value>
+  </data>
+  <data name="Web only" xml:space="preserve">
+    <value>Только веб</value>
+  </data>
+  <data name="Bind host" xml:space="preserve">
+    <value>Адрес привязки</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>Порт</value>
+  </data>
+  <data name="Stale seconds" xml:space="preserve">
+    <value>Устаревание в секундах</value>
+  </data>
+  <data name="Start Server" xml:space="preserve">
+    <value>Запустить сервер</value>
+  </data>
+  <data name="Stop Server" xml:space="preserve">
+    <value>Остановить сервер</value>
+  </data>
+  <data name="Open HUD" xml:space="preserve">
+    <value>Открыть HUD</value>
+  </data>
+  <data name="Screenshots" xml:space="preserve">
+    <value>Скриншоты</value>
+  </data>
+  <data name="Cache" xml:space="preserve">
+    <value>Кэш</value>
+  </data>
+  <data name="Extracted" xml:space="preserve">
+    <value>Извлечённые</value>
+  </data>
+  <data name="Copy URL" xml:space="preserve">
+    <value>Копировать URL</value>
+  </data>
+  <data name="Diagnostics" xml:space="preserve">
+    <value>Диагностика</value>
+  </data>
+  <data name="Clear Stale" xml:space="preserve">
+    <value>Очистить устаревшие</value>
+  </data>
+  <data name="Clear Cache" xml:space="preserve">
+    <value>Очистить кэш</value>
+  </data>
+  <data name="Extract Assets" xml:space="preserve">
+    <value>Извлечь ресурсы</value>
+  </data>
+  <data name="Data folder" xml:space="preserve">
+    <value>Папка данных</value>
+  </data>
+  <data name="Browse" xml:space="preserve">
+    <value>Обзор</value>
+  </data>
+  <data name="Open Data" xml:space="preserve">
+    <value>Открыть данные</value>
+  </data>
+  <data name="Reset Default" xml:space="preserve">
+    <value>Сбросить</value>
+  </data>
+  <data name="Server running" xml:space="preserve">
+    <value>Сервер работает</value>
+  </data>
+  <data name="Server stopped" xml:space="preserve">
+    <value>Сервер остановлен</value>
+  </data>
+  <data name="Active clients" xml:space="preserve">
+    <value>Активные клиенты</value>
+  </data>
+  <data name="Runtime log" xml:space="preserve">
+    <value>Журнал работы</value>
+  </data>
+  <data name="Server configuration" xml:space="preserve">
+    <value>Настройки сервера</value>
+  </data>
+  <data name="Actions" xml:space="preserve">
+    <value>Действия</value>
+  </data>
+  <data name="Summary" xml:space="preserve">
+    <value>Сводка</value>
+  </data>
+  <data name="Map" xml:space="preserve">
+    <value>Карта</value>
+  </data>
+  <data name="Threat" xml:space="preserve">
+    <value>Угроза</value>
+  </data>
+  <data name="Operator" xml:space="preserve">
+    <value>Оператор</value>
+  </data>
+  <data name="Command" xml:space="preserve">
+    <value>Команда</value>
+  </data>
+  <data name="Matrix" xml:space="preserve">
+    <value>Матрица</value>
+  </data>
+  <data name="Classic" xml:space="preserve">
+    <value>Классический</value>
+  </data>
+  <data name="Show Details" xml:space="preserve">
+    <value>Показать подробности</value>
+  </data>
+  <data name="Hide Details" xml:space="preserve">
+    <value>Скрыть подробности</value>
+  </data>
+  <data name="Remote Monitor + Command Relay" xml:space="preserve">
+    <value>Удалённый монитор и передача команд</value>
+  </data>
+  <data name="Remote HUD and command relay" xml:space="preserve">
+    <value>Удалённый HUD и передача команд</value>
+  </data>
+  <data name="Send Text" xml:space="preserve">
+    <value>Отправить текст</value>
+  </data>
+  <data name="Request Screenshot" xml:space="preserve">
+    <value>Запросить скриншот</value>
+  </data>
+  <data name="Last Screenshot" xml:space="preserve">
+    <value>Последний скриншот</value>
+  </data>
+  <data name="Last update" xml:space="preserve">
+    <value>Последнее обновление</value>
+  </data>
+  <data name="Stale" xml:space="preserve">
+    <value>Устарел</value>
+  </data>
+  <data name="Disconnected" xml:space="preserve">
+    <value>Отключён</value>
+  </data>
+  <data name="Online" xml:space="preserve">
+    <value>В сети</value>
+  </data>
+  <data name="Offline" xml:space="preserve">
+    <value>Не в сети</value>
+  </data>
+  <data name="Idle" xml:space="preserve">
+    <value>Простой</value>
+  </data>
+  <data name="Unknown" xml:space="preserve">
+    <value>Неизвестно</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Готово</value>
+  </data>
+  <data name="Allow web viewer CCTV mode" xml:space="preserve">
+    <value>Разрешить веб-CCTV</value>
+  </data>
+  <data name="Allow web viewer screenshot requests" xml:space="preserve">
+    <value>Разрешить веб-скриншоты</value>
+  </data>
+  <data name="Allow web viewer text and slash commands" xml:space="preserve">
+    <value>Разрешить веб-текст и команды</value>
+  </data>
+  <data name="Combat radar height (yalms)" xml:space="preserve">
+    <value>Высота радара в бою (ялмы)</value>
+  </data>
+  <data name="Combat radar width (yalms)" xml:space="preserve">
+    <value>Ширина радара в бою (ялмы)</value>
+  </data>
+  <data name="Travel radar height (yalms)" xml:space="preserve">
+    <value>Высота радара вне боя (ялмы)</value>
+  </data>
+  <data name="Travel radar width (yalms)" xml:space="preserve">
+    <value>Ширина радара вне боя (ялмы)</value>
+  </data>
+  <data name="Radar box size (px)" xml:space="preserve">
+    <value>Размер радара (px)</value>
+  </data>
+  <data name="Fast position interval (ms)" xml:space="preserve">
+    <value>Интервал позиции (мс)</value>
+  </data>
+  <data name="Full snapshot interval (ms)" xml:space="preserve">
+    <value>Интервал полного снимка (мс)</value>
+  </data>
+  <data name="Python launch command" xml:space="preserve">
+    <value>Команда запуска Python</value>
+  </data>
+  <data name="Publish HUD snapshots to remote server" xml:space="preserve">
+    <value>Отправлять снимки HUD на сервер</value>
+  </data>
+  <data name="Enumerate party members for radar labels" xml:space="preserve">
+    <value>Нумеровать участников на радаре</value>
+  </data>
+  <data name="Display size of the local HUD radar box." xml:space="preserve">
+    <value>Размер локального радара.</value>
+  </data>
+  <data name="Show TTSL status in the server info bar." xml:space="preserve">
+    <value>Показывать TTSL в строке сервера.</value>
+  </data>
+  <data name="Show or hide the server-info bar entry for TTSL." xml:space="preserve">
+    <value>Показать или скрыть TTSL в строке сервера.</value>
+  </data>
+  <data name="Obfuscate displayed player names for screenshots." xml:space="preserve">
+    <value>Скрывать имена игроков для скриншотов.</value>
+  </data>
+  <data name="Use party slot numbers on the radar." xml:space="preserve">
+    <value>Использовать номера группы на радаре.</value>
+  </data>
+  <data name="Open the guided local/web HUD setup." xml:space="preserve">
+    <value>Открыть мастер локального и веб-HUD.</value>
+  </data>
+  <data name="Open the Python remote HUD in your default browser." xml:space="preserve">
+    <value>Открыть удалённый HUD в браузере.</value>
+  </data>
+  <data name="Guided local HUD and web publisher setup" xml:space="preserve">
+    <value>Настройка локального HUD и веб-публикации</value>
+  </data>
+  <data name="Copies the best local server-launch command TTSL could resolve from this install." xml:space="preserve">
+    <value>Копировать найденную команду локального запуска.</value>
+  </data>
+  <data name="Copies the Lodestone blog link with suggested glyphs." xml:space="preserve">
+    <value>Копировать ссылку Lodestone с символами.</value>
+  </data>
+  <data name="Customize the glyphs used when TTSL is on or off." xml:space="preserve">
+    <value>Настроить символы включённого и выключенного TTSL.</value>
+  </data>
+  <data name="Where should TTSL show your HUD?" xml:space="preserve">
+    <value>Где показывать HUD TTSL?</value>
+  </data>
+  <data name="Choose the local HUD details you want ready" xml:space="preserve">
+    <value>Выберите данные локального HUD</value>
+  </data>
+  <data name="These choices also control which sections are included when local HUD data is published." xml:space="preserve">
+    <value>Эти настройки также определяют публикуемые разделы HUD.</value>
+  </data>
+  <data name="Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are." xml:space="preserve">
+    <value>Выберите режим. Меняются только эти настройки; веб-разрешения, интервалы, радар, значки и подписи сохраняются.</value>
+  </data>
+  <data name="Show the in-game TTSL window without publishing to the web server." xml:space="preserve">
+    <value>Показывать TTSL в игре без веб-публикации.</value>
+  </data>
+  <data name="Show the in-game TTSL window and publish snapshots to the configured web server." xml:space="preserve">
+    <value>Показывать TTSL в игре и отправлять снимки на сервер.</value>
+  </data>
+  <data name="Publish snapshots to the web server while keeping the in-game HUD hidden." xml:space="preserve">
+    <value>Отправлять снимки, скрывая HUD в игре.</value>
+  </data>
+  <data name="Confirm the web server address and copy the existing launch command if you need to start the local server." xml:space="preserve">
+    <value>Проверьте адрес и скопируйте команду для локального запуска.</value>
+  </data>
+  <data name="Local HUD mode does not publish snapshots. The existing remote URL is preserved for later." xml:space="preserve">
+    <value>Локальный режим не отправляет снимки. URL сохраняется.</value>
+  </data>
+  <data name="The active account changed. Reopen the wizard and review that account's settings." xml:space="preserve">
+    <value>Активная учётная запись изменилась. Откройте мастер снова и проверьте настройки.</value>
+  </data>
+  <data name="Step {0} of 3" xml:space="preserve">
+    <value>Шаг {0} из 3</value>
+  </data>
+  <data name="Preview: {0}" xml:space="preserve">
+    <value>Просмотр: {0}</value>
+  </data>
+  <data name="Current account ID: {0}" xml:space="preserve">
+    <value>ID текущей учётной записи: {0}</value>
+  </data>
+  <data name="Publisher: {0}" xml:space="preserve">
+    <value>Отправитель: {0}</value>
+  </data>
+  <data name="Last error: {0}" xml:space="preserve">
+    <value>Последняя ошибка: {0}</value>
+  </data>
+  <data name="Enabled Icon" xml:space="preserve">
+    <value>Значок включения</value>
+  </data>
+  <data name="Disabled Icon" xml:space="preserve">
+    <value>Значок выключения</value>
+  </data>
+  <data name="Age" xml:space="preserve">
+    <value>Давность</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Закрыть</value>
+  </data>
+  <data name="Command View" xml:space="preserve">
+    <value>Командный вид</value>
+  </data>
+  <data name="Connected" xml:space="preserve">
+    <value>Подключён</value>
+  </data>
+  <data name="Dist" xml:space="preserve">
+    <value>Расст.</value>
+  </data>
+  <data name="Enmity" xml:space="preserve">
+    <value>Враждебность</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Процесс</value>
+  </data>
+  <data name="Focus" xml:space="preserve">
+    <value>Фокус</value>
+  </data>
+  <data name="Game path" xml:space="preserve">
+    <value>Путь игры</value>
+  </data>
+  <data name="High" xml:space="preserve">
+    <value>Высокое</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Хост</value>
+  </data>
+  <data name="Inspector" xml:space="preserve">
+    <value>Инспектор</value>
+  </data>
+  <data name="Last Screenshot Sent" xml:space="preserve">
+    <value>Последний отправленный скриншот</value>
+  </data>
+  <data name="Loose Clients" xml:space="preserve">
+    <value>Клиенты вне группы</value>
+  </data>
+  <data name="Low" xml:space="preserve">
+    <value>Низкое</value>
+  </data>
+  <data name="Medium" xml:space="preserve">
+    <value>Среднее</value>
+  </data>
+  <data name="Minimap" xml:space="preserve">
+    <value>Мини-карта</value>
+  </data>
+  <data name="No combat telemetry captured." xml:space="preserve">
+    <value>Данные боя не получены.</value>
+  </data>
+  <data name="No party data captured yet." xml:space="preserve">
+    <value>Данные группы пока не получены.</value>
+  </data>
+  <data name="Party Surface" xml:space="preserve">
+    <value>Представление группы</value>
+  </data>
+  <data name="Refresh failed" xml:space="preserve">
+    <value>Ошибка обновления</value>
+  </data>
+  <data name="Situation" xml:space="preserve">
+    <value>Обстановка</value>
+  </data>
+  <data name="Slot" xml:space="preserve">
+    <value>Ячейка</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Состояние</value>
+  </data>
+  <data name="Surface Matrix" xml:space="preserve">
+    <value>Матрица состояний</value>
+  </data>
+  <data name="Type" xml:space="preserve">
+    <value>Тип</value>
+  </data>
+  <data name="Vitals" xml:space="preserve">
+    <value>Показатели</value>
+  </data>
+  <data name="Zone" xml:space="preserve">
+    <value>Зона</value>
+  </data>
+  <data name="Asset plan unavailable." xml:space="preserve">
+    <value>План ресурсов недоступен.</value>
+  </data>
+  <data name="Extraction status unavailable." xml:space="preserve">
+    <value>Состояние извлечения недоступно.</value>
+  </data>
+  <data name="Awaiting the first CCTV frame from the client." xml:space="preserve">
+    <value>Ожидание первого кадра CCTV.</value>
+  </data>
+  <data name="CCTV frames appear here after the first live capture." xml:space="preserve">
+    <value>Кадры CCTV появятся после первого захвата.</value>
+  </data>
+  <data name="CCTV is not allowed for this client." xml:space="preserve">
+    <value>CCTV запрещён для этого клиента.</value>
+  </data>
+  <data name="CCTV uses rolling game-window captures and replaces the map pane until closed." xml:space="preserve">
+    <value>CCTV заменяет карту непрерывными снимками до закрытия.</value>
+  </data>
+  <data name="Clients not currently represented inside an aggregate party surface." xml:space="preserve">
+    <value>Клиенты вне объединённых групп.</value>
+  </data>
+  <data name="Open the screenshot folder on the TTSL server host." xml:space="preserve">
+    <value>Открыть папку скриншотов на сервере TTSL.</value>
+  </data>
+  <data name="Plain text goes to /echo. Slash commands like /sit run verbatim" xml:space="preserve">
+    <value>Текст идёт в /echo; команды вроде /sit выполняются без изменений.</value>
+  </data>
+  <data name="Select a client or aggregate party surface to inspect the detail pane." xml:space="preserve">
+    <value>Выберите клиент или группу для подробностей.</value>
+  </data>
+  <data name="The tracked client does not currently expose target or hostile data." xml:space="preserve">
+    <value>Клиент пока не предоставляет данные целей и врагов.</value>
+  </data>
+  <data name="This client is not currently allowing web-triggered text, slash commands, screenshots, or CCTV." xml:space="preserve">
+    <value>Клиент не разрешает веб-текст, команды, снимки или CCTV.</value>
+  </data>
+  <data name="DTR" xml:space="preserve">
+    <value>DTR</value>
+  </data>
+  <data name="Krangle" xml:space="preserve">
+    <value>Krangle</value>
+  </data>
+  <data name="CCTV" xml:space="preserve">
+    <value>CCTV</value>
+  </data>
+  <data name="HUD" xml:space="preserve">
+    <value>HUD</value>
+  </data>
+  <data name="HP" xml:space="preserve">
+    <value>HP</value>
+  </data>
+  <data name="MP" xml:space="preserve">
+    <value>MP</value>
+  </data>
+  <data name="FB" xml:space="preserve">
+    <value>FB</value>
+  </data>
+  <data name="CMD" xml:space="preserve">
+    <value>CMD</value>
+  </data>
+  <data name="SS" xml:space="preserve">
+    <value>SS</value>
+  </data>
+  <data name="SSF" xml:space="preserve">
+    <value>SSF</value>
+  </data>
+  <data name="Allows the browser HUD to replace the map pane with a rolling live feed using low, medium, or high capture presets." xml:space="preserve">
+    <value>Разрешает видео вместо карты с низким, средним или высоким качеством.</value>
+  </data>
+  <data name="Captures the current FFXIV game-window client area and uploads it to the Python server." xml:space="preserve">
+    <value>Снимает область окна FFXIV и отправляет на сервер Python.</value>
+  </data>
+  <data name="Clients are grouped by incoming account ID and character on the server page." xml:space="preserve">
+    <value>Клиенты группируются по ID учётной записи и персонажу.</value>
+  </data>
+  <data name="Default view is 20y x 20y in combat and 50y x 50y out of combat." xml:space="preserve">
+    <value>По умолчанию: 20y × 20y в бою, 50y × 50y вне боя.</value>
+  </data>
+  <data name="Edit the copied command if you want LAN viewers: change --host 127.0.0.1 to --host 0.0.0.0." xml:space="preserve">
+    <value>Для LAN замените --host 127.0.0.1 на --host 0.0.0.0.</value>
+  </data>
+  <data name="For future sheet/icon extraction, at least one client on the same PC as the Python monitor must connect first." xml:space="preserve">
+    <value>Для извлечения данных и значков сначала подключите клиент на ПК монитора.</value>
+  </data>
+  <data name="Off by default. When enabled, the web HUD can ask this client to use CharacterInspect preview capture only as a fallback when Lodestone body art is unavailable." xml:space="preserve">
+    <value>По умолчанию выключено. CharacterInspect используется лишь при отсутствии изображения тела Lodestone.</value>
+  </data>
+  <data name="Plain text is sent to /echo with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim." xml:space="preserve">
+    <value>Текст отправляется в /echo с [TTSL Web]. Команды / передаются без изменений.</value>
+  </data>
+  <data name="Plain web text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim, screenshot buttons use the uploader/source client for aggregate-party stranger data, and CCTV uses a rolling same-client frame cache." xml:space="preserve">
+    <value>Текст использует [TTSL Web] и /echo; команды / неизменны. Снимки сторонних участников идут через исходный клиент; CCTV использует его текущий кэш.</value>
+  </data>
+  <data name="Sends local HUD snapshots to the Python mini-server so multiple clients can be viewed in one browser." xml:space="preserve">
+    <value>Отправляет снимки на сервер Python для просмотра нескольких клиентов в браузере.</value>
+  </data>
+  <data name="TTSL settings are now stored per account ID once a live account is detected." xml:space="preserve">
+    <value>Настройки TTSL сохраняются по ID после обнаружения активной учётной записи.</value>
+  </data>
+  <data name="The browser HUD now has live box-size and combat/travel yalm controls in its top toolbar." xml:space="preserve">
+    <value>Веб-панель меняет размер и дальность радара в бою и вне боя.</value>
+  </data>
+  <data name="The server will cache the first same-PC game path it sees for the rest of that monitoring session." xml:space="preserve">
+    <value>Сервер сохраняет первый локальный путь игры на время сеанса.</value>
+  </data>
+  <data name="Showing {0:F0}y x {1:F0}y ({2})." xml:space="preserve">
+    <value>Область: {0:F0}y × {1:F0}y ({2}).</value>
+  </data>
+  <data name="Travel" xml:space="preserve"><value>Перемещение</value></data>
+  <data name="Shot" xml:space="preserve">
+    <value>Снимок</value>
+  </data>
+  <data name="Mode" xml:space="preserve">
+    <value>Режим</value>
+  </data>
+  <data name="Krangle names" xml:space="preserve">
+    <value>Скрывать имена</value>
+  </data>
+  <data name="DTR entry" xml:space="preserve">
+    <value>Запись DTR</value>
+  </data>
+  <data name="Mode: {0}" xml:space="preserve">
+    <value>Режим: {0}</value>
+  </data>
+  <data name="Condition panel: {0}" xml:space="preserve">
+    <value>Панель состояний: {0}</value>
+  </data>
+  <data name="Repair summary: {0}" xml:space="preserve">
+    <value>Сводка ремонта: {0}</value>
+  </data>
+  <data name="Party status: {0}" xml:space="preserve">
+    <value>Список состояний группы: {0}</value>
+  </data>
+  <data name="Party radar: {0}" xml:space="preserve">
+    <value>Радар группы: {0}</value>
+  </data>
+  <data name="Krangle names: {0}" xml:space="preserve">
+    <value>Скрывать имена: {0}</value>
+  </data>
+  <data name="DTR entry: {0}" xml:space="preserve">
+    <value>Запись DTR: {0}</value>
+  </data>
+  <data name="Server: {0}" xml:space="preserve">
+    <value>Сервер: {0}</value>
+  </data>
+  <data name="Release asset: latestServer.zip" xml:space="preserve">
+    <value>Файл выпуска: latestServer.zip</value>
+  </data>
+  <data name="(?)" xml:space="preserve">
+    <value>(?)</value>
+  </data>
+  <data name="TTSL " xml:space="preserve">
+    <value>TTSL </value>
+  </data>
+  <data name="In duty" xml:space="preserve">
+    <value>В задании</value>
+  </data>
+  <data name="Queued" xml:space="preserve">
+    <value>В очереди</value>
+  </data>
+  <data name="Unavailable" xml:space="preserve">
+    <value>Недоступно</value>
+  </data>
+  <data name="Locked" xml:space="preserve">
+    <value>Заблокировано</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Текст</value>
+  </data>
+  <data name="Screens" xml:space="preserve">
+    <value>Снимки</value>
+  </data>
+  <data name="Telemetry" xml:space="preserve">
+    <value>Телеметрия</value>
+  </data>
+  <data name="Unknown race" xml:space="preserve">
+    <value>Неизвестная раса</value>
+  </data>
+  <data name="Party Leader" xml:space="preserve">
+    <value>Лидер группы</value>
+  </data>
+  <data name="Party Role" xml:space="preserve">
+    <value>Роль в группе</value>
+  </data>
+  <data name="Clients" xml:space="preserve">
+    <value>Клиенты</value>
+  </data>
+  <data name="Asset plan pending." xml:space="preserve">
+    <value>Ожидание плана ресурсов.</value>
+  </data>
+  <data name="Extraction idle." xml:space="preserve">
+    <value>Извлечение не выполняется.</value>
+  </data>
+  <data name="Extracting..." xml:space="preserve">
+    <value>Извлечение...</value>
+  </data>
+  <data name="Waiting for clients..." xml:space="preserve">
+    <value>Ожидание клиентов...</value>
+  </data>
+  <data name="No updates yet." xml:space="preserve">
+    <value>Обновлений пока нет.</value>
+  </data>
+  <data name="All tracked clients are stale or disconnected." xml:space="preserve">
+    <value>Все клиенты устарели или отключены.</value>
+  </data>
+  <data name="No aggregate party surfaces are available right now, so command view is showing compact client cards." xml:space="preserve">
+    <value>Нет объединённых групп; показаны компактные карточки клиентов.</value>
+  </data>
+  <data name="Aggregate parties are disabled. Enable the toggle above to unlock the full party command board." xml:space="preserve">
+    <value>Объединение групп выключено. Включите выше для полной командной панели.</value>
+  </data>
+  <data name="Plain text is echoed with a [TTSL Web] prefix. Slash-prefixed input is sent verbatim. SS sends a one-shot cached screenshot, while CCTV runs a rolling live feed in the map pane." xml:space="preserve">
+    <value>Текст использует [TTSL Web] и /echo; команды / неизменны. SS отправляет снимок; CCTV показывает видео вместо карты.</value>
+  </data>
+  <data name="SS and CMD target monitored members directly. CCTV replaces the map pane until closed. Stranger buttons stay visible but disabled until that slot is represented by a tracked client." xml:space="preserve">
+    <value>SS и CMD работают с отслеживаемыми участниками. CCTV заменяет карту. Кнопки сторонних участников отключены до обнаружения клиента.</value>
+  </data>
+  <data name="Strangers already carry party HP, MP, position, level, and job data. Lodestone portraits resolve in the background using the stranger world or the source-client world as a fallback." xml:space="preserve">
+    <value>Для сторонних участников есть HP, MP, позиция, уровень и класс. Портреты используют их мир или мир исходного клиента.</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this native monitor." xml:space="preserve">
+    <value>Нет клиентов. Запустите сервер, задайте URL в TTSL и включите отправку. Для извлечения нужен клиент на этом ПК.</value>
+  </data>
+  <data name="Data folder is already active:" xml:space="preserve">
+    <value>Папка уже активна:</value>
+  </data>
+  <data name="Data folder saved for next launch:" xml:space="preserve">
+    <value>Папка сохранена для следующего запуска:</value>
+  </data>
+  <data name="Restart TTSL Native Server to use it. Current session keeps using:" xml:space="preserve">
+    <value>Перезапустите TTSL Native Server. Текущий сеанс использует:</value>
+  </data>
+  <data name="Failed to register TTSL native server window class." xml:space="preserve">
+    <value>Не удалось зарегистрировать класс окна TTSL.</value>
+  </data>
+  <data name="Failed to create TTSL native server window." xml:space="preserve">
+    <value>Не удалось создать окно TTSL.</value>
+  </data>
+  <data name="Click to toggle the HUD." xml:space="preserve">
+    <value>Нажмите для переключения HUD.</value>
+  </data>
+  <data name="Text Only: 'TTSL: On/Off'&#10;Icon+Text: '&lt;icon&gt; TTSL'&#10;Icon Only: '&lt;icon&gt;'" xml:space="preserve">
+    <value>Только текст: 'TTSL: On/Off'
+Значок+текст: '&lt;icon&gt; TTSL'
+Только значок: '&lt;icon&gt;'</value>
+  </data>
+  <data name="Busy" xml:space="preserve">
+    <value>Занят</value>
+  </data>
+  <data name="Current target" xml:space="preserve">
+    <value>Текущая цель</value>
+  </data>
+  <data name="Disc" xml:space="preserve">
+    <value>Откл.</value>
+  </data>
+  <data name="Extra" xml:space="preserve">
+    <value>Дополнительно</value>
+  </data>
+  <data name="Extract" xml:space="preserve">
+    <value>Извлечь</value>
+  </data>
+  <data name="Label" xml:space="preserve">
+    <value>Подпись</value>
+  </data>
+  <data name="Lookup" xml:space="preserve">
+    <value>Поиск</value>
+  </data>
+  <data name="Missing" xml:space="preserve">
+    <value>Отсутствует</value>
+  </data>
+  <data name="Monitored" xml:space="preserve">
+    <value>Отслеживаемые</value>
+  </data>
+  <data name="No current target" xml:space="preserve">
+    <value>Нет текущей цели</value>
+  </data>
+  <data name="No radar data" xml:space="preserve">
+    <value>Нет данных радара</value>
+  </data>
+  <data name="No repair data" xml:space="preserve">
+    <value>Нет данных ремонта</value>
+  </data>
+  <data name="No tracked target" xml:space="preserve">
+    <value>Нет отслеживаемой цели</value>
+  </data>
+  <data name="Not casting" xml:space="preserve">
+    <value>Не колдует</value>
+  </data>
+  <data name="Path" xml:space="preserve">
+    <value>Путь</value>
+  </data>
+  <data name="Paused" xml:space="preserve">
+    <value>Приостановлено</value>
+  </data>
+  <data name="Policy" xml:space="preserve">
+    <value>Разрешения</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Позиция</value>
+  </data>
+  <data name="Repair" xml:space="preserve">
+    <value>Ремонт</value>
+  </data>
+  <data name="Solo" xml:space="preserve">
+    <value>Один</value>
+  </data>
+  <data name="Source" xml:space="preserve">
+    <value>Источник</value>
+  </data>
+  <data name="Source host" xml:space="preserve">
+    <value>Исходный хост</value>
+  </data>
+  <data name="Stranger" xml:space="preserve">
+    <value>Сторонний</value>
+  </data>
+  <data name="Strangers" xml:space="preserve">
+    <value>Сторонние</value>
+  </data>
+  <data name="Submitting" xml:space="preserve">
+    <value>Отправка</value>
+  </data>
+  <data name="Targeting you" xml:space="preserve">
+    <value>Целится в вас</value>
+  </data>
+  <data name="Texture" xml:space="preserve">
+    <value>Текстура</value>
+  </data>
+  <data name="Tracked" xml:space="preserve">
+    <value>Отслеживается</value>
+  </data>
+  <data name="Tracked client" xml:space="preserve">
+    <value>Отслеживаемый клиент</value>
+  </data>
+  <data name="Unknown host" xml:space="preserve">
+    <value>Неизвестный хост</value>
+  </data>
+  <data name="Unknown time" xml:space="preserve">
+    <value>Время неизвестно</value>
+  </data>
+  <data name="Unknown zone" xml:space="preserve">
+    <value>Зона неизвестна</value>
+  </data>
+  <data name="View" xml:space="preserve">
+    <value>Вид</value>
+  </data>
+  <data name="Visible" xml:space="preserve">
+    <value>Видимый</value>
+  </data>
+  <data name="Remote Control" xml:space="preserve">
+    <value>Удалённое управление</value>
+  </data>
+  <data name="Field Map" xml:space="preserve">
+    <value>Карта зоны</value>
+  </data>
+  <data name="Source Minimap" xml:space="preserve">
+    <value>Мини-карта источника</value>
+  </data>
+  <data name="Aggregate parties" xml:space="preserve">
+    <value>Объединять группы</value>
+  </data>
+  <data name="Krangle names/account IDs" xml:space="preserve">
+    <value>Скрывать имена и ID учётных записей</value>
+  </data>
+  <data name="Krangle enemy names" xml:space="preserve">
+    <value>Скрывать имена врагов</value>
+  </data>
+  <data name="Show stale/disconnected" xml:space="preserve">
+    <value>Показывать устаревшие и отключённые</value>
+  </data>
+  <data name="Icons" xml:space="preserve">
+    <value>Значки</value>
+  </data>
+  <data name="Total HP" xml:space="preserve">
+    <value>Всего HP</value>
+  </data>
+  <data name="Total MP" xml:space="preserve">
+    <value>Всего MP</value>
+  </data>
+  <data name="Party Members" xml:space="preserve">
+    <value>Участники группы</value>
+  </data>
+  <data name="Waiting for local player" xml:space="preserve">
+    <value>Ожидание локального игрока</value>
+  </data>
+  <data name="Connected to {0}" xml:space="preserve">
+    <value>Подключено к {0}</value>
+  </data>
+  <data name="Retrying in {0}s" xml:space="preserve">
+    <value>Повтор через {0}с</value>
+  </data>
+  <data name="Box px" xml:space="preserve">
+    <value>Размер радара (px)</value>
+  </data>
+  <data name="Combat W" xml:space="preserve">
+    <value>Ширина радара в бою (ялмы)</value>
+  </data>
+  <data name="Combat H" xml:space="preserve">
+    <value>Высота радара в бою (ялмы)</value>
+  </data>
+  <data name="Travel W" xml:space="preserve">
+    <value>Ширина радара вне боя (ялмы)</value>
+  </data>
+  <data name="Travel H" xml:space="preserve">
+    <value>Высота радара вне боя (ялмы)</value>
+  </data>
+  <data name="Aggregate-party stranger actions route through the source client." xml:space="preserve">
+    <value>Действия сторонних участников выполняет исходный клиент.</value>
+  </data>
+  <data name="Extraction started." xml:space="preserve">
+    <value>Извлечение начато.</value>
+  </data>
+  <data name="Map texture not extracted yet." xml:space="preserve">
+    <value>Текстура карты пока не извлечена.</value>
+  </data>
+  <data name="No map data captured yet." xml:space="preserve">
+    <value>Данные карты пока не получены.</value>
+  </data>
+  <data name="Opened screenshot folder on the server host." xml:space="preserve">
+    <value>Папка снимков открыта на сервере.</value>
+  </data>
+  <data name="Party telemetry + Lodestone lookup" xml:space="preserve">
+    <value>Данные группы и поиск Lodestone</value>
+  </data>
+  <data name="Queued remote action." xml:space="preserve">
+    <value>Удалённое действие в очереди.</value>
+  </data>
+  <data name="Screenshot requests are not allowed for this client." xml:space="preserve">
+    <value>Снимки запрещены для этого клиента.</value>
+  </data>
+  <data name="Source Remote Control" xml:space="preserve">
+    <value>Управление исходным клиентом</value>
+  </data>
+  <data name="Web text or slash commands are not allowed for this client." xml:space="preserve">
+    <value>Веб-текст и команды запрещены для этого клиента.</value>
+  </data>
+  <data name="same-PC game path not captured yet" xml:space="preserve">
+    <value>Локальный путь игры ещё не получен</value>
+  </data>
+  <data name="see server log" xml:space="preserve">
+    <value>Смотрите журнал сервера</value>
+  </data>
+  <data name="Scroll down to &quot;The Dumpster Fire&quot; channel to discuss issues / suggestions for specific plugins." xml:space="preserve">
+    <value>Обсуждайте проблемы и предложения в канале "The Dumpster Fire".</value>
+  </data>
+  <data name="Failed to open screenshot folder: {0}" xml:space="preserve">
+    <value>Не удалось открыть папку снимков: {0}</value>
+  </data>
+  <data name="Extraction request failed: {0}" xml:space="preserve">
+    <value>Ошибка запроса извлечения: {0}</value>
+  </data>
+  <data name="Remote action failed: {0}" xml:space="preserve">
+    <value>Ошибка удалённого действия: {0}</value>
+  </data>
+  <data name="Last update {0} · {1}" xml:space="preserve">
+    <value>Последнее обновление {0} · {1}</value>
+  </data>
+  <data name="Stranger source locked to first monitored client: {0} · Connected {1}" xml:space="preserve">
+    <value>Источник сторонних участников закреплён за первым клиентом: {0} · Подключён {1}</value>
+  </data>
+  <data name="{0} clients · {1} live · {2} stale/disconnected" xml:space="preserve">
+    <value>{0} клиентов · {1} активных · {2} устаревших/отключённых</value>
+  </data>
+  <data name="Generated {0} · stale after {1}s · {2}" xml:space="preserve">
+    <value>Создано {0} · устаревает через {1}с · {2}</value>
+  </data>
+  <data name="Last CCTV Frame" xml:space="preserve">
+    <value>Последний кадр CCTV</value>
+  </data>
+  <data name="Close CCTV for {0}" xml:space="preserve">
+    <value>Закрыть CCTV для {0}</value>
+  </data>
+  <data name="Replace the map pane with live CCTV for {0}" xml:space="preserve">
+    <value>Заменить карту CCTV для {0}</value>
+  </data>
+  <data name="Request a screenshot from {0}" xml:space="preserve">
+    <value>Запросить снимок у {0}</value>
+  </data>
+  <data name="Open a command prompt for {0}" xml:space="preserve">
+    <value>Открыть команду для {0}</value>
+  </data>
+  <data name="No clients connected yet. Start the server, point TTSL at it, then enable remote publishing. Future sheet/icon extraction requires at least one client on the same PC as this Python monitor." xml:space="preserve">
+    <value>Нет клиентов. Запустите сервер, задайте URL в TTSL и включите отправку. Для извлечения нужен клиент на этом ПК.</value>
+  </data>
+  <data name="Select TTSL Native Server data folder" xml:space="preserve">
+    <value>Выберите папку данных TTSL Native Server</value>
+  </data>
+  <data name="Invalid data folder: {0}" xml:space="preserve">
+    <value>Недопустимая папка данных: {0}</value>
+  </data>
+  <data name="Party groups" xml:space="preserve">
+    <value>Группы</value>
+  </data>
+  <data name="Clan" xml:space="preserve">
+    <value>Клан</value>
+  </data>
+  <data name="Race" xml:space="preserve">
+    <value>Раса</value>
+  </data>
+  <data name="Working..." xml:space="preserve">
+    <value>Выполняется...</value>
+  </data>
+  <data name="Targeting party member {0}" xml:space="preserve">
+    <value>Нацелен на участника {0}</value>
+  </data>
+  <data name="Live CCTV for {0}" xml:space="preserve">
+    <value>Прямая CCTV-трансляция: {0}</value>
+  </data>
+  <data name="Send text or slash command to {0}" xml:space="preserve">
+    <value>Отправить текст или команду: {0}</value>
+  </data>
+  <data name="Targeting {0}" xml:space="preserve">
+    <value>Цель: {0}</value>
+  </data>
+  <data name="Lodestone body image for {0}" xml:space="preserve">
+    <value>Изображение персонажа {0} из Lodestone</value>
+  </data>
+  <data name="Party telemetry available · Lodestone {0} · Direct actions disabled." xml:space="preserve">
+    <value>Данные группы доступны · Lodestone {0} · Прямые действия отключены.</value>
+  </data>
+  <data name="Failed" xml:space="preserve">
+    <value>Ошибка</value>
+  </data>
+  <data name="Pending" xml:space="preserve">
+    <value>Ожидание</value>
+  </data>
+  <data name="Refreshing" xml:space="preserve">
+    <value>Обновление</value>
+  </data>
+  <data name="Partial" xml:space="preserve">
+    <value>Частично</value>
+  </data>
+  <data name="Unresolved" xml:space="preserve">
+    <value>Не определено</value>
+  </data>
+  <data name="Full" xml:space="preserve">
+    <value>Полный</value>
+  </data>
+  <data name="Ally" xml:space="preserve">
+    <value>Союзник</value>
+  </data>
+  <data name="Hostile" xml:space="preserve">
+    <value>Враг</value>
+  </data>
+  <data name="Hot" xml:space="preserve">
+    <value>Активно</value>
+  </data>
+  <data name="{0} live" xml:space="preserve">
+    <value>{0} активных</value>
+  </data>
+  <data name="Plugin fallback ready" xml:space="preserve">
+    <value>Резерв плагина готов</value>
+  </data>
+  <data name="Four layouts for 4-12 clients: classic cards, operator board, party command board, and dense matrix." xml:space="preserve">
+    <value>Четыре вида для 4–12 клиентов: карточки, панель оператора, команды группы и компактная матрица.</value>
+  </data>
+  <data name="Native asset extraction started." xml:space="preserve">
+    <value>Извлечение ресурсов запущено.</value>
+  </data>
+  <data name="Loading race names from native EXD data..." xml:space="preserve">
+    <value>Загрузка названий рас из EXD...</value>
+  </data>
+  <data name="Loading tribe names from native EXD data..." xml:space="preserve">
+    <value>Загрузка названий кланов из EXD...</value>
+  </data>
+  <data name="Loaded {0} race name row(s) from native EXD data." xml:space="preserve">
+    <value>Загружено названий рас из EXD: {0}.</value>
+  </data>
+  <data name="Loaded {0} tribe name row(s) from native EXD data." xml:space="preserve">
+    <value>Загружено названий кланов из EXD: {0}.</value>
+  </data>
+  <data name="Extracting job icon {0}/{1} ({2})..." xml:space="preserve">
+    <value>Извлечение значка профессии {0}/{1} ({2})...</value>
+  </data>
+  <data name="Extracting map texture {0}/{1} ({2})..." xml:space="preserve">
+    <value>Извлечение текстуры карты {0}/{1} ({2})...</value>
+  </data>
+  <data name="Generating race icon {0}/{1}..." xml:space="preserve">
+    <value>Создание значка расы {0}/{1}...</value>
+  </data>
+  <data name="Generating tribe icon {0}/{1}..." xml:space="preserve">
+    <value>Создание значка клана {0}/{1}...</value>
+  </data>
+  <data name="Native asset extraction {0}: {1} extracted, {2} failed." xml:space="preserve">
+    <value>Извлечение ресурсов {0}: извлечено {1}, ошибок {2}.</value>
+  </data>
+  <data name="Writing native asset extraction summary..." xml:space="preserve">
+    <value>Запись сводки извлечения ресурсов...</value>
+  </data>
+  <data name="Native asset extraction failed: {0}" xml:space="preserve">
+    <value>Ошибка извлечения ресурсов: {0}</value>
+  </data>
+  <data name="Launching extractor with the current session plan." xml:space="preserve">
+    <value>Запуск извлечения по плану текущего сеанса.</value>
+  </data>
+  <data name="Asset extraction started." xml:space="preserve">
+    <value>Извлечение ресурсов запущено.</value>
+  </data>
+  <data name="Extractor finished." xml:space="preserve">
+    <value>Извлечение завершено.</value>
+  </data>
+  <data name="Extractor failed." xml:space="preserve">
+    <value>Ошибка извлечения.</value>
+  </data>
+  <data name="Summary written to {0}" xml:space="preserve">
+    <value>Сводка записана в {0}</value>
+  </data>
+  <data name="Failed {0} file(s). See {1}." xml:space="preserve">
+    <value>Ошибок файлов: {0}. См. {1}.</value>
+  </data>
+  <data name="Extractor failed: {0}" xml:space="preserve">
+    <value>Ошибка извлечения: {0}</value>
+  </data>
+  <data name="No extracted asset summary found yet." xml:space="preserve">
+    <value>Сводка извлечения ещё не найдена.</value>
+  </data>
+  <data name="Native asset extraction is already running." xml:space="preserve">
+    <value>Извлечение ресурсов уже выполняется.</value>
+  </data>
+  <data name="Asset extraction is already running." xml:space="preserve">
+    <value>Извлечение ресурсов уже выполняется.</value>
+  </data>
+  <data name="Same-PC game path has not been captured yet." xml:space="preserve">
+    <value>Путь игры на этом ПК ещё не определён.</value>
+  </data>
+  <data name="Extractor script not found: {0}" xml:space="preserve">
+    <value>Скрипт извлечения не найден: {0}</value>
+  </data>
+  <data name="Last asset extraction status was {0}." xml:space="preserve">
+    <value>Последнее состояние извлечения: {0}.</value>
+  </data>
+  <data name="Target client is not currently tracked." xml:space="preserve">
+    <value>Целевой клиент сейчас не отслеживается.</value>
+  </data>
+  <data name="That client does not allow web text or slash commands." xml:space="preserve">
+    <value>Клиент запрещает текст и команды из браузера.</value>
+  </data>
+  <data name="That client does not allow web CCTV streaming." xml:space="preserve">
+    <value>Клиент запрещает CCTV из браузера.</value>
+  </data>
+  <data name="That client does not allow web screenshot requests." xml:space="preserve">
+    <value>Клиент запрещает запросы снимков из браузера.</value>
+  </data>
+  <data name="Text is empty." xml:space="preserve">
+    <value>Текст пуст.</value>
+  </data>
+  <data name="Queued web text/slash command." xml:space="preserve">
+    <value>Текст/команда добавлены в очередь.</value>
+  </data>
+  <data name="Queued CCTV frame request." xml:space="preserve">
+    <value>Запрос кадра CCTV добавлен в очередь.</value>
+  </data>
+  <data name="Queued screenshot request." xml:space="preserve">
+    <value>Запрос снимка добавлен в очередь.</value>
+  </data>
+  <data name="Unsupported action type: {0}" xml:space="preserve">
+    <value>Неподдерживаемое действие: {0}</value>
+  </data>
+  <data name="Auto-extracting {0} for the current session." xml:space="preserve">
+    <value>Автоматическое извлечение {0} для текущего сеанса.</value>
+  </data>
+  <data name="Race name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Для рас использованы созданные названия: {0}</value>
+  </data>
+  <data name="Tribe name lookup fell back to generated labels: {0}" xml:space="preserve">
+    <value>Для кланов использованы созданные названия: {0}</value>
+  </data>
+  <data name="Not found" xml:space="preserve">
+    <value>Не найдено</value>
+  </data>
+<data name="Server is already running." xml:space="preserve"><value>Сервер уже запущен.</value></data>
+<data name="WSAStartup failed: {0}" xml:space="preserve"><value>Ошибка WSAStartup: {0}</value></data>
+<data name="socket() failed: {0}" xml:space="preserve"><value>Ошибка socket(): {0}</value></data>
+<data name="Bind host must be an IPv4 address such as 127.0.0.1 or 0.0.0.0." xml:space="preserve"><value>Адрес привязки должен быть адресом IPv4, например 127.0.0.1 или 0.0.0.0.</value></data>
+<data name="bind() failed on {0} with {1}" xml:space="preserve"><value>Ошибка bind() для {0}: {1}</value></data>
+<data name="listen() failed: {0}" xml:space="preserve"><value>Ошибка listen(): {0}</value></data>
+<data name="Data folder path is empty." xml:space="preserve"><value>Путь к папке данных пуст.</value></data>
+<data name="Failed to create {0}: {1}" xml:space="preserve"><value>Не удалось создать {0}: {1}</value></data>
+<data name="{0} is not a folder." xml:space="preserve"><value>{0} не является папкой.</value></data>
+  <data name="Yes" xml:space="preserve">
+    <value>Да</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Нет</value>
+  </data>
+  <data name="Operator View" xml:space="preserve">
+    <value>Обзор оператора</value>
+  </data>
+  <data name="Select a client to monitor and interact" xml:space="preserve">
+    <value>Выберите клиент для наблюдения и взаимодействия</value>
+  </data>
+  <data name="Command Center" xml:space="preserve">
+    <value>Центр команд</value>
+  </data>
+  <data name="Aggregated party command board" xml:space="preserve">
+    <value>Панель команд объединённых групп</value>
+  </data>
+  <data name="Party Overview" xml:space="preserve">
+    <value>Обзор группы</value>
+  </data>
+  <data name="Active Members" xml:space="preserve">
+    <value>Активные участники</value>
+  </data>
+  <data name="In Zone" xml:space="preserve">
+    <value>В зоне</value>
+  </data>
+  <data name="Selected Entity" xml:space="preserve">
+    <value>Выбранный объект</value>
+  </data>
+  <data name="Compare clients across zones and status" xml:space="preserve">
+    <value>Сравнение клиентов по зонам и состоянию</value>
+  </data>
+  <data name="Window appearance" xml:space="preserve"><value>Внешний вид окна</value></data>
+  <data name="Compact visible on main window" xml:space="preserve"><value>Показывать компактный режим в главном окне</value></data>
+  <data name="Language visible on main window" xml:space="preserve"><value>Показывать выбор языка в главном окне</value></data>
+  <data name="Transparency" xml:space="preserve"><value>Прозрачность</value></data>
+  <data name="Opacity (%)" xml:space="preserve"><value>Непрозрачность (%)</value></data>
+  <data name="Auto-fade when unfocused" xml:space="preserve"><value>Автоматически затемнять без фокуса</value></data>
+  <data name="Unfocused opacity (%)" xml:space="preserve"><value>Непрозрачность без фокуса (%)</value></data>
+  <data name="Unfocused delay (seconds)" xml:space="preserve"><value>Задержка без фокуса (секунды)</value></data>
+</root>
