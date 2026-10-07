@@ -193,13 +193,15 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             UiGui.SetTooltip("Use party slot numbers on the radar.");
 
         Flow("Setup",true);
-        if (UiGui.Button("Setup",new Vector2(Math.Max(150,MaterialText.Measure(UiText.T("Setup")).X/MaterialTheme.Metrics.Scale+60),TtslPresentation.ControlHeight)*MaterialTheme.Metrics.Scale))
+        if (UiGui.Button("Setup",new Vector2(Math.Max(150,MaterialText.Measure(UiText.T("Setup")).X/MaterialTheme.Metrics.Scale+60)*MaterialTheme.Metrics.Scale,
+            MaterialControlMetrics.Measure(MaterialTheme.Metrics, ImGui.GetTextLineHeight(), MaterialControlContext.Toolbar).Height)))
             plugin.OpenSetupWizard();
         if (ImGui.IsItemHovered())
             UiGui.SetTooltip("Open the guided local/web HUD setup.");
 
         Flow("Settings",true);
-        if (UiGui.Button("Settings",new Vector2(Math.Max(150,MaterialText.Measure(UiText.T("Settings")).X/MaterialTheme.Metrics.Scale+60),TtslPresentation.ControlHeight)*MaterialTheme.Metrics.Scale))
+        if (UiGui.Button("Settings",new Vector2(Math.Max(150,MaterialText.Measure(UiText.T("Settings")).X/MaterialTheme.Metrics.Scale+60)*MaterialTheme.Metrics.Scale,
+            MaterialControlMetrics.Measure(MaterialTheme.Metrics, ImGui.GetTextLineHeight(), MaterialControlContext.Toolbar).Height)))
             plugin.ToggleConfigUi();
 
         Flow("Settings");

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased - Button sizing (I491)
+
+- Use font-aware Toolbar sizing for ordinary buttons and reduce Main's Setup and Settings action heights. Preserve complete labels, fonts, native IDs/actions, requested widths and small/dense controls.
+- Current Debug/x64 compilation passes. Final actual-product native checks pass 9329 assertions across 16 focused scenes and 96 pointer activations, with integer exit 0 in all 1 routes. Coverage uses English/Hindi captions, original exercised font roles, both densities, 100/150 percent scale and enlarged text; game/GPU acceptance remains separate.
+
 ## Unreleased - CJK atlas construction
 
 - Request a 4096 x 4096 managed atlas and merge one bundled Noto CJK face per font role for the selected language, including Simplified and Traditional Chinese aliases. Preserve existing font sizes, glyph ranges, Windows and symbol fonts, and font lifecycle.

@@ -189,6 +189,8 @@ internal static class UiGui
     internal static bool Button(string label,string? display=null)
     {
         var translated=display ?? UiText.T(label.Split("##",2)[0]);
+        using var controls = ImGui.GetStyle().FramePadding.Y == 0 || MaterialControls.Context == MaterialControlContext.Dense
+            ? default(MaterialControls.ControlScope) : MaterialControls.Push(MaterialControlContext.Toolbar);
         using var height=MaterialText.PushLineHeight(translated);
         var width=MaterialText.Measure(translated).X+2*ImGui.GetStyle().FramePadding.X;
         width=MaterialLayout.FitNextItemWidth(width,width);
@@ -206,7 +208,11 @@ internal static class UiGui
     internal static bool Button(string label, Vector2 pixels)
     {
         var translated = UiText.T(label.Split("##", 2)[0]);
-        pixels.Y=Math.Max(pixels.Y,MaterialText.Measure(translated).Y+2*ImGui.GetStyle().FramePadding.Y);
+        using var controls = ImGui.GetStyle().FramePadding.Y == 0 || MaterialControls.Context == MaterialControlContext.Dense
+            ? default(MaterialControls.ControlScope) : MaterialControls.Push(MaterialControlContext.Toolbar);
+        var paddingY = ImGui.GetStyle().FramePadding.Y;
+        using var height = MaterialText.PushLineHeight(translated);
+        pixels.Y=Math.Max(pixels.Y,Math.Max(ImGui.GetTextLineHeight(),MaterialText.Measure(translated).Y)+2*paddingY);
         pixels.X=MaterialLayout.FitNextItemWidth(pixels.X,pixels.X);
         var color = ImGui.GetStyle().Colors[(int)ImGuiCol.Text];
         ImGui.PushStyleColor(ImGuiCol.Text, Vector4.Zero);
