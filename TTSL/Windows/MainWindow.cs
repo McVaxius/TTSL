@@ -9,6 +9,7 @@ using System.Reflection;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 
 namespace TTSL.Windows;
@@ -30,6 +31,24 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         };
         Size = new Vector2(1480, 1040);
         SizeCondition = ImGuiCond.FirstUseEver;
+        TitleBarButtons.Add(new()
+        {
+            Icon = FontAwesomeIcon.Cog, Priority = 0, IconOffset = new(2, 1),
+            Click = button => { if (button == ImGuiMouseButton.Left) plugin.ToggleConfigUi(); },
+            ShowTooltip = () => UiGui.SetTooltip("Settings"),
+        });
+        TitleBarButtons.Add(new()
+        {
+            Icon = FontAwesomeIcon.Wrench, Priority = -10, IconOffset = new(2, 1),
+            Click = button => { if (button == ImGuiMouseButton.Left) plugin.OpenSetupWizard(); },
+            ShowTooltip = () => UiGui.SetTooltip("Open the guided local/web HUD setup."),
+        });
+        TitleBarButtons.Add(new()
+        {
+            Icon = FontAwesomeIcon.Desktop, Priority = -20, IconOffset = new(2, 1),
+            Click = button => { if (button == ImGuiMouseButton.Left) plugin.SetOverlayEnabled(!plugin.Configuration.OverlayEnabled, "main window"); },
+            ShowTooltip = () => MaterialText.SetTooltip(UiText.T("HUD") + ": " + UiText.T(plugin.Configuration.OverlayEnabled ? "Enabled" : "Disabled")),
+        });
     }
 
     public void Dispose()
@@ -43,7 +62,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
         var player = Plugin.ObjectTable.LocalPlayer;
 
-        UiGui.Title(PluginInfo.DisplayName,PluginInfo.DisplayName+" "+version);
+        UiGui.TitleWithButtons(PluginInfo.DisplayName,PluginInfo.DisplayName+" "+version, this);
 
         DrawHeader(version);
         DrawToolbar(cfg);

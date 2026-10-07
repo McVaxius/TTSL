@@ -1,6 +1,7 @@
 using System.Numerics;
 using AethertekUI;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.Windowing;
 
 namespace TTSL.Ui;
 
@@ -248,6 +249,9 @@ internal static class UiGui
         return changed;
     }
     internal static void Title(string original,string translated)
+        => TitleWithButtons(original, translated, null);
+
+    internal static void TitleWithButtons(string original,string translated, Window? owner)
     {
         var s=ImGui.GetStyle(); var size=ImGui.GetFontSize();var height=ImGui.GetFrameHeight();
         var flags=ImGuiP.GetCurrentWindow().Flags;
@@ -259,7 +263,16 @@ internal static class UiGui
         var translatedWidth=translatedSize.X;
         if(MaterialText.RequiresShaping(translated)) position.Y=ImGui.GetWindowPos().Y+(height-translatedSize.Y)*.5f;
         var dl=ImGui.GetWindowDrawList();
-        dl.PushClipRect(ImGui.GetWindowPos(),ImGui.GetWindowPos()+new Vector2(ImGui.GetWindowSize().X-2*height,height),false);
+        var reserved = 2 * height;
+        if (owner is not null)
+        {
+            var count = owner.TitleBarButtons.Count(button => !owner.IsClickthrough || button.AvailableClickthrough);
+            if (owner.AllowPinning || owner.AllowClickthrough || owner.AllowBackgroundBlur) count++;
+            reserved = size + 2 * s.FramePadding.X + count * (size + s.ItemInnerSpacing.X);
+            if ((flags & ImGuiWindowFlags.NoCollapse) == 0 && s.WindowMenuButtonPosition == ImGuiDir.Right)
+                reserved += size + s.ItemInnerSpacing.X;
+        }
+        dl.PushClipRect(ImGui.GetWindowPos(),ImGui.GetWindowPos()+new Vector2(Math.Max(0,ImGui.GetWindowSize().X-reserved),height),false);
         var bg=s.Colors[(int)(ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows)?ImGuiCol.TitleBgActive:ImGuiCol.TitleBg)];
         dl.AddRectFilled(position,position+new Vector2(Math.Max(originalWidth,translatedWidth),height-s.FramePadding.Y),ImGui.ColorConvertFloat4ToU32(bg));
         MaterialText.AddText(dl,ImGui.GetFont(),size,position,ImGui.ColorConvertFloat4ToU32(s.Colors[(int)ImGuiCol.Text]),translated);

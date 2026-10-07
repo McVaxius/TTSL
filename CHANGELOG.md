@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased - CJK atlas construction
+
+- Request a 4096 x 4096 managed atlas and merge one bundled Noto CJK face per font role for the selected language, including Simplified and Traditional Chinese aliases. Preserve existing font sizes, glyph ranges, Windows and symbol fonts, and font lifecycle.
+
+## Unreleased - Main window titlebar shortcuts
+
+- Add Settings, Setup and the existing HUD visibility toggle to the native titlebar. Retain all body controls and re-read current HUD state on click, including while collapsed. Keep the original window identity and reserve native icon space during translated title painting.
+
+## Unreleased - Community invite
+
+- Update the existing Discord community action to https://discord.gg/ac6gjDvR8R.
+
 ## Unreleased - GitHub Actions dependency alignment
 
 - Pin the existing AethertekUI Actions checkout to published revision `6c193cf06ac67f954c549cafc2033ac0efdd630a`, which includes the Hindi text host and renderer. This fixes missing-text-API compilation after a consumer is published before its library; local workflow validation and hosted build results are separate.
