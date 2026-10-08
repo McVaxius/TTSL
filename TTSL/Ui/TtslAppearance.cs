@@ -23,6 +23,7 @@ internal sealed class TtslAppearance : IDisposable
     private uint appliedAccent;
     private Vector3 accentDraft;
     private int checkedGeneration = -1;
+    private int checkedHindiGeneration = -1;
     private bool fontIssueLogged;
 
     private void Apply()
@@ -36,6 +37,7 @@ internal sealed class TtslAppearance : IDisposable
             fonts = new(Plugin.PluginInterface.UiBuilder.FontAtlas, text.GlyphRanges(), language);
             appliedLanguage = language;
             checkedGeneration = -1;
+            checkedHindiGeneration = -1;
             fontIssueLogged = false;
             plugin.UpdateDtrBar();
         }
@@ -55,6 +57,16 @@ internal sealed class TtslAppearance : IDisposable
         if (!windows.Windows.Any(window => window.IsOpen)) return;
         using var resources = text.Enter();
         using var shaping = shapedText.Push();
+        if (fonts.Ready && checkedHindiGeneration != fonts.Generation)
+        {
+            var generation = fonts.Generation;
+            var hindiAvailable = true;
+            foreach (var role in Enum.GetValues<UiFontRole>())
+                hindiAvailable &= shapedText.Renderer.TryCheckGlyphs(["हिन्दी"], TtslPresentation.AtlasHeight(role) * ImGuiHelpers.GlobalScale, out _);
+            languages.Replace(UiText.Languages.Select(l => new MaterialOption<string>(l.Code, l.Code,
+                l.Code == "hi" && !hindiAvailable ? "Hindi (unavailable)" : l.Name, l.Code == "hi" && !hindiAvailable)).ToArray());
+            checkedHindiGeneration = generation;
+        }
         if (fonts.Ready && checkedGeneration != fonts.Generation)
         {
             try
@@ -79,7 +91,13 @@ internal sealed class TtslAppearance : IDisposable
             if (ImGui.Begin("Thick Thighs Save Lives##FontStatus", ImGuiWindowFlags.AlwaysAutoResize))
             {
                 fontStatusDecorations.Paint();
-                MaterialText.TextWrapped(UiText.T(fonts.LoadException is null && !fontIssueLogged ? "Loading UI fonts..." : "UI fonts failed to load. See the plugin log."));
+                var loading = fonts.LoadException is null && !fontIssueLogged;
+                if (appliedLanguage == "hi")
+                {
+                    ImGui.TextWrapped(loading ? "Loading Hindi UI fonts..." : "Hindi UI fonts are unavailable. See the plugin log.");
+                    if (!loading && ImGui.Button("Use English")) { plugin.Configuration.UiLanguage = "en"; plugin.Configuration.Save(); }
+                }
+                else MaterialText.TextWrapped(UiText.T(loading ? "Loading UI fonts..." : "UI fonts failed to load. See the plugin log."));
             }
             ImGui.End();
             fontStatusDecorations.Paint();

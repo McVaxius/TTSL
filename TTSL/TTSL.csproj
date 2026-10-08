@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>1.0.0.2</Version>
-    <FileVersion>1.0.0.2</FileVersion>
-    <AssemblyVersion>1.0.0.2</AssemblyVersion>
+    <Version>1.0.0.3</Version>
+    <FileVersion>1.0.0.3</FileVersion>
+    <AssemblyVersion>1.0.0.3</AssemblyVersion>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <RootNamespace>TTSL</RootNamespace>
@@ -43,5 +43,6 @@
   <ItemGroup>
     <None Include="TTSL.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="images\icon.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="images\icon.png" Link="icon.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

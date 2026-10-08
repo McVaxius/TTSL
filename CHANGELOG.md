@@ -1,3 +1,9 @@
+2026-10-07 - Packaged image branding and operator guidance (I500/I497/I499)
+
+- Use the existing packaged icon in Main branding/titlebars with aspect-ratio fitting and a stable reserved box. Preserve native titlebar controls, saved geometry, motion and complete-window opacity. Copy the original icon beside direct and packaged DLLs as icon.png while retaining the nested images copy.
+- Refresh concise README guidance for appearance, focus fade, titlebar shortcuts and this plugin's existing setup/automation controls.
+- Probe the optional Hindi menu caption once per existing font generation. Disable only that choice with an ASCII caption when unavailable; retain selected-catalog checks and show explicit ASCII Hindi failure status with a saved Use English action (I499).
+
 # Changelog
 
 ## Unreleased - Button sizing (I491)

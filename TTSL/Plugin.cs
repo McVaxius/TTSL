@@ -35,6 +35,10 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IPluginLog Log { get; private set; } = null!;
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
 
+    internal Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap OriginalIcon
+        => TextureProvider.GetFromFile(System.IO.Path.Combine(
+            PluginInterface.AssemblyLocation.DirectoryName ?? "", "icon.png")).GetWrapOrEmpty();
+
     internal TtslAppearance Appearance { get; }
     public Configuration Configuration { get; }
     public readonly WindowSystem WindowSystem = new(PluginInfo.InternalName);

@@ -55,6 +55,13 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     {
     }
 
+    public override void PostDraw()
+    {
+        base.PostDraw();
+        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
+        UiGui.ImageTitle(this, PluginInfo.DisplayName + " " + version, plugin.OriginalIcon);
+    }
+
     public override void Draw()
     {
         WindowMotion.DrawChrome();
@@ -62,7 +69,6 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
         var player = Plugin.ObjectTable.LocalPlayer;
 
-        UiGui.TitleWithButtons(PluginInfo.DisplayName,PluginInfo.DisplayName+" "+version, this);
 
         DrawHeader(version);
         DrawToolbar(cfg);
@@ -100,7 +106,10 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     private void DrawHeader(string version)
     {
         var scale=MaterialTheme.Metrics.Scale; var start=ImGui.GetCursorScreenPos();
-        TtslPresentation.Brand(start+new Vector2(0,8)*scale,44*scale);
+        var icon = plugin.OriginalIcon;
+        var imageMin = start + new Vector2(0, 8) * scale;
+        MaterialCanvas.DrawImage(ImGui.GetWindowDrawList(), icon.Handle, icon.Size,
+            imageMin, imageMin + new Vector2(44 * scale));
         ImGui.SetCursorScreenPos(start+new Vector2(62,6)*scale);
         using(UiText.Font(plugin.Configuration.UiCompact?UiFontRole.CompactTitle:UiFontRole.Title)) MaterialText.Text(PluginInfo.DisplayName);
         ImGui.SameLine(); UiGui.TextDisabled("TTSL "+version);

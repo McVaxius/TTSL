@@ -257,6 +257,18 @@ internal static class UiGui
     internal static void Title(string original,string translated)
         => TitleWithButtons(original, translated, null);
 
+    internal static unsafe void ImageTitle(Window owner, string visibleTitle,
+        Dalamud.Interface.Textures.TextureWraps.IDalamudTextureWrap icon)
+    {
+        var window = ImGuiP.FindWindowByName(owner.WindowName);
+        if (window.Handle == null) return;
+        var count = owner.TitleBarButtons.Count(button => !owner.IsClickthrough || button.AvailableClickthrough);
+        if (owner.AllowPinning || owner.AllowClickthrough || owner.AllowBackgroundBlur) count++;
+        var extraRight = count * (ImGuiP.CalcFontSize(window) + ImGui.GetStyle().ItemInnerSpacing.X);
+        using var font = UiText.Font(UiFontRole.Body);
+        MaterialWindowHeader.PaintTitle(window, visibleTitle, icon.Handle, icon.Size, extraRight, owner.ShowCloseButton);
+    }
+
     internal static void TitleWithButtons(string original,string translated, Window? owner)
     {
         var s=ImGui.GetStyle(); var size=ImGui.GetFontSize();var height=ImGui.GetFrameHeight();
