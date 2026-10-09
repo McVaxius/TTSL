@@ -35,15 +35,45 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
     {
         WindowMotion.DrawChrome();
         UiGui.Title(PluginInfo.DisplayName+" Settings",PluginInfo.DisplayName+" "+UiText.T("Settings"));
+        var settingsRoot = ImGui.GetID("");
+        using var tabs = MaterialTabs.Begin("TtslSettingsTabs", new[] { UiText.T("Settings"), UiText.T("Window appearance") }, ImGuiTabBarFlags.FittingPolicyScroll);
+        if (tabs.Visible)
+        {
+            using (var general = MaterialTabs.Item(UiText.T("Settings") + "###Settings", ImGuiTabItemFlags.NoPushId))
+                if (general.Visible)
+                {
+                    ImGuiP.PushOverrideID(settingsRoot);
+                    try { DrawGeneralSettings(); }
+                    finally { ImGui.PopID(); }
+                }
+            using (var appearance = MaterialTabs.Item(UiText.T("Window appearance") + "###WindowAppearance", ImGuiTabItemFlags.NoPushId))
+            {
+                if (appearance.Visible)
+                {
+                    ImGuiP.PushOverrideID(settingsRoot);
+                    try
+                    {
+                        plugin.Appearance.DrawSelector();
+                        var compact = plugin.Configuration.UiCompact;
+                        if (UiGui.Checkbox("C##CompactMode", ref compact))
+                        {
+                            plugin.Configuration.UiCompact = compact;
+                            plugin.SaveConfiguration();
+                        }
+                        if (ImGui.IsItemHovered()) UiGui.SetTooltip("Compact mode");
+                        plugin.Appearance.DrawWindowSettings();
+                    }
+                    finally { ImGui.PopID(); }
+                }
+            }
+        }
+        FinalizePendingWindowPlacement();
+    }
+
+    private void DrawGeneralSettings()
+    {
         var cfg = plugin.Configuration;
         var changed = false;
-        UiGui.Text("Window appearance");
-        ImGui.Separator();
-        plugin.Appearance.DrawSelector();
-        var compact=cfg.UiCompact; if(UiGui.Checkbox("C##CompactMode",ref compact)){cfg.UiCompact=compact;changed=true;}
-        if(ImGui.IsItemHovered()) UiGui.SetTooltip("Compact mode");
-        plugin.Appearance.DrawWindowSettings();
-        ImGui.Separator();
 
         if (UiGui.Button("Setup Wizard"))
             plugin.OpenSetupWizard();
@@ -322,7 +352,6 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
         if (changed)
             plugin.SaveConfiguration();
 
-        FinalizePendingWindowPlacement();
     }
 
     private static bool DrawIconInput(string label, ref string value, string fallback)
