@@ -1,5 +1,6 @@
 2026-10-09 - Tight compact list grids (I503/I509)
 
+
 - Apply adjacent compact party rows and let retained job/text content set row height, preserving every party value.
 
 2026-10-09 - Separate XA Slave log-tools shortcut (I512)
