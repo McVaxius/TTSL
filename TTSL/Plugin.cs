@@ -332,7 +332,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void MigrateConfiguration()
     {
-        var changed = false;
+        var changed = Configuration.ApplyCompactDefaults();
 
         if (Configuration.Version < 2)
         {

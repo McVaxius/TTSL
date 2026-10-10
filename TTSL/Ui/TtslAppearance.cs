@@ -177,6 +177,9 @@ internal sealed class TtslAppearance : IDisposable
         var compactVisible = config.UiCompactVisibleOnMainWindow;
         if (UiGui.Checkbox("Compact visible on main window###window-compact-visible", ref compactVisible))
         { config.UiCompactVisibleOnMainWindow = compactVisible; changed = true; }
+        var transparencyVisible = config.UiTransparencyVisibleOnMainWindow;
+        if (UiGui.Checkbox("Transparency visible on main window###window-transparency-visible", ref transparencyVisible))
+        { config.UiTransparencyVisibleOnMainWindow = transparencyVisible; changed = true; }
         var languageVisible = config.UiLanguageVisibleOnMainWindow;
         if (UiGui.Checkbox("Language visible on main window###window-language-visible", ref languageVisible))
         { config.UiLanguageVisibleOnMainWindow = languageVisible; changed = true; }
@@ -200,6 +203,17 @@ internal sealed class TtslAppearance : IDisposable
         ImGui.EndDisabled();
         ImGui.EndDisabled();
         if (changed) plugin.Configuration.Save();
+    }
+
+    internal float LanguageWidth
+    {
+        get
+        {
+            using var controls = MaterialControls.Push(TtslPresentation.Controls(28));
+            var metrics = MaterialControls.Metrics;
+            return Math.Max(140 * MaterialTheme.Metrics.Scale, MathF.Ceiling(MaterialText.Measure(languages.LabelFor(appliedLanguage, "Select...")).X
+                + metrics.Height + 3 * metrics.Gap + Math.Min(metrics.IconSize, metrics.Height)));
+        }
     }
 
     internal void DrawLanguageSelector()

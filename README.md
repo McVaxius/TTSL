@@ -1,5 +1,7 @@
 # Thick Thighs Save Lives
 
+The I521 update applies Compact mode once and hides Main's Compact and Transparency controls. Settings retains density, transparency and each main-control visibility choice; subsequent loads preserve your choices and unknown saved settings.
+
 ---
 
 **Help fund my AI overlords' coffee addiction so they can keep generating more plugins instead of taking over the world**

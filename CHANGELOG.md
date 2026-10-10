@@ -1,3 +1,7 @@
+2026-10-10 - Compact defaults (I521)
+
+- Apply Compact mode and hide Main's Compact/Transparency controls once. Appearance settings retain both visibility choices; subsequent loads preserve overrides and unknown saved settings.
+
 2026-10-09 - Tight compact list grids (I503/I509)
 
 
