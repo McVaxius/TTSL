@@ -1385,4 +1385,28 @@
   <data name="Unfocused delay (seconds)" xml:space="preserve">
     <value>फ़ोकस हटने पर विलंब (सेकंड)</value>
   </data>
+  <data name="Copy / ZIP Dalamud log" xml:space="preserve">
+    <value>Dalamud लॉग कॉपी / ZIP करें</value>
+  </data>
+  <data name="Export capped log anyway" xml:space="preserve">
+    <value>भरा हुआ लॉग फिर भी निर्यात करें</value>
+  </data>
+  <data name="Exporting log..." xml:space="preserve">
+    <value>लॉग निर्यात हो रहा है...</value>
+  </data>
+  <data name="Log ZIP ready. Share it manually; remove old exports when you no longer need them." xml:space="preserve">
+    <value>लॉग ZIP तैयार है। इसे स्वयं साझा करें और पुराने अनावश्यक निर्यात हटाएँ।</value>
+  </data>
+  <data name="Log export failed." xml:space="preserve">
+    <value>लॉग निर्यात विफल हुआ।</value>
+  </data>
+  <data name="Open Export Folder" xml:space="preserve">
+    <value>निर्यात फ़ोल्डर खोलें</value>
+  </data>
+  <data name="This log has reached Dalamud's 100 MiB limit. Logging may have stopped, so recent activity may be missing and this log may not help troubleshoot your current issue." xml:space="preserve">
+    <value>यह लॉग Dalamud की 100 MiB सीमा पर पहुँच गया है। लॉग लिखना रुक गया हो सकता है; हाल की गतिविधि गायब हो सकती है और यह लॉग वर्तमान समस्या की जाँच में उपयोगी नहीं हो सकता।</value>
+  </data>
+  <data name="Open XA Slave log tools" xml:space="preserve"><value>XA Slave के लॉग उपकरण खोलें</value></data>
+  <data name="Opens XA Slave&apos;s Utility &gt; XA Mods panel, which contains Dalamud Log Cleaner." xml:space="preserve"><value>XA Slave का Utility &gt; XA Mods पैनल खोलता है, जिसमें Dalamud Log Cleaner है।</value></data>
+  <data name="XA Slave log tools could not be opened." xml:space="preserve"><value>XA Slave के लॉग उपकरण नहीं खोले जा सके।</value></data>
 </root>

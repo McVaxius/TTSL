@@ -355,6 +355,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             return;
         }
 
+        using var tightRows = TtslPresentation.Compact ? MaterialTable.PushTightRows() : default;
         if (ImGui.BeginTable("##TTSLPartyTable", 5, ImGuiTableFlags.SizingStretchProp | ImGuiTableFlags.RowBg | ImGuiTableFlags.NoSavedSettings))
         {
             ImGui.TableSetupColumn("#", ImGuiTableColumnFlags.WidthFixed, 24f);
@@ -366,7 +367,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
 
             foreach (var snapshot in snapshots)
             {
-                ImGui.TableNextRow(ImGuiTableRowFlags.None,(TtslPresentation.Compact?44:52)*MaterialTheme.Metrics.Scale);
+                ImGui.TableNextRow(ImGuiTableRowFlags.None, TtslPresentation.Compact ? 0 : 52 * MaterialTheme.Metrics.Scale);
 
                 ImGui.TableSetColumnIndex(0);
                 UiGui.TextUnformatted(snapshot.SlotText);

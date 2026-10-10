@@ -1373,5 +1373,29 @@ Yalnız simge: &apos;&lt;icon&gt;&apos;</value>
   <data name="Auto-fade when unfocused" xml:space="preserve"><value>Odak yokken otomatik soldur</value></data>
   <data name="Unfocused opacity (%)" xml:space="preserve"><value>Odak yokken opaklık (%)</value></data>
   <data name="Unfocused delay (seconds)" xml:space="preserve"><value>Odak kaybı gecikmesi (saniye)</value></data>
+  <data name="Copy / ZIP Dalamud log" xml:space="preserve">
+    <value>Dalamud günlüğünü kopyala / ZIP yap</value>
+  </data>
+  <data name="Export capped log anyway" xml:space="preserve">
+    <value>Dolu günlüğü yine de dışa aktar</value>
+  </data>
+  <data name="Exporting log..." xml:space="preserve">
+    <value>Günlük dışa aktarılıyor...</value>
+  </data>
+  <data name="Log ZIP ready. Share it manually; remove old exports when you no longer need them." xml:space="preserve">
+    <value>Günlük ZIP’i hazır. Elle paylaşın ve artık gerekmeyen eski dışa aktarımları silin.</value>
+  </data>
+  <data name="Log export failed." xml:space="preserve">
+    <value>Günlük dışa aktarılamadı.</value>
+  </data>
+  <data name="Open Export Folder" xml:space="preserve">
+    <value>Dışa Aktarım Klasörünü Aç</value>
+  </data>
+  <data name="This log has reached Dalamud's 100 MiB limit. Logging may have stopped, so recent activity may be missing and this log may not help troubleshoot your current issue." xml:space="preserve">
+    <value>Bu günlük Dalamud’un 100 MiB sınırına ulaştı. Kayıt durmuş olabilir; son etkinlikler eksik olabilir ve günlük mevcut sorunu teşhis etmeye yardımcı olmayabilir.</value>
+  </data>
+  <data name="Open XA Slave log tools" xml:space="preserve"><value>XA Slave günlük araçlarını aç</value></data>
+  <data name="Opens XA Slave&apos;s Utility &gt; XA Mods panel, which contains Dalamud Log Cleaner." xml:space="preserve"><value>Dalamud Log Cleaner&apos;ı içeren XA Slave Utility &gt; XA Mods panelini açar.</value></data>
+  <data name="XA Slave log tools could not be opened." xml:space="preserve"><value>XA Slave günlük araçları açılamadı.</value></data>
 </root>
 

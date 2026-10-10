@@ -1373,5 +1373,29 @@ Somente ícone: &apos;&lt;icon&gt;&apos;</value>
   <data name="Auto-fade when unfocused" xml:space="preserve"><value>Esmaecer automaticamente sem foco</value></data>
   <data name="Unfocused opacity (%)" xml:space="preserve"><value>Opacidade sem foco (%)</value></data>
   <data name="Unfocused delay (seconds)" xml:space="preserve"><value>Espera sem foco (segundos)</value></data>
+  <data name="Copy / ZIP Dalamud log" xml:space="preserve">
+    <value>Copiar / compactar log do Dalamud</value>
+  </data>
+  <data name="Export capped log anyway" xml:space="preserve">
+    <value>Exportar o log cheio mesmo assim</value>
+  </data>
+  <data name="Exporting log..." xml:space="preserve">
+    <value>Exportando log...</value>
+  </data>
+  <data name="Log ZIP ready. Share it manually; remove old exports when you no longer need them." xml:space="preserve">
+    <value>ZIP do log pronto. Compartilhe manualmente e exclua exportações antigas que não precisar mais.</value>
+  </data>
+  <data name="Log export failed." xml:space="preserve">
+    <value>Falha ao exportar o log.</value>
+  </data>
+  <data name="Open Export Folder" xml:space="preserve">
+    <value>Abra a pasta de exportação</value>
+  </data>
+  <data name="This log has reached Dalamud's 100 MiB limit. Logging may have stopped, so recent activity may be missing and this log may not help troubleshoot your current issue." xml:space="preserve">
+    <value>Este log atingiu o limite de 100 MiB do Dalamud. O registro pode ter parado; atividades recentes podem estar ausentes e o log pode não ajudar a diagnosticar o problema atual.</value>
+  </data>
+  <data name="Open XA Slave log tools" xml:space="preserve"><value>Abrir ferramentas de log do XA Slave</value></data>
+  <data name="Opens XA Slave&apos;s Utility &gt; XA Mods panel, which contains Dalamud Log Cleaner." xml:space="preserve"><value>Abre o painel Utility &gt; XA Mods do XA Slave, que contém o Dalamud Log Cleaner.</value></data>
+  <data name="XA Slave log tools could not be opened." xml:space="preserve"><value>Não foi possível abrir as ferramentas de log do XA Slave.</value></data>
 </root>
 

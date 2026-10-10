@@ -10,6 +10,7 @@ namespace TTSL.Windows;
 
 public sealed class ConfigWindow : PositionedWindow, IDisposable
 {
+    private readonly AethertekUI.Dalamud.MaterialSupportLog supportLog = new();
     private static readonly string[] DtrModes = { "Text Only", "Icon+Text", "Icon Only" };
     private const string IconGuideUrl = "https://na.finalfantasyxiv.com/lodestone/character/22423564/blog/4393835";
     private const string NativeServerReleaseUrl = "https://github.com/McVaxius/TTSL/releases/latest";
@@ -72,6 +73,8 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
 
     private void DrawGeneralSettings()
     {
+        supportLog.Draw(Plugin.PluginInterface, key => UiText.T(key),
+            path => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = path, UseShellExecute = true }), ex => Plugin.Log.Error(ex, "Dalamud log export failed."), Plugin.CommandManager);
         var cfg = plugin.Configuration;
         var changed = false;
 
