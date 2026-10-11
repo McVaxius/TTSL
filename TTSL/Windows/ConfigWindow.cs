@@ -32,6 +32,12 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
     {
     }
 
+    public override void PostDraw()
+    {
+        base.PostDraw();
+        UiGui.ImageTitleWithStatus(this, PluginInfo.DisplayName + " " + UiText.T("Settings"), plugin.OriginalIcon, status: plugin.TitlebarStatus);
+    }
+
     public override void Draw()
     {
         WindowMotion.DrawChrome();

@@ -205,6 +205,12 @@ internal sealed class TtslAppearance : IDisposable
 
     internal void DrawWindowSettings()
     {
+        var showTitlebarStatus = plugin.Configuration.UiShowTitlebarStatus;
+        if (UiGui.Checkbox(UiText.T("Show titlebar status") + "###UiShowTitlebarStatus", ref showTitlebarStatus))
+        { plugin.Configuration.UiShowTitlebarStatus = showTitlebarStatus; plugin.Configuration.Save(); }
+        var detailedTitlebarStatus = plugin.Configuration.UiDetailedTitlebarStatus;
+        if (UiGui.Checkbox(UiText.T("Detailed titlebar status") + "###UiDetailedTitlebarStatus", ref detailedTitlebarStatus))
+        { plugin.Configuration.UiDetailedTitlebarStatus = detailedTitlebarStatus; plugin.Configuration.Save(); }
         var config = plugin.Configuration;
         var changed = false;
         var compactVisible = config.UiCompactVisibleOnMainWindow;

@@ -59,7 +59,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     {
         base.PostDraw();
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
-        UiGui.ImageTitle(this, PluginInfo.DisplayName + " " + version, plugin.OriginalIcon);
+        UiGui.ImageTitleWithStatus(this, PluginInfo.DisplayName + " " + version, plugin.OriginalIcon, status: plugin.TitlebarStatus);
     }
 
     public override void Draw()

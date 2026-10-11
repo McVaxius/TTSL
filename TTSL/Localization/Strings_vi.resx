@@ -1398,5 +1398,9 @@ Chỉ biểu tượng: &apos;&lt;icon&gt;&apos;</value>
   <data name="Opens XA Slave&apos;s Utility &gt; XA Mods panel, which contains Dalamud Log Cleaner." xml:space="preserve"><value>Mở bảng Utility &gt; XA Mods của XA Slave, chứa Dalamud Log Cleaner.</value></data>
   <data name="XA Slave log tools could not be opened." xml:space="preserve"><value>Không thể mở công cụ nhật ký XA Slave.</value></data>
   <data name="Transparency visible on main window" xml:space="preserve"><value>Hiện độ trong suốt trên cửa sổ chính</value></data>
+  <data name="Show titlebar status" xml:space="preserve"><value>Hiện trạng thái trên thanh tiêu đề</value></data>
+  <data name="Detailed titlebar status" xml:space="preserve"><value>Trạng thái chi tiết trên thanh tiêu đề</value></data>
+  <data name="HUD on" xml:space="preserve"><value>Bật HUD</value></data>
+  <data name="HUD off" xml:space="preserve"><value>Tắt HUD</value></data>
 </root>
 

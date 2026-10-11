@@ -1410,4 +1410,8 @@
   <data name="Opens XA Slave&apos;s Utility &gt; XA Mods panel, which contains Dalamud Log Cleaner." xml:space="preserve"><value>XA Slave का Utility &gt; XA Mods पैनल खोलता है, जिसमें Dalamud Log Cleaner है।</value></data>
   <data name="XA Slave log tools could not be opened." xml:space="preserve"><value>XA Slave के लॉग उपकरण नहीं खोले जा सके।</value></data>
   <data name="Transparency visible on main window" xml:space="preserve"><value>मुख्य विंडो में पारदर्शिता दिखाएँ</value></data>
+  <data name="Show titlebar status" xml:space="preserve"><value>शीर्षक पट्टी में स्थिति दिखाएँ</value></data>
+  <data name="Detailed titlebar status" xml:space="preserve"><value>शीर्षक पट्टी में विस्तृत स्थिति</value></data>
+  <data name="HUD on" xml:space="preserve"><value>HUD चालू</value></data>
+  <data name="HUD off" xml:space="preserve"><value>HUD बंद</value></data>
 </root>

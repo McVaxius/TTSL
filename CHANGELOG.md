@@ -1,3 +1,9 @@
+2026-10-11 - Native titlebar status (I536)
+
+- Show HUD enablement, publisher state and errors in native main, settings and setup titles. Keep concise state and available numeric progress when detailed wording is off; hover retains full details.
+- Add saved Show titlebar status and Detailed titlebar status controls in Appearance, both enabled by default. Preserve native window identities, geometry and title actions.
+- Use the packaged plugin icon in settings and auxiliary titlebars. Translate the new controls and status labels in every supported language.
+
 2026-10-11 - Native titlebar appearance shortcuts (I532)
 
 - Add Language, Compact, Transparency and Colour to applicable native window titlebars through AethertekUI. Reuse current editors and save routes, retain main visibility preferences and grouped Settings, remove the moved body shortcuts and their unused spacing, and preserve existing action order, title clipping, motion, opacity and release versions.

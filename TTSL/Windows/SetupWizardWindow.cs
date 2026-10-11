@@ -90,7 +90,11 @@ public sealed class SetupWizardWindow : Window, IDisposable
         windowMotion.Prepare(this, reducedMotion: false, roundedCorners: true);
     }
 
-    public override void PostDraw() => windowMotion.Restore(this);
+    public override void PostDraw()
+    {
+        windowMotion.Restore(this);
+        UiGui.ImageTitleWithStatus(this, "TTSL " + UiText.T("Setup Wizard"), plugin.OriginalIcon, status: plugin.TitlebarStatus);
+    }
 
     public override void Draw()
     {

@@ -1374,4 +1374,8 @@ Nur Symbol: '&lt;icon&gt;'</value>
   <data name="Opens XA Slave&apos;s Utility &gt; XA Mods panel, which contains Dalamud Log Cleaner." xml:space="preserve"><value>Öffnet das Panel Utility &gt; XA Mods von XA Slave mit dem Dalamud Log Cleaner.</value></data>
   <data name="XA Slave log tools could not be opened." xml:space="preserve"><value>Die XA Slave-Protokollwerkzeuge konnten nicht geöffnet werden.</value></data>
   <data name="Transparency visible on main window" xml:space="preserve"><value>Transparenz im Hauptfenster anzeigen</value></data>
+  <data name="Show titlebar status" xml:space="preserve"><value>Status in der Titelleiste anzeigen</value></data>
+  <data name="Detailed titlebar status" xml:space="preserve"><value>Ausführlicher Status in der Titelleiste</value></data>
+  <data name="HUD on" xml:space="preserve"><value>HUD an</value></data>
+  <data name="HUD off" xml:space="preserve"><value>HUD aus</value></data>
 </root>

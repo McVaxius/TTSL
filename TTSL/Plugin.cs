@@ -40,6 +40,20 @@ public sealed class Plugin : IDalamudPlugin
             PluginInterface.AssemblyLocation.DirectoryName ?? "", "icon.png")).GetWrapOrEmpty();
 
     internal TtslAppearance Appearance { get; }
+    internal AethertekUI.MaterialTitlebarStatus? TitlebarStatus
+    {
+        get
+        {
+            if (!Configuration.UiShowTitlebarStatus) return null;
+            var state = UiText.T(Configuration.OverlayEnabled ? "HUD on" : "HUD off");
+            var remote = UiText.T(RemoteHudPublisher.StatusText);
+            var details = state + " \u00b7 " + remote;
+            var tooltip = details + (string.IsNullOrWhiteSpace(RemoteHudPublisher.LastError) ? "" : "\n" + RemoteHudPublisher.LastError);
+            return new(Configuration.UiDetailedTitlebarStatus ? details : state, state, tooltip,
+                string.IsNullOrWhiteSpace(RemoteHudPublisher.LastError) ? AethertekUI.MaterialTheme.Current.Colors.OnSurfaceVariant : AethertekUI.MaterialTheme.Current.Colors.Error);
+        }
+    }
+
     public Configuration Configuration { get; }
     public readonly WindowSystem WindowSystem = new(PluginInfo.InternalName);
     public MainWindow MainWindow { get; }

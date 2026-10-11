@@ -1398,5 +1398,9 @@ Yalnız simge: &apos;&lt;icon&gt;&apos;</value>
   <data name="Opens XA Slave&apos;s Utility &gt; XA Mods panel, which contains Dalamud Log Cleaner." xml:space="preserve"><value>Dalamud Log Cleaner&apos;ı içeren XA Slave Utility &gt; XA Mods panelini açar.</value></data>
   <data name="XA Slave log tools could not be opened." xml:space="preserve"><value>XA Slave günlük araçları açılamadı.</value></data>
   <data name="Transparency visible on main window" xml:space="preserve"><value>Ana pencerede saydamlığı göster</value></data>
+  <data name="Show titlebar status" xml:space="preserve"><value>Başlık çubuğunda durumu göster</value></data>
+  <data name="Detailed titlebar status" xml:space="preserve"><value>Ayrıntılı başlık çubuğu durumu</value></data>
+  <data name="HUD on" xml:space="preserve"><value>HUD açık</value></data>
+  <data name="HUD off" xml:space="preserve"><value>HUD kapalı</value></data>
 </root>
 
