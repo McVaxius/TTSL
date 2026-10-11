@@ -35,7 +35,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
     public override void Draw()
     {
         WindowMotion.DrawChrome();
-        UiGui.Title(PluginInfo.DisplayName+" Settings",PluginInfo.DisplayName+" "+UiText.T("Settings"));
+        UiGui.TitleWithButtons(PluginInfo.DisplayName+" Settings",PluginInfo.DisplayName+" "+UiText.T("Settings"), this);
         var settingsRoot = ImGui.GetID("");
         using var tabs = MaterialTabs.Begin("TtslSettingsTabs", new[] { UiText.T("Settings"), UiText.T("Window appearance") }, ImGuiTabBarFlags.FittingPolicyScroll);
         if (tabs.Visible)

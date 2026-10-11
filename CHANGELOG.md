@@ -1,3 +1,7 @@
+2026-10-11 - Native titlebar appearance shortcuts (I532)
+
+- Add Language, Compact, Transparency and Colour to applicable native window titlebars through AethertekUI. Reuse current editors and save routes, retain main visibility preferences and grouped Settings, remove the moved body shortcuts and their unused spacing, and preserve existing action order, title clipping, motion, opacity and release versions.
+
 2026-10-10 - Compact defaults (I521)
 
 - Apply Compact mode and hide Main's Compact/Transparency controls once. Appearance settings retain both visibility choices; subsequent loads preserve overrides and unknown saved settings.

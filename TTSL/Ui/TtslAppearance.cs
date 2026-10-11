@@ -114,13 +114,46 @@ internal sealed class TtslAppearance : IDisposable
         style.Style(ImGuiStyleVar.FrameRounding, 4 * s);
         style.Style(ImGuiStyleVar.ChildRounding, 4 * s);
         using var body = fonts.Push(UiFontRole.Body);
+        PrepareAppearanceTitleBars(windows);
+        foreach (var actions in appearanceTitleBars.Values) actions.RefreshVisibility();
         windows.Draw();
         foreach (var window in windows.Windows)
         {
+            if (window is Window owner && appearanceTitleBars.TryGetValue(owner, out var actions)) actions.DrawPopups();
             if (!windowOpacities.TryGetValue(window, out var opacity))
                 windowOpacities.Add(window, opacity = new());
             ApplyWindowOpacity(opacity, window.WindowName);
         }
+    }
+
+    private readonly System.Collections.Generic.Dictionary<Window, MaterialAppearanceTitleBar> appearanceTitleBars = new();
+
+    private void PrepareAppearanceTitleBars(WindowSystem windows)
+    {
+        foreach (var owner in windows.Windows.OfType<Window>())
+        {
+            if ((owner.Flags & ImGuiWindowFlags.NoTitleBar) != 0 || appearanceTitleBars.ContainsKey(owner)) continue;
+            appearanceTitleBars.Add(owner, MaterialAppearanceTitleBar.Register(owner,
+                () => new(UiText.T("Language"), UiText.T("Compact mode"), UiText.T("Transparency"), UiText.T("Color")),
+                DrawLanguageSelector,
+                () => { plugin.Configuration.UiCompact = !plugin.Configuration.UiCompact; plugin.Configuration.Save(); },
+                DrawWindowSettings, DrawTitleColour,
+                () => owner is TTSL.Windows.MainWindow
+                    ? new(plugin.Configuration.UiLanguageVisibleOnMainWindow, plugin.Configuration.UiCompactVisibleOnMainWindow,
+                        plugin.Configuration.UiTransparencyVisibleOnMainWindow, true)
+                    : new(true, true, true, true)));
+        }
+    }
+
+    private void DrawTitleColour()
+    {
+        using var controls = MaterialControls.Push(TtslPresentation.Controls(28));
+        if (!MaterialAppearanceSelector.DrawPalette("titlebar-colour", ref accentDraft,
+            new(UiText.T("Color"), UiText.T("Language"), UiText.T("Teal"), UiText.T("Blue"), UiText.T("Pink"), UiText.T("Custom RGB")))) return;
+        plugin.Configuration.UiAccentRgb = ((uint)Math.Clamp((int)MathF.Round(accentDraft.X * 255), 0, 255) << 16)
+            | ((uint)Math.Clamp((int)MathF.Round(accentDraft.Y * 255), 0, 255) << 8)
+            | (uint)Math.Clamp((int)MathF.Round(accentDraft.Z * 255), 0, 255);
+        plugin.Configuration.Save();
     }
 
     internal void DrawSelector()

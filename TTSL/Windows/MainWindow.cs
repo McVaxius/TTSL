@@ -114,26 +114,11 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         using(UiText.Font(plugin.Configuration.UiCompact?UiFontRole.CompactTitle:UiFontRole.Title)) MaterialText.Text(PluginInfo.DisplayName);
         ImGui.SameLine(); UiGui.TextDisabled("TTSL "+version);
         var right=ImGui.GetWindowPos().X+ImGui.GetWindowSize().X-ImGui.GetStyle().WindowPadding.X;
-        var compactWidth = plugin.Configuration.UiCompactVisibleOnMainWindow
-            ? MaterialText.Measure("C").X + ImGui.GetFrameHeight() + ImGui.GetStyle().ItemInnerSpacing.X : 0;
-        var transparencyWidth = plugin.Configuration.UiTransparencyVisibleOnMainWindow
-            ? MaterialText.Measure(UiText.T("Transparency")).X + ImGui.GetFrameHeight() + ImGui.GetStyle().ItemInnerSpacing.X : 0;
-        var languageWidth = plugin.Configuration.UiLanguageVisibleOnMainWindow ? plugin.Appearance.LanguageWidth : 0;
-        var toolbarWidth = compactWidth + transparencyWidth + languageWidth + MaterialText.Measure(UiText.T("Ko-fi")).X
-            + MaterialText.Measure(UiText.T("Discord")).X + 4 * ImGui.GetStyle().FramePadding.X + 4 * ImGui.GetStyle().ItemSpacing.X;
+        var toolbarWidth = MaterialText.Measure(UiText.T("Ko-fi")).X
+            + MaterialText.Measure(UiText.T("Discord")).X + 4 * ImGui.GetStyle().FramePadding.X + ImGui.GetStyle().ItemSpacing.X;
         var single=right-ImGui.GetItemRectMax().X>toolbarWidth+ImGui.GetStyle().ItemSpacing.X;
         ImGui.SetCursorScreenPos(single?new Vector2(right-toolbarWidth,start.Y+12*scale):start+new Vector2(0,TtslPresentation.HeaderHeight)*scale);
-        if (plugin.Configuration.UiCompactVisibleOnMainWindow)
-        {
-            var compact=plugin.Configuration.UiCompact;
-            if(UiGui.Checkbox("C##CompactMode",ref compact)){plugin.Configuration.UiCompact=compact;plugin.SaveConfiguration();}
-            if(ImGui.IsItemHovered()) UiGui.SetTooltip("Compact mode");
-        }
-        if (plugin.Configuration.UiLanguageVisibleOnMainWindow)
-        { Flow("Language"); plugin.Appearance.DrawLanguageSelector(); }
-        if (plugin.Configuration.UiTransparencyVisibleOnMainWindow)
-        { Flow("Transparency"); plugin.Appearance.DrawTransparencyToggle(); }
-        Flow("Ko-fi"); if(UiGui.SmallButton("Ko-fi")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.SupportUrl,UseShellExecute=true});
+        if(UiGui.SmallButton("Ko-fi")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.SupportUrl,UseShellExecute=true});
         Flow("Discord"); if(UiGui.SmallButton("Discord")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.DiscordUrl,UseShellExecute=true});
         if(ImGui.IsItemHovered()) UiGui.SetTooltip(PluginInfo.DiscordFeedbackNote);
         ImGui.SetCursorScreenPos(start+new Vector2(0,(single?TtslPresentation.HeaderHeight:TtslPresentation.HeaderHeight+38))*scale);

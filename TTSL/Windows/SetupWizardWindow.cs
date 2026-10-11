@@ -95,7 +95,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
     public override void Draw()
     {
         windowMotion.DrawChrome();
-        UiGui.Title("TTSL Setup Wizard","TTSL "+UiText.T("Setup Wizard"));
+        UiGui.TitleWithButtons("TTSL Setup Wizard","TTSL "+UiText.T("Setup Wizard"), this);
         draft ??= WizardDraft.From(plugin.Configuration);
 
         UiGui.Text($"Step {step + 1} of 3");
