@@ -1414,4 +1414,16 @@
   <data name="Detailed titlebar status" xml:space="preserve"><value>शीर्षक पट्टी में विस्तृत स्थिति</value></data>
   <data name="HUD on" xml:space="preserve"><value>HUD चालू</value></data>
   <data name="HUD off" xml:space="preserve"><value>HUD बंद</value></data>
+  <data name="Auto" xml:space="preserve"><value>स्वचालित</value></data>
+  <data name="Picker" xml:space="preserve"><value>चयनकर्ता</value></data>
+  <data name="Default" xml:space="preserve"><value>डिफ़ॉल्ट</value></data>
+  <data name="Background, controls and text follow your theme." xml:space="preserve"><value>पृष्ठभूमि, नियंत्रण और पाठ आपकी थीम का पालन करते हैं।</value></data>
+  <data name="Theme colour" xml:space="preserve"><value>थीम का रंग</value></data>
+  <data name="Choose each colour independently." xml:space="preserve"><value>हर रंग अलग से चुनें।</value></data>
+  <data name="Background" xml:space="preserve"><value>पृष्ठभूमि</value></data>
+  <data name="Controls" xml:space="preserve"><value>नियंत्रण</value></data>
+  <data name="Aa  Preview text" xml:space="preserve"><value>Aa  पाठ का पूर्वावलोकन</value></data>
+  <data name="Control" xml:space="preserve"><value>नियंत्रण</value></data>
+  <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>हर रंग स्वयं तय करने के लिए चयनकर्ता चुनें।</value></data>
+  <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>स्वचालित थीम के लिए स्वचालित विकल्प चुनें।</value></data>
 </root>

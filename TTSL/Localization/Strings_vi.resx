@@ -1402,5 +1402,17 @@ Chỉ biểu tượng: &apos;&lt;icon&gt;&apos;</value>
   <data name="Detailed titlebar status" xml:space="preserve"><value>Trạng thái chi tiết trên thanh tiêu đề</value></data>
   <data name="HUD on" xml:space="preserve"><value>Bật HUD</value></data>
   <data name="HUD off" xml:space="preserve"><value>Tắt HUD</value></data>
+  <data name="Auto" xml:space="preserve"><value>Tự động</value></data>
+  <data name="Picker" xml:space="preserve"><value>Bộ chọn</value></data>
+  <data name="Default" xml:space="preserve"><value>Mặc định</value></data>
+  <data name="Background, controls and text follow your theme." xml:space="preserve"><value>Nền, điều khiển và văn bản theo chủ đề của bạn.</value></data>
+  <data name="Theme colour" xml:space="preserve"><value>Màu chủ đề</value></data>
+  <data name="Choose each colour independently." xml:space="preserve"><value>Chọn từng màu riêng biệt.</value></data>
+  <data name="Background" xml:space="preserve"><value>Nền</value></data>
+  <data name="Controls" xml:space="preserve"><value>Điều khiển</value></data>
+  <data name="Aa  Preview text" xml:space="preserve"><value>Aa  Xem trước văn bản</value></data>
+  <data name="Control" xml:space="preserve"><value>Điều khiển</value></data>
+  <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>Chuyển sang Bộ chọn để tự đặt từng màu.</value></data>
+  <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>Chuyển về Tự động để dùng chủ đề tự động.</value></data>
 </root>
 

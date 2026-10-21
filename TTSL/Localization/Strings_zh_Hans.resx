@@ -1378,4 +1378,16 @@
   <data name="Detailed titlebar status" xml:space="preserve"><value>详细标题栏状态</value></data>
   <data name="HUD on" xml:space="preserve"><value>HUD 开启</value></data>
   <data name="HUD off" xml:space="preserve"><value>HUD 关闭</value></data>
+  <data name="Auto" xml:space="preserve"><value>自动</value></data>
+  <data name="Picker" xml:space="preserve"><value>选色器</value></data>
+  <data name="Default" xml:space="preserve"><value>默认</value></data>
+  <data name="Background, controls and text follow your theme." xml:space="preserve"><value>背景、控件和文本跟随主题。</value></data>
+  <data name="Theme colour" xml:space="preserve"><value>主题颜色</value></data>
+  <data name="Choose each colour independently." xml:space="preserve"><value>分别选择每种颜色。</value></data>
+  <data name="Background" xml:space="preserve"><value>背景</value></data>
+  <data name="Controls" xml:space="preserve"><value>控件</value></data>
+  <data name="Aa  Preview text" xml:space="preserve"><value>Aa  文本预览</value></data>
+  <data name="Control" xml:space="preserve"><value>控件</value></data>
+  <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>切换到选色器以自行设置每种颜色。</value></data>
+  <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>切换回自动以使用自动主题。</value></data>
 </root>

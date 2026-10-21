@@ -1,3 +1,7 @@
+2026-10-20 - Independent UI colours
+
+- Add Auto (default) and Picker in Colour and Settings, with independent Background, Controls and Text choices. Preserve the existing automatic palette, saved manual choices, native controls and unrelated settings. Translate the editor in every supported language.
+
 2026-10-11 - Native titlebar status (I536)
 
 - Show HUD enablement, publisher state and errors in native main, settings and setup titles. Keep concise state and available numeric progress when detailed wording is off; hover retains full details.

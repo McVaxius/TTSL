@@ -1378,4 +1378,16 @@ Nur Symbol: '&lt;icon&gt;'</value>
   <data name="Detailed titlebar status" xml:space="preserve"><value>Ausführlicher Status in der Titelleiste</value></data>
   <data name="HUD on" xml:space="preserve"><value>HUD an</value></data>
   <data name="HUD off" xml:space="preserve"><value>HUD aus</value></data>
+  <data name="Auto" xml:space="preserve"><value>Automatisch</value></data>
+  <data name="Picker" xml:space="preserve"><value>Farbwahl</value></data>
+  <data name="Default" xml:space="preserve"><value>Standard</value></data>
+  <data name="Background, controls and text follow your theme." xml:space="preserve"><value>Hintergrund, Steuerelemente und Text folgen deinem Design.</value></data>
+  <data name="Theme colour" xml:space="preserve"><value>Designfarbe</value></data>
+  <data name="Choose each colour independently." xml:space="preserve"><value>Wähle jede Farbe unabhängig aus.</value></data>
+  <data name="Background" xml:space="preserve"><value>Hintergrund</value></data>
+  <data name="Controls" xml:space="preserve"><value>Steuerelemente</value></data>
+  <data name="Aa  Preview text" xml:space="preserve"><value>Aa  Textvorschau</value></data>
+  <data name="Control" xml:space="preserve"><value>Steuerelement</value></data>
+  <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>Wechsle zur Farbwahl, um jede Farbe selbst festzulegen.</value></data>
+  <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>Wechsle zurück zu Automatisch, um das automatische Design zu verwenden.</value></data>
 </root>

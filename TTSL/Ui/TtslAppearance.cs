@@ -22,6 +22,9 @@ internal sealed class TtslAppearance : IDisposable
     private string appliedLanguage = "";
     private uint appliedAccent;
     private Vector3 accentDraft;
+    private MaterialColorSettings colorDraft = new();
+    private MaterialColorSettings? appliedSavedColors;
+    private MaterialColorSettings? appliedColors;
     private int checkedGeneration = -1;
     private int checkedHindiGeneration = -1;
     private bool fontIssueLogged;
@@ -41,10 +44,17 @@ internal sealed class TtslAppearance : IDisposable
             fontIssueLogged = false;
             plugin.UpdateDtrBar();
         }
-        if (theme is null || appliedAccent != (plugin.Configuration.UiAccentRgb & 0xFFFFFF))
+        var savedColors = plugin.Configuration.UiColors ?? new MaterialColorSettings();
+        if (savedColors != appliedSavedColors)
+        {
+            colorDraft = savedColors;
+            appliedSavedColors = savedColors;
+        }
+        if (theme is null || appliedAccent != (plugin.Configuration.UiAccentRgb & 0xFFFFFF) || colorDraft != appliedColors)
         {
             appliedAccent = plugin.Configuration.UiAccentRgb & 0xFFFFFF;
-            theme = TtslPresentation.Theme(appliedAccent);
+            appliedColors = colorDraft;
+            theme = TtslPresentation.Theme(appliedAccent, colorDraft);
             var rgb = TtslPresentation.Rgb(appliedAccent);
             accentDraft = new(rgb.X, rgb.Y, rgb.Z);
         }
@@ -145,28 +155,31 @@ internal sealed class TtslAppearance : IDisposable
         }
     }
 
+    private bool DrawColourEditor(string id)
+    {
+        var changed = MaterialAppearanceSelector.DrawColors(id, ref colorDraft, ref accentDraft,
+            new(UiText.T("Color"), UiText.T("Language"), UiText.T("Teal"), UiText.T("Blue"), UiText.T("Pink"), UiText.T("Custom RGB")),
+            new(UiText.T("Auto"), UiText.T("Picker"), UiText.T("Default"), UiText.T("Background, controls and text follow your theme."), UiText.T("Theme colour"), UiText.T("Choose each colour independently."), UiText.T("Background"), UiText.T("Controls"), UiText.T("Text"), UiText.T("Aa  Preview text"), UiText.T("Control"), UiText.T("Switch to Picker to set each colour yourself."), UiText.T("Switch back to Auto to use the automatic theme.")), plugin.Configuration.UiCompact ? 298 : 316);
+        if (!changed) return false;
+        plugin.Configuration.UiColors = colorDraft;
+        plugin.Configuration.UiAccentRgb = MaterialColorSettings.ToRgb(accentDraft);
+        return true;
+    }
+
     private void DrawTitleColour()
     {
         using var controls = MaterialControls.Push(TtslPresentation.Controls(28));
-        if (!MaterialAppearanceSelector.DrawPalette("titlebar-colour", ref accentDraft,
-            new(UiText.T("Color"), UiText.T("Language"), UiText.T("Teal"), UiText.T("Blue"), UiText.T("Pink"), UiText.T("Custom RGB")))) return;
-        plugin.Configuration.UiAccentRgb = ((uint)Math.Clamp((int)MathF.Round(accentDraft.X * 255), 0, 255) << 16)
-            | ((uint)Math.Clamp((int)MathF.Round(accentDraft.Y * 255), 0, 255) << 8)
-            | (uint)Math.Clamp((int)MathF.Round(accentDraft.Z * 255), 0, 255);
-        plugin.Configuration.Save();
+        if (DrawColourEditor("titlebar-colour")) plugin.Configuration.Save();
     }
 
     internal void DrawSelector()
     {
         var language = appliedLanguage;
         using var controls = MaterialControls.Push(TtslPresentation.Controls(28));
-        var changed = MaterialAppearanceSelector.Draw("appearance", ref accentDraft, ref language, languages,
-            new(UiText.T("Color"), UiText.T("Language"), UiText.T("Teal"), UiText.T("Blue"), UiText.T("Pink"), UiText.T("Custom RGB")), 140);
-        if (changed.AccentChanged)
-            plugin.Configuration.UiAccentRgb = ((uint)Math.Clamp((int)MathF.Round(accentDraft.X * 255), 0, 255) << 16)
-                | ((uint)Math.Clamp((int)MathF.Round(accentDraft.Y * 255), 0, 255) << 8) | (uint)Math.Clamp((int)MathF.Round(accentDraft.Z * 255), 0, 255);
-        if (changed.LanguageChanged) plugin.Configuration.UiLanguage = language;
-        if (changed.AccentChanged || changed.LanguageChanged) plugin.Configuration.Save();
+        var colorChanged = DrawColourEditor("appearance");
+        var languageChanged = MaterialAppearanceSelector.DrawLanguage("appearance", ref language, languages, 140);
+        if (languageChanged) plugin.Configuration.UiLanguage = language;
+        if (colorChanged || languageChanged) plugin.Configuration.Save();
     }
 
     internal TtslAppearance(Plugin plugin)

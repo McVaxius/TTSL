@@ -1378,4 +1378,16 @@
   <data name="Detailed titlebar status" xml:space="preserve"><value>Подробное состояние в заголовке</value></data>
   <data name="HUD on" xml:space="preserve"><value>HUD вкл.</value></data>
   <data name="HUD off" xml:space="preserve"><value>HUD выкл.</value></data>
+  <data name="Auto" xml:space="preserve"><value>Авто</value></data>
+  <data name="Picker" xml:space="preserve"><value>Палитра</value></data>
+  <data name="Default" xml:space="preserve"><value>По умолчанию</value></data>
+  <data name="Background, controls and text follow your theme." xml:space="preserve"><value>Фон, элементы управления и текст следуют теме.</value></data>
+  <data name="Theme colour" xml:space="preserve"><value>Цвет темы</value></data>
+  <data name="Choose each colour independently." xml:space="preserve"><value>Выберите каждый цвет отдельно.</value></data>
+  <data name="Background" xml:space="preserve"><value>Фон</value></data>
+  <data name="Controls" xml:space="preserve"><value>Элементы управления</value></data>
+  <data name="Aa  Preview text" xml:space="preserve"><value>Aa  Образец текста</value></data>
+  <data name="Control" xml:space="preserve"><value>Кнопка</value></data>
+  <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>Переключитесь на Палитру, чтобы задать каждый цвет.</value></data>
+  <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>Вернитесь в Авто, чтобы использовать автоматическую тему.</value></data>
 </root>
