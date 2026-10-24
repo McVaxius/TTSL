@@ -1,10 +1,61 @@
 #pragma once
 #include <cmath>
 #include <commdlg.h>
+#include <mmsystem.h>
+#include <memory>
+#include <vector>
 #include <string_view>
 #include "ui_strings.h"
 
 namespace TtslUi {
+// One optional native UI voice, independent of speech and other applications.
+class SoundPlayer {
+    struct Buffer { WAVEHDR header{}; std::vector<short> samples; };
+    HWAVEOUT device_ = nullptr;
+    std::unique_ptr<Buffer> buffer_;
+public:
+    bool unavailable = false;
+    bool Stop() {
+        if (!buffer_) return true;
+        if (waveOutReset(device_) != MMSYSERR_NOERROR ||
+            waveOutUnprepareHeader(device_, &buffer_->header, sizeof(WAVEHDR)) != MMSYSERR_NOERROR)
+            return !(unavailable = true);
+        buffer_.reset(); return true;
+    }
+    bool Play(bool preview = false) {
+        if (!Stop()) return false;
+        if (!device_) {
+            WAVEFORMATEX format{WAVE_FORMAT_PCM, 1, 22050, 44100, 2, 16, 0};
+            if (waveOutOpen(&device_, WAVE_MAPPER, &format, 0, 0, CALLBACK_NULL) != MMSYSERR_NOERROR)
+                return !(unavailable = true);
+        }
+        buffer_ = std::make_unique<Buffer>();
+        const double duration = preview ? .21 : .075;
+        buffer_->samples.resize(static_cast<size_t>(22050 * duration));
+        double phase = 0;
+        for (size_t i = 0; i < buffer_->samples.size(); ++i) {
+            const double fraction = static_cast<double>(i) / (buffer_->samples.size() - 1);
+            const double hz = preview ? (fraction < .34 ? 880 : fraction < .67 ? 1174 : 1568) : 1320;
+            phase += 6.283185307179586 * hz / 22050;
+            buffer_->samples[i] = static_cast<short>(32767 * .10 * std::sin(3.141592653589793 * fraction) *
+                std::exp(-2 * fraction) * std::sin(phase));
+        }
+        auto& header = buffer_->header;
+        header.lpData = reinterpret_cast<LPSTR>(buffer_->samples.data());
+        header.dwBufferLength = static_cast<DWORD>(buffer_->samples.size() * sizeof(short));
+        if (waveOutPrepareHeader(device_, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+            buffer_.reset(); return !(unavailable = true);
+        }
+        if (waveOutWrite(device_, &header, sizeof(header)) != MMSYSERR_NOERROR) {
+            Stop(); return !(unavailable = true);
+        }
+        unavailable = false; return true;
+    }
+    ~SoundPlayer() {
+        if (Stop()) { if (device_) waveOutClose(device_); }
+        else buffer_.release(); // A failing driver may still own the submitted buffer.
+    }
+};
 struct Lch { double l,c,h; };
 inline Lch ToLch(unsigned rgb) {
     auto linear=[](double c){ return c<=.04045?c/12.92:std::pow((c+.055)/1.055,2.4); };

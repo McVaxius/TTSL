@@ -41,7 +41,15 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
     public override void Draw()
     {
         WindowMotion.DrawChrome();
+        if (MaterialTheme.Current.IsLcars) MaterialLcars.Header(PluginInfo.DisplayName + " · " + UiText.T("Settings"));
         UiGui.TitleWithButtons(PluginInfo.DisplayName+" Settings",PluginInfo.DisplayName+" "+UiText.T("Settings"), this);
+        if (MaterialTheme.Current.IsLcars) TtslPresentation.Panel(DrawSettings, 0); else DrawSettings();
+        FinalizePendingWindowPlacement();
+        if (MaterialTheme.Current.IsLcars) MaterialLcars.Footer(UiText.T("Settings"));
+    }
+
+    private void DrawSettings()
+    {
         var settingsRoot = ImGui.GetID("");
         using var tabs = MaterialTabs.Begin("TtslSettingsTabs", new[] { UiText.T("Settings"), UiText.T("Window appearance") }, ImGuiTabBarFlags.FittingPolicyScroll);
         if (tabs.Visible)
@@ -74,7 +82,6 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
                 }
             }
         }
-        FinalizePendingWindowPlacement();
     }
 
     private void DrawGeneralSettings()

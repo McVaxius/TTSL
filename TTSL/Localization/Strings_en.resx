@@ -1390,4 +1390,10 @@ Icon Only: '&lt;icon&gt;'</value>
   <data name="Control" xml:space="preserve"><value>Control</value></data>
   <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>Switch to Picker to set each colour yourself.</value></data>
   <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>Switch back to Auto to use the automatic theme.</value></data>
+<data name="LCARS" xml:space="preserve"><value>LCARS</value></data>
+<data name="UI sounds" xml:space="preserve"><value>UI sounds</value></data>
+<data name="Mute UI sounds" xml:space="preserve"><value>Mute UI sounds</value></data>
+<data name="Unmute UI sounds" xml:space="preserve"><value>Unmute UI sounds</value></data>
+<data name="Preview UI sound" xml:space="preserve"><value>Preview UI sound</value></data>
+<data name="Audio output is unavailable." xml:space="preserve"><value>Audio output is unavailable.</value></data>
 </root>

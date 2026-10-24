@@ -4,6 +4,7 @@ using AethertekUI.Dalamud;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
+using Dalamud.Interface;
 
 namespace TTSL.Ui;
 
@@ -13,6 +14,8 @@ internal sealed class TtslAppearance : IDisposable
     private readonly AethertekUI.MaterialWindowOpacity fontStatusOpacity = new();
     private readonly Plugin plugin;
     private readonly MaterialTextHost shapedText;
+    private readonly MaterialUiSoundPlayer sounds = new();
+    private bool soundsActive;
     private UiText text;
     private TtslFonts fonts;
     private MaterialTheme theme;
@@ -55,10 +58,14 @@ internal sealed class TtslAppearance : IDisposable
             appliedAccent = plugin.Configuration.UiAccentRgb & 0xFFFFFF;
             appliedColors = colorDraft;
             theme = TtslPresentation.Theme(appliedAccent, colorDraft);
+            theme.Feedback = PlaySound;
             var rgb = TtslPresentation.Rgb(appliedAccent);
             accentDraft = new(rgb.X, rgb.Y, rgb.Z);
         }
         theme.Density = plugin.Configuration.UiCompact ? MaterialDensity.Compact : MaterialDensity.Standard;
+        var active = theme.IsLcars && !plugin.Configuration.UiSoundsMuted;
+        if (soundsActive && !active) sounds.Stop();
+        soundsActive = active;
     }
 
     internal void Draw(WindowSystem windows)
@@ -101,6 +108,7 @@ internal sealed class TtslAppearance : IDisposable
             if (ImGui.Begin("Thick Thighs Save Lives##FontStatus", ImGuiWindowFlags.AlwaysAutoResize))
             {
                 fontStatusDecorations.Paint();
+                if (theme.IsLcars) MaterialLcars.Header("TTSL");
                 var loading = fonts.LoadException is null && !fontIssueLogged;
                 if (appliedLanguage == "hi")
                 {
@@ -108,6 +116,7 @@ internal sealed class TtslAppearance : IDisposable
                     if (!loading && ImGui.Button("Use English")) { plugin.Configuration.UiLanguage = "en"; plugin.Configuration.Save(); }
                 }
                 else MaterialText.TextWrapped(UiText.T(loading ? "Loading UI fonts..." : "UI fonts failed to load. See the plugin log."));
+                if (theme.IsLcars) MaterialLcars.Footer("TTSL");
             }
             ImGui.End();
             fontStatusDecorations.Paint();
@@ -125,7 +134,7 @@ internal sealed class TtslAppearance : IDisposable
         style.Style(ImGuiStyleVar.ChildRounding, 4 * s);
         using var body = fonts.Push(UiFontRole.Body);
         PrepareAppearanceTitleBars(windows);
-        foreach (var actions in appearanceTitleBars.Values) actions.RefreshVisibility();
+        foreach (var actions in appearanceTitleBars.Values) { actions.SetLcarsIcons(theme.IsLcars); actions.RefreshVisibility(); }
         windows.Draw();
         foreach (var window in windows.Windows)
         {
@@ -137,6 +146,7 @@ internal sealed class TtslAppearance : IDisposable
     }
 
     private readonly System.Collections.Generic.Dictionary<Window, MaterialAppearanceTitleBar> appearanceTitleBars = new();
+    private readonly System.Collections.Generic.Dictionary<Window, TitleBarButton> soundButtons = new();
 
     private void PrepareAppearanceTitleBars(WindowSystem windows)
     {
@@ -148,10 +158,22 @@ internal sealed class TtslAppearance : IDisposable
                 DrawLanguageSelector,
                 () => { plugin.Configuration.UiCompact = !plugin.Configuration.UiCompact; plugin.Configuration.Save(); },
                 DrawWindowSettings, DrawTitleColour,
+                () => plugin.SetKrangleEnabled(!plugin.Configuration.KrangleEnabled, "titlebar"),
+                () => UiText.T("Krangle"),
                 () => owner is TTSL.Windows.MainWindow
                     ? new(plugin.Configuration.UiLanguageVisibleOnMainWindow, plugin.Configuration.UiCompactVisibleOnMainWindow,
                         plugin.Configuration.UiTransparencyVisibleOnMainWindow, true)
                     : new(true, true, true, true)));
+            var speaker = new TitleBarButton
+            {
+                Icon = plugin.Configuration.UiSoundsMuted ? FontAwesomeIcon.VolumeMute : FontAwesomeIcon.VolumeUp,
+                Priority = owner.TitleBarButtons.Min(button => button.Priority) - 1,
+                IconOffset = new(2, 1),
+                Click = button => { if (button == ImGuiMouseButton.Left) SetSoundsMuted(!plugin.Configuration.UiSoundsMuted); },
+                ShowTooltip = () => MaterialText.SetTooltip(UiText.T(plugin.Configuration.UiSoundsMuted ? "Unmute UI sounds" : "Mute UI sounds")),
+            };
+            owner.TitleBarButtons.Add(speaker);
+            soundButtons.Add(owner, speaker);
         }
     }
 
@@ -159,7 +181,7 @@ internal sealed class TtslAppearance : IDisposable
     {
         var changed = MaterialAppearanceSelector.DrawColors(id, ref colorDraft, ref accentDraft,
             new(UiText.T("Color"), UiText.T("Language"), UiText.T("Teal"), UiText.T("Blue"), UiText.T("Pink"), UiText.T("Custom RGB")),
-            new(UiText.T("Auto"), UiText.T("Picker"), UiText.T("Default"), UiText.T("Background, controls and text follow your theme."), UiText.T("Theme colour"), UiText.T("Choose each colour independently."), UiText.T("Background"), UiText.T("Controls"), UiText.T("Text"), UiText.T("Aa  Preview text"), UiText.T("Control"), UiText.T("Switch to Picker to set each colour yourself."), UiText.T("Switch back to Auto to use the automatic theme.")), plugin.Configuration.UiCompact ? 298 : 316);
+            new(UiText.T("Auto"), UiText.T("Picker"), UiText.T("Default"), UiText.T("Background, controls and text follow your theme."), UiText.T("Theme colour"), UiText.T("Choose each colour independently."), UiText.T("Background"), UiText.T("Controls"), UiText.T("Text"), UiText.T("Aa  Preview text"), UiText.T("Control"), UiText.T("Switch to Picker to set each colour yourself."), UiText.T("Switch back to Auto to use the automatic theme.")) { Lcars = UiText.T("LCARS"), LcarsHelp = UiText.T("LCARS") }, plugin.Configuration.UiCompact ? 298 : 316);
         if (!changed) return false;
         plugin.Configuration.UiColors = colorDraft;
         plugin.Configuration.UiAccentRgb = MaterialColorSettings.ToRgb(accentDraft);
@@ -200,7 +222,20 @@ internal sealed class TtslAppearance : IDisposable
     internal string NativeLabel(string key) => text.Language == "hi" ? key : text.Label(key);
     internal string Format(string key, params object?[] arguments) => text.Format(key, arguments);
 
-    public void Dispose() { fonts?.Dispose(); text?.Dispose(); shapedText.Dispose(); }
+    public void Dispose() { sounds.Dispose(); fonts?.Dispose(); text?.Dispose(); shapedText.Dispose(); }
+
+    private void PlaySound(MaterialUiSoundCue cue)
+    {
+        if (theme.IsLcars && !plugin.Configuration.UiSoundsMuted) sounds.TryPlay(cue);
+    }
+
+    private void SetSoundsMuted(bool muted)
+    {
+        plugin.Configuration.UiSoundsMuted = muted;
+        if (muted) sounds.Stop();
+        foreach (var speaker in soundButtons.Values) speaker.Icon = muted ? FontAwesomeIcon.VolumeMute : FontAwesomeIcon.VolumeUp;
+        plugin.Configuration.Save();
+    }
 
     internal void ApplyWindowOpacity(AethertekUI.MaterialWindowOpacity opacity, string windowName)
     {
@@ -218,6 +253,12 @@ internal sealed class TtslAppearance : IDisposable
 
     internal void DrawWindowSettings()
     {
+        var muted = plugin.Configuration.UiSoundsMuted;
+        if (UiGui.Checkbox("Mute UI sounds###UiSoundsMuted", ref muted)) SetSoundsMuted(muted);
+        ImGui.BeginDisabled(muted || !theme.IsLcars);
+        UiGui.Button("Preview UI sound###ui-sound-preview", cue: MaterialUiSoundCue.Preview);
+        ImGui.EndDisabled();
+        if (sounds.Error is not null) UiGui.TextDisabled("Audio output is unavailable.");
         var showTitlebarStatus = plugin.Configuration.UiShowTitlebarStatus;
         if (UiGui.Checkbox(UiText.T("Show titlebar status") + "###UiShowTitlebarStatus", ref showTitlebarStatus))
         { plugin.Configuration.UiShowTitlebarStatus = showTitlebarStatus; plugin.Configuration.Save(); }

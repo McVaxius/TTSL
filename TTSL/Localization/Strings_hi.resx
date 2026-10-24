@@ -1426,4 +1426,10 @@
   <data name="Control" xml:space="preserve"><value>नियंत्रण</value></data>
   <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>हर रंग स्वयं तय करने के लिए चयनकर्ता चुनें।</value></data>
   <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>स्वचालित थीम के लिए स्वचालित विकल्प चुनें।</value></data>
+<data name="LCARS" xml:space="preserve"><value>LCARS</value></data>
+<data name="UI sounds" xml:space="preserve"><value>UI ध्वनियाँ</value></data>
+<data name="Mute UI sounds" xml:space="preserve"><value>UI ध्वनियाँ बंद करें</value></data>
+<data name="Unmute UI sounds" xml:space="preserve"><value>UI ध्वनियाँ चालू करें</value></data>
+<data name="Preview UI sound" xml:space="preserve"><value>UI ध्वनि सुनें</value></data>
+<data name="Audio output is unavailable." xml:space="preserve"><value>ऑडियो आउटपुट उपलब्ध नहीं है।</value></data>
 </root>

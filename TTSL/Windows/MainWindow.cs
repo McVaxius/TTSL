@@ -71,6 +71,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
 
 
         DrawHeader(version);
+        if (MaterialTheme.Current.IsLcars) plugin.Appearance.DrawSelector();
         DrawToolbar(cfg);
 
         ImGui.Separator();
@@ -78,6 +79,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         if (player == null)
         {
             UiGui.TextDisabled("Local player is not available yet.");
+            if (MaterialTheme.Current.IsLcars) MaterialLcars.Footer("TTSL");
             FinalizePendingWindowPlacement();
             return;
         }
@@ -101,10 +103,20 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         }
 
         FinalizePendingWindowPlacement();
+        if (MaterialTheme.Current.IsLcars) MaterialLcars.Footer("TTSL");
     }
 
     private void DrawHeader(string version)
     {
+        if (MaterialTheme.Current.IsLcars)
+        {
+            using (UiText.Font(plugin.Configuration.UiCompact ? UiFontRole.CompactTitle : UiFontRole.Title)) MaterialLcars.Header(PluginInfo.DisplayName);
+            UiGui.TextDisabled("TTSL " + version);
+            if (UiGui.SmallButton("Ko-fi")) Process.Start(new ProcessStartInfo { FileName = PluginInfo.SupportUrl, UseShellExecute = true });
+            Flow("Discord"); if (UiGui.SmallButton("Discord")) Process.Start(new ProcessStartInfo { FileName = PluginInfo.DiscordUrl, UseShellExecute = true });
+            if (ImGui.IsItemHovered()) UiGui.SetTooltip(PluginInfo.DiscordFeedbackNote);
+            return;
+        }
         var scale=MaterialTheme.Metrics.Scale; var start=ImGui.GetCursorScreenPos();
         var icon = plugin.OriginalIcon;
         var imageMin = start + new Vector2(0, 8) * scale;
@@ -132,32 +144,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         if(ImGui.GetItemRectMax().X+needed<ImGui.GetWindowPos().X+ImGui.GetWindowSize().X-ImGui.GetStyle().WindowPadding.X) ImGui.SameLine();
     }
 
-    private static void Panel(Action draw,float logicalHeight)
-    {
-        var s=MaterialTheme.Metrics.Scale;var start=ImGui.GetCursorScreenPos();var width=ImGui.GetContentRegionAvail().X;
-        var height=logicalHeight*s;
-        var dl=ImGui.GetWindowDrawList();
-        dl.ChannelsSplit(2);dl.ChannelsSetCurrent(1);
-        ImGui.SetCursorScreenPos(start+new Vector2(16,12)*s);
-        var window=ImGuiP.GetCurrentWindow();
-        var previousWorkRect=window.WorkRect;var previousContentRect=window.ContentRegionRect;
-        var innerRight=Math.Max(start.X+16*s,start.X+width-16*s);
-        var innerWorkRect=previousWorkRect;innerWorkRect.Max.X=Math.Min(innerWorkRect.Max.X,innerRight);
-        var innerContentRect=previousContentRect;innerContentRect.Max.X=Math.Min(innerContentRect.Max.X,innerRight);
-        window.WorkRect=innerWorkRect;window.ContentRegionRect=innerContentRect;
-        ImGui.PushClipRect(new Vector2(start.X+16*s,window.ClipRect.Min.Y),new Vector2(innerRight,window.ClipRect.Max.Y),true);
-        ImGui.BeginGroup();
-        ImGuiP.PushOverrideID(ImGuiP.GetCurrentWindow().ID);
-        try { draw(); }
-        finally
-        {
-            ImGui.PopID();ImGui.EndGroup();ImGui.PopClipRect();
-            window.WorkRect=previousWorkRect;window.ContentRegionRect=previousContentRect;
-        }
-        var bottom=Math.Max(start.Y+height,ImGui.GetItemRectMax().Y+12*s);
-        dl.ChannelsSetCurrent(0);TtslPresentation.Surface(start,new Vector2(start.X+width,bottom));dl.ChannelsMerge();
-        ImGui.SetCursorScreenPos(new Vector2(start.X,bottom));ImGui.Dummy(new Vector2(width, TtslPresentation.Gap*s));
-    }
+    private static void Panel(Action draw,float logicalHeight) => TtslPresentation.Panel(draw, logicalHeight);
 
     private void DrawToolbar(Configuration cfg)
     {
@@ -231,6 +218,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     }
     private static void Heading(string text)
     {
+        if (MaterialTheme.Current.IsLcars) { using (UiText.Font(UiFontRole.PluginName)) MaterialLcars.PanelHeading(UiText.T(text)); return; }
         var s=MaterialTheme.Metrics.Scale;var p=ImGui.GetCursorScreenPos();var ink=MaterialTheme.Current.Colors.OnSurface;
         var icon=text switch { "Snapshot" or "Party"=>MaterialIcon.Person, "Conditions"=>MaterialIcon.Document, "Equipment"=>MaterialIcon.Settings, _=>MaterialIcon.Link };
         if(text=="Party Radar")

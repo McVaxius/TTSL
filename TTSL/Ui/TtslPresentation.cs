@@ -65,8 +65,36 @@ internal static class TtslPresentation
             Gap = 8 * s, IconSize = 22 * s, Rounding = 4 * s, ItemSpacing = new(10 * s, 6 * s), CellPadding = new(12 * s, 6 * s) };
     }
 
+    internal static void Panel(Action draw,float logicalHeight)
+    {
+        var s=MaterialTheme.Metrics.Scale;var start=ImGui.GetCursorScreenPos();var width=ImGui.GetContentRegionAvail().X;
+        var height=logicalHeight*s;
+        var dl=ImGui.GetWindowDrawList();
+        dl.ChannelsSplit(2);dl.ChannelsSetCurrent(1);
+        ImGui.SetCursorScreenPos(start+new Vector2(16,12)*s);
+        var window=ImGuiP.GetCurrentWindow();
+        var previousWorkRect=window.WorkRect;var previousContentRect=window.ContentRegionRect;
+        var innerRight=Math.Max(start.X+16*s,start.X+width-16*s);
+        var innerWorkRect=previousWorkRect;innerWorkRect.Max.X=Math.Min(innerWorkRect.Max.X,innerRight);
+        var innerContentRect=previousContentRect;innerContentRect.Max.X=Math.Min(innerContentRect.Max.X,innerRight);
+        window.WorkRect=innerWorkRect;window.ContentRegionRect=innerContentRect;
+        ImGui.PushClipRect(new Vector2(start.X+16*s,window.ClipRect.Min.Y),new Vector2(innerRight,window.ClipRect.Max.Y),true);
+        ImGui.BeginGroup();
+        ImGuiP.PushOverrideID(ImGuiP.GetCurrentWindow().ID);
+        try { draw(); }
+        finally
+        {
+            ImGui.PopID();ImGui.EndGroup();ImGui.PopClipRect();
+            window.WorkRect=previousWorkRect;window.ContentRegionRect=previousContentRect;
+        }
+        var bottom=Math.Max(start.Y+height,ImGui.GetItemRectMax().Y+12*s);
+        dl.ChannelsSetCurrent(0);TtslPresentation.Surface(start,new Vector2(start.X+width,bottom));dl.ChannelsMerge();
+        ImGui.SetCursorScreenPos(new Vector2(start.X,bottom));ImGui.Dummy(new Vector2(width, TtslPresentation.Gap*s));
+    }
+
     internal static void Surface(Vector2 min, Vector2 max)
     {
+        if (MaterialTheme.Current.IsLcars) { MaterialLcars.PanelFrame(min, max); return; }
         var c = MaterialTheme.Current.Colors;
         MaterialCanvas.Surface(min, max, c.SurfaceContainerHigh, c.Surface, 4 * MaterialTheme.Metrics.Scale);
         ImGui.GetWindowDrawList().AddRect(min, max, MaterialCanvas.Color(c.OutlineVariant), 4 * MaterialTheme.Metrics.Scale);

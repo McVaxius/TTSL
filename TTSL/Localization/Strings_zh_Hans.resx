@@ -1390,4 +1390,10 @@
   <data name="Control" xml:space="preserve"><value>控件</value></data>
   <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>切换到选色器以自行设置每种颜色。</value></data>
   <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>切换回自动以使用自动主题。</value></data>
+<data name="LCARS" xml:space="preserve"><value>LCARS</value></data>
+<data name="UI sounds" xml:space="preserve"><value>界面音效</value></data>
+<data name="Mute UI sounds" xml:space="preserve"><value>静音界面音效</value></data>
+<data name="Unmute UI sounds" xml:space="preserve"><value>启用界面音效</value></data>
+<data name="Preview UI sound" xml:space="preserve"><value>试听界面音效</value></data>
+<data name="Audio output is unavailable." xml:space="preserve"><value>音频输出不可用。</value></data>
 </root>

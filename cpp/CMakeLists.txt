@@ -51,4 +51,5 @@ target_link_libraries(ttsl-native-server PRIVATE
     windowscodecs
     winhttp
     bcrypt
+    winmm
 )

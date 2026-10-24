@@ -1390,4 +1390,10 @@
   <data name="Control" xml:space="preserve"><value>コントロール</value></data>
   <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>各色を自分で設定するにはピッカーに切り替えます。</value></data>
   <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>自動テーマを使うには「自動」に戻します。</value></data>
+<data name="LCARS" xml:space="preserve"><value>LCARS</value></data>
+<data name="UI sounds" xml:space="preserve"><value>UIサウンド</value></data>
+<data name="Mute UI sounds" xml:space="preserve"><value>UIサウンドをミュート</value></data>
+<data name="Unmute UI sounds" xml:space="preserve"><value>UIサウンドを有効化</value></data>
+<data name="Preview UI sound" xml:space="preserve"><value>UIサウンドを試聴</value></data>
+<data name="Audio output is unavailable." xml:space="preserve"><value>音声出力を利用できません。</value></data>
 </root>

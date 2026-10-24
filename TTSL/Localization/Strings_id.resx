@@ -1414,5 +1414,11 @@ Ikon saja: &apos;&lt;icon&gt;&apos;</value>
   <data name="Control" xml:space="preserve"><value>Kontrol</value></data>
   <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>Beralih ke Pemilih untuk menentukan setiap warna.</value></data>
   <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>Kembali ke Otomatis untuk menggunakan tema otomatis.</value></data>
+<data name="LCARS" xml:space="preserve"><value>LCARS</value></data>
+<data name="UI sounds" xml:space="preserve"><value>Suara antarmuka</value></data>
+<data name="Mute UI sounds" xml:space="preserve"><value>Bisukan suara antarmuka</value></data>
+<data name="Unmute UI sounds" xml:space="preserve"><value>Aktifkan suara antarmuka</value></data>
+<data name="Preview UI sound" xml:space="preserve"><value>Pratinjau suara antarmuka</value></data>
+<data name="Audio output is unavailable." xml:space="preserve"><value>Keluaran audio tidak tersedia.</value></data>
 </root>
 

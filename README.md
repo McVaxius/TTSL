@@ -36,6 +36,10 @@ This repo is still under active development.
 
 ## Appearance
 
+Colour offers **Auto / Picker / LCARS** in that order. LCARS adds segmented rails, elbow headers, framed panels and outlined controls across Main, Settings and Guided Setup while retaining saved Picker colours. The separate native server and both browser HUD producers use their existing Win32 and HTML hosts and save appearance through their own existing preferences.
+
+**Mute UI sounds** defaults on. Settings and the speaker shortcut share that saved preference within each host; unmuting enables short generated LCARS control tones, and **Preview UI sound** plays one sample. Muting or leaving LCARS stops only the host's owned UI sound. These tones are independent of speech and require no sound pack. Browser playback depends on available browser audio support.
+
 **Transparency** applies to the complete plugin window, including its titlebar and popups. Settings provides normal opacity, automatic focus fade, faded opacity and delay; defaults are 100%, fading to 50% after 10 seconds without focus and restoring on focus. Compact and language controls can be hidden independently on Main while remaining available in Settings.
 
 Main's titlebar opens Settings or Guided Setup and toggles the local HUD overlay. The packaged icon appears in Main branding and its titlebar, including when collapsed. The setup wizard keeps its local/web HUD choices and permissions; enabling the local HUD does not grant remote control.

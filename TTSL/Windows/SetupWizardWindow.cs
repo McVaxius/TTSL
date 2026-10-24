@@ -99,7 +99,14 @@ public sealed class SetupWizardWindow : Window, IDisposable
     public override void Draw()
     {
         windowMotion.DrawChrome();
+        if (MaterialTheme.Current.IsLcars) MaterialLcars.Header(UiText.T("Setup Wizard"));
         UiGui.TitleWithButtons("TTSL Setup Wizard","TTSL "+UiText.T("Setup Wizard"), this);
+        if (MaterialTheme.Current.IsLcars) TtslPresentation.Panel(DrawSteps, 0); else DrawSteps();
+        if (MaterialTheme.Current.IsLcars) MaterialLcars.Footer(UiText.T("Setup Wizard"));
+    }
+
+    private void DrawSteps()
+    {
         draft ??= WizardDraft.From(plugin.Configuration);
 
         UiGui.Text($"Step {step + 1} of 3");

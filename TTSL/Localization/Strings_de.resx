@@ -1390,4 +1390,10 @@ Nur Symbol: '&lt;icon&gt;'</value>
   <data name="Control" xml:space="preserve"><value>Steuerelement</value></data>
   <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>Wechsle zur Farbwahl, um jede Farbe selbst festzulegen.</value></data>
   <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>Wechsle zurück zu Automatisch, um das automatische Design zu verwenden.</value></data>
+<data name="LCARS" xml:space="preserve"><value>LCARS</value></data>
+<data name="UI sounds" xml:space="preserve"><value>UI-Töne</value></data>
+<data name="Mute UI sounds" xml:space="preserve"><value>UI-Töne stummschalten</value></data>
+<data name="Unmute UI sounds" xml:space="preserve"><value>UI-Töne einschalten</value></data>
+<data name="Preview UI sound" xml:space="preserve"><value>UI-Ton vorhören</value></data>
+<data name="Audio output is unavailable." xml:space="preserve"><value>Audioausgabe ist nicht verfügbar.</value></data>
 </root>

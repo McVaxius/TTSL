@@ -17,10 +17,11 @@ internal static class UiGui
     internal static void BulletText(string text) => MaterialText.BulletText(UiText.T(text));
     internal static bool ToggleAction(string original,ref bool value,MaterialIcon icon)
     {
+        using var lcars = MaterialLcars.NativeButtonStyle();
         var s=MaterialTheme.Metrics.Scale;var c=MaterialTheme.Current.Colors;
         var label=UiText.T(original);var size=new Vector2(Math.Max(156*s,MaterialText.Measure(label).X+76*s),TtslPresentation.ControlHeight*s);
         size.X=MaterialLayout.FitNextItemWidth(size.X,size.X);
-        ImGui.PushStyleColor(ImGuiCol.Button,value?MaterialColor.Layer(c.SurfaceContainer,c.Primary,.15f):c.SurfaceContainerHigh);
+        ImGui.PushStyleColor(ImGuiCol.Button,MaterialTheme.Current.IsLcars ? MaterialLcars.Background : value?MaterialColor.Layer(c.SurfaceContainer,c.Primary,.15f):c.SurfaceContainerHigh);
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered,MaterialColor.Layer(c.SurfaceContainerHigh,c.Primary,.22f));
         ImGui.PushStyleColor(ImGuiCol.ButtonActive,MaterialColor.Layer(c.SurfaceContainerHigh,c.Primary,.30f));
         ImGui.PushStyleColor(ImGuiCol.Text,Vector4.Zero);
@@ -30,7 +31,7 @@ internal static class UiGui
         dl.AddRect(min,max,MaterialCanvas.Color(value?c.Primary:c.OutlineVariant),4*s);
         MaterialIcons.Draw(icon,min+new Vector2(14*s,(size.Y-24*s)*.5f),24*s,c.OnSurface);
         MaterialText.AddText(dl,min+new Vector2(50*s,(size.Y-MaterialText.Measure(label).Y)*.5f),MaterialCanvas.Color(c.OnSurface),label);
-        if(clicked)value=!value;return clicked;
+        if(clicked)value=!value;MaterialLcars.Feedback(clicked, MaterialUiSoundCue.Toggle);return clicked;
     }
     private static (Vector2 Min, Vector2 PreviousMax, float Width, string Label) BeginField(string original, float preferredWidth, float minimum)
     {
@@ -167,6 +168,7 @@ internal static class UiGui
     internal static void Text(FormattableString text) => Text(UiText.F(text));
     internal static void TextColored(Vector4 color, string text)
     {
+        if (MaterialTheme.Current.IsLcars && color == MaterialTheme.Current.Colors.Primary) { MaterialLcars.PanelHeading(UiText.T(text)); return; }
         ImGui.PushTextWrapPos(0);
         MaterialText.TextColored(color, UiText.T(text));
         ImGui.PopTextWrapPos();
@@ -186,11 +188,12 @@ internal static class UiGui
         MaterialText.AddText(dl,position,ImGui.ColorConvertFloat4ToU32(foreground),translated);
         if(clip.HasValue) dl.PopClipRect();
     }
-    internal static bool Button(string label,string? display=null)
+    internal static bool Button(string label,string? display=null,MaterialUiSoundCue cue=MaterialUiSoundCue.Click)
     {
         var translated=display ?? UiText.T(label.Split("##",2)[0]);
         using var controls = ImGui.GetStyle().FramePadding.Y == 0 || MaterialControls.Context == MaterialControlContext.Dense
             ? default(MaterialControls.ControlScope) : MaterialControls.Push(MaterialControlContext.Toolbar);
+        using var lcars = MaterialLcars.NativeButtonStyle();
         using var height=MaterialText.PushLineHeight(translated);
         var width=MaterialText.Measure(translated).X+2*ImGui.GetStyle().FramePadding.X;
         width=MaterialLayout.FitNextItemWidth(width,width);
@@ -203,6 +206,7 @@ internal static class UiGui
         ImGui.GetWindowDrawList().PushClipRect(min,max,true);
         MaterialText.AddText(ImGui.GetWindowDrawList(),min+(max-min-MaterialText.Measure(translated))*.5f,ImGui.ColorConvertFloat4ToU32(foreground),translated);
         ImGui.GetWindowDrawList().PopClipRect();
+        MaterialLcars.Feedback(clicked, cue);
         return clicked;
     }
     internal static bool Button(string label, Vector2 pixels)
@@ -210,6 +214,7 @@ internal static class UiGui
         var translated = UiText.T(label.Split("##", 2)[0]);
         using var controls = ImGui.GetStyle().FramePadding.Y == 0 || MaterialControls.Context == MaterialControlContext.Dense
             ? default(MaterialControls.ControlScope) : MaterialControls.Push(MaterialControlContext.Toolbar);
+        using var lcars = MaterialLcars.NativeButtonStyle();
         var paddingY = ImGui.GetStyle().FramePadding.Y;
         using var height = MaterialText.PushLineHeight(translated);
         pixels.Y=Math.Max(pixels.Y,Math.Max(ImGui.GetTextLineHeight(),MaterialText.Measure(translated).Y)+2*paddingY);
@@ -223,6 +228,7 @@ internal static class UiGui
         dl.PushClipRect(min, max, true);
         MaterialText.AddText(dl,min + (max - min - MaterialText.Measure(translated)) * .5f, MaterialCanvas.Color(color), translated);
         dl.PopClipRect();
+        MaterialLcars.Feedback(clicked);
         return clicked;
     }
     internal static bool SmallButton(string label,string? display=null)
@@ -238,7 +244,11 @@ internal static class UiGui
         var visible=label.Split("##",2)[0];
         var translated=UiText.T(visible);
         if(label.Contains("###",StringComparison.Ordinal) && !MaterialText.RequiresShaping(translated))
-            return ImGui.Checkbox(translated+label[visible.Length..],ref value);
+        {
+            var nativeChanged = ImGui.Checkbox(translated+label[visible.Length..],ref value);
+            MaterialLcars.Feedback(nativeChanged, MaterialUiSoundCue.Toggle);
+            return nativeChanged;
+        }
         using var height=MaterialText.PushLineHeight(translated);
         var foreground=ImGui.GetStyle().Colors[(int)ImGuiCol.Text];
         var gap=ImGui.GetStyle().ItemInnerSpacing;
@@ -252,6 +262,7 @@ internal static class UiGui
         var p=ImGui.GetItemRectMin()+new Vector2(ImGui.GetFrameHeight()+gap.X,(ImGui.GetFrameHeight()-MaterialText.Measure(translated).Y)*.5f);
         foreground.W*=ImGui.GetStyle().Alpha;
         MaterialText.AddText(ImGui.GetWindowDrawList(),p,ImGui.ColorConvertFloat4ToU32(foreground),translated);
+        MaterialLcars.Feedback(changed, MaterialUiSoundCue.Toggle);
         return changed;
     }
     internal static void Title(string original,string translated)

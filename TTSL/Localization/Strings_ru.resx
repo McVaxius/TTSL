@@ -1390,4 +1390,10 @@
   <data name="Control" xml:space="preserve"><value>Кнопка</value></data>
   <data name="Switch to Picker to set each colour yourself." xml:space="preserve"><value>Переключитесь на Палитру, чтобы задать каждый цвет.</value></data>
   <data name="Switch back to Auto to use the automatic theme." xml:space="preserve"><value>Вернитесь в Авто, чтобы использовать автоматическую тему.</value></data>
+<data name="LCARS" xml:space="preserve"><value>LCARS</value></data>
+<data name="UI sounds" xml:space="preserve"><value>Звуки интерфейса</value></data>
+<data name="Mute UI sounds" xml:space="preserve"><value>Отключить звуки интерфейса</value></data>
+<data name="Unmute UI sounds" xml:space="preserve"><value>Включить звуки интерфейса</value></data>
+<data name="Preview UI sound" xml:space="preserve"><value>Прослушать звук интерфейса</value></data>
+<data name="Audio output is unavailable." xml:space="preserve"><value>Аудиовыход недоступен.</value></data>
 </root>

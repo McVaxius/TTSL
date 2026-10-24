@@ -1,3 +1,9 @@
+2026-10-23 - LCARS appearance
+
+- Add Auto / Picker / LCARS through the existing colour preferences. Render segmented rails, elbow headers, framed content and outlined native controls across plugin Main, Settings and Setup, both embedded browser HUD pages and the separate Win32 server manager. Retain native actions, permissions, modes, geometry, existing Picker values and account scopes.
+- Add optional generated UI tones, muted by default, with one saved mute preference shared by each host's Settings and speaker shortcut. Stop only owned playback on mute or leaving LCARS; keep speech independent and preview to one cue. Translate controls in all fifteen locales without adding a sound pack or external package.
+- Pin consumer CI to published AethertekUI revision `4c49da19ab6522ed1995cfd2b9bd75020f105d6c`. Keep existing release versions. Local builds and isolated checks remain separate from game, native-window and audible-device acceptance.
+
 2026-10-20 - Independent UI colours
 
 - Add Auto (default) and Picker in Colour and Settings, with independent Background, Controls and Text choices. Preserve the existing automatic palette, saved manual choices, native controls and unrelated settings. Translate the editor in every supported language.
