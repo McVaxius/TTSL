@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <commdlg.h>
 #include <mmsystem.h>
@@ -8,6 +10,77 @@
 #include "ui_strings.h"
 
 namespace TtslUi {
+struct Palette { unsigned background,controls,text; };
+inline constexpr Palette PickerDefaults{0x111F29,0x1CC9E6,0xE9F2F7};
+inline constexpr Palette GlassDefaults{0x10232D,0x65C7D2,0xEDF7FA};
+inline constexpr Palette SpatialDefaults{0xE8EDF4,0x6678A8,0x1C2538};
+inline constexpr Palette CyberpunkDefaults{0x0B0D13,0x19DCE8,0xEAF8FF};
+inline constexpr std::array<unsigned,3> GlassWaveDefaults={0x65C7D2,0xA3B2F2,0xDE9EC9};
+inline COLORREF Color(unsigned rgb) { return RGB((rgb>>16)&255,(rgb>>8)&255,rgb&255); }
+inline COLORREF Mix(COLORREF first,COLORREF second,double amount) {
+    amount=std::clamp(amount,0.,1.);
+    const auto channel=[&](int a,int b){return static_cast<int>(std::lround(a+(b-a)*amount));};
+    return RGB(channel(GetRValue(first),GetRValue(second)),channel(GetGValue(first),GetGValue(second)),channel(GetBValue(first),GetBValue(second)));
+}
+inline COLORREF Contrast(COLORREF color) {
+    return .2126*GetRValue(color)+.7152*GetGValue(color)+.0722*GetBValue(color)>150?RGB(7,9,13):RGB(248,250,253);
+}
+// All material ink is bounded to the supplied owner/control rectangle; no desktop capture or blur.
+inline void GlassBackdrop(HDC dc,RECT rect,const Palette& palette,const std::array<unsigned,3>& waves,double time) {
+    constexpr int columns=96,rows=64;
+    std::array<DWORD,columns*rows> pixels{};
+    for(int y=0;y<rows;++y)for(int x=0;x<columns;++x) {
+        const double u=x/double(columns-1),v=y/double(rows-1);
+        const double d1=u-(.22+.38*v+.11*std::sin(v*5-time*.9));
+        const double d2=u-(.84-.38*v+.13*std::sin(v*5.2+time*.72+.8));
+        const double d3=v-(.80-.68*u+.14*std::sin(u*5.3-time*.83+.7));
+        const double band1=std::exp(-d1*d1*45),band2=std::exp(-d2*d2*55),band3=std::exp(-d3*d3*65);
+        auto color=Mix(Color(palette.background),Color(waves[1]),.14+.07*u+.04*v);
+        color=Mix(color,Color(waves[0]),band1*.58);color=Mix(color,Color(waves[1]),band2*.50);color=Mix(color,Color(waves[2]),band3*.50);
+        color=Mix(color,Color(palette.text),std::pow(std::max({band1,band2,band3}),8)*.10);
+        pixels[y*columns+x]=(GetRValue(color)<<16)|(GetGValue(color)<<8)|GetBValue(color);
+    }
+    BITMAPINFO info{};info.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);info.bmiHeader.biWidth=columns;info.bmiHeader.biHeight=-rows;
+    info.bmiHeader.biPlanes=1;info.bmiHeader.biBitCount=32;info.bmiHeader.biCompression=BI_RGB;
+    const int saved=SaveDC(dc);SetStretchBltMode(dc,HALFTONE);SetBrushOrgEx(dc,0,0,nullptr);
+    StretchDIBits(dc,rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top,0,0,columns,rows,pixels.data(),&info,DIB_RGB_COLORS,SRCCOPY);RestoreDC(dc,saved);
+}
+inline void MaterialSurface(HDC dc,RECT rect,int mode,const Palette& palette,bool inset=false,bool pressed=false,bool disabled=false,bool emphasized=false) {
+    if(rect.right<=rect.left||rect.bottom<=rect.top)return;
+    const int saved=SaveDC(dc);IntersectClipRect(dc,rect.left,rect.top,rect.right,rect.bottom);
+    const auto base=Color(palette.background),accent=Color(palette.controls),text=Color(palette.text);
+    auto face=Mix(base,text,mode==4?(inset?.035:.12):mode==3?.13:.045);
+    if(emphasized)face=accent;
+    if(pressed)face=Mix(face,accent,.18);
+    auto edge=Mix(base,accent,disabled?.16:mode==3?.60:.42);
+    const int radius=mode==5?3:mode==4?(inset?6:12):11;
+    if(mode==4) {
+        auto shadow=CreateSolidBrush(Mix(base,RGB(0,0,0),inset?.23:.16));auto old=SelectObject(dc,shadow);SelectObject(dc,GetStockObject(NULL_PEN));
+        RoundRect(dc,rect.left+2,rect.top+3,rect.right,rect.bottom,radius*2,radius*2);SelectObject(dc,old);DeleteObject(shadow);
+        rect.right-=2;rect.bottom-=3;
+    }
+    auto brush=CreateSolidBrush(face);auto pen=CreatePen(PS_SOLID,1,edge);SelectObject(dc,brush);SelectObject(dc,pen);
+    if(mode==5) {
+        const int cut=std::min(10L,std::min(rect.right-rect.left,rect.bottom-rect.top)/3);
+        POINT plate[]={{rect.left+cut,rect.top},{rect.right-1,rect.top},{rect.right-1,rect.bottom-cut},{rect.right-cut,rect.bottom-1},{rect.left,rect.bottom-1},{rect.left,rect.top+cut}};Polygon(dc,plate,6);
+        const auto ice=Mix(accent,text,.52);SetDCPenColor(dc,ice);SelectObject(dc,GetStockObject(DC_PEN));
+        MoveToEx(dc,rect.left+cut+4,rect.top+2,nullptr);LineTo(dc,std::min(rect.right-4,rect.left+cut+38),rect.top+2);
+        const auto magenta=RGB(GetBValue(accent),GetRValue(accent)/2,GetGValue(accent));SetDCPenColor(dc,Mix(base,magenta,.72));
+        MoveToEx(dc,rect.right-cut-20,rect.bottom-3,nullptr);LineTo(dc,rect.right-cut-3,rect.bottom-3);
+        MoveToEx(dc,rect.right-18,rect.top+1,nullptr);LineTo(dc,rect.right-7,rect.top+1);LineTo(dc,rect.right-2,rect.top+6);LineTo(dc,rect.right-2,rect.top+13);
+        SetDCPenColor(dc,accent);MoveToEx(dc,rect.left+1,rect.bottom-14,nullptr);LineTo(dc,rect.left+1,rect.bottom-7);LineTo(dc,rect.left+7,rect.bottom-2);LineTo(dc,rect.left+19,rect.bottom-2);
+    } else {
+        RoundRect(dc,rect.left,rect.top,rect.right,rect.bottom,radius*2,radius*2);
+        if(mode==3){const int frosted=SaveDC(dc);auto clip=CreateRoundRectRgn(rect.left+1,rect.top+1,rect.right-1,rect.bottom-1,radius*2,radius*2);ExtSelectClipRgn(dc,clip,RGN_AND);DeleteObject(clip);
+            for(int band=0;band<24;++band){RECT strip{rect.left,rect.top+(rect.bottom-rect.top)*band/24,rect.right,rect.top+(rect.bottom-rect.top)*(band+1)/24};SetDCBrushColor(dc,Mix(face,accent,.025+.065*(1-band/23.)));FillRect(dc,&strip,static_cast<HBRUSH>(GetStockObject(DC_BRUSH)));}RestoreDC(dc,frosted);}
+        auto highlight=CreatePen(PS_SOLID,1,Mix(face,text,mode==3?.48:.65));SelectObject(dc,highlight);
+        MoveToEx(dc,rect.left+radius,rect.top+1,nullptr);LineTo(dc,rect.right-radius,rect.top+1);
+        if(mode==4&&inset){SelectObject(dc,pen);MoveToEx(dc,rect.left+2,rect.top+radius,nullptr);LineTo(dc,rect.left+2,rect.bottom-radius);}
+        SelectObject(dc,pen);DeleteObject(highlight);
+        if(mode==3&&!inset){auto glow=CreatePen(PS_SOLID,2,Mix(face,accent,.26));SelectObject(dc,glow);MoveToEx(dc,rect.left+radius,rect.bottom-3,nullptr);LineTo(dc,rect.right-radius,rect.bottom-3);SelectObject(dc,pen);DeleteObject(glow);}
+    }
+    RestoreDC(dc,saved);DeleteObject(brush);DeleteObject(pen);
+}
 // One optional native UI voice, independent of speech and other applications.
 class SoundPlayer {
     struct Buffer { WAVEHDR header{}; std::vector<short> samples; };

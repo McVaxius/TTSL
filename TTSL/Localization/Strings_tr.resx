@@ -1420,5 +1420,21 @@ Yalnız simge: &apos;&lt;icon&gt;&apos;</value>
 <data name="Unmute UI sounds" xml:space="preserve"><value>Arayüz seslerini aç</value></data>
 <data name="Preview UI sound" xml:space="preserve"><value>Arayüz sesini dene</value></data>
 <data name="Audio output is unavailable." xml:space="preserve"><value>Ses çıkışı kullanılamıyor.</value></data>
+  <data name="LCARS panels, bars and controls" xml:space="preserve"><value>LCARS panelleri, çubukları ve denetimleri</value></data>
+  <data name="Glassmorphism" xml:space="preserve"><value>Cam efekti</value></data>
+  <data name="Spatial" xml:space="preserve"><value>Mekânsal</value></data>
+  <data name="Cyberpunk" xml:space="preserve"><value>Siberpunk</value></data>
+  <data name="LCARS bar 1" xml:space="preserve"><value>LCARS çubuğu 1</value></data>
+  <data name="LCARS bar 2" xml:space="preserve"><value>LCARS çubuğu 2</value></data>
+  <data name="LCARS bar 3" xml:space="preserve"><value>LCARS çubuğu 3</value></data>
+  <data name="Reset" xml:space="preserve"><value>Sıfırla</value></data>
+  <data name="Reset colours" xml:space="preserve"><value>Renkleri sıfırla</value></data>
+  <data name="Animation" xml:space="preserve"><value>Animasyon</value></data>
+  <data name="Animation speed (0.1–10x; default 1x)" xml:space="preserve"><value>Animasyon hızı (0,1–10x; varsayılan 1x)</value></data>
+  <data name="Wave colours" xml:space="preserve"><value>Dalga renkleri</value></data>
+  <data name="Wave colour 1" xml:space="preserve"><value>Dalga rengi 1</value></data>
+  <data name="Wave colour 2" xml:space="preserve"><value>Dalga rengi 2</value></data>
+  <data name="Wave colour 3" xml:space="preserve"><value>Dalga rengi 3</value></data>
+  <data name="Reset wave colours" xml:space="preserve"><value>Dalga renklerini sıfırla</value></data>
 </root>
 

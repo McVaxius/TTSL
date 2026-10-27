@@ -105,8 +105,12 @@ internal sealed class TtslAppearance : IDisposable
             if (!fontIssueLogged && fonts.LoadException is { } error) { Plugin.Log.Error(error, "[TTSL] Required UI fonts failed to load."); fontIssueLogged = true; }
             ImGui.SetNextWindowSize(new Vector2(460 * ImGuiHelpers.GlobalScale, 0));
             fontStatusMotion.PreDraw("Thick Thighs Save Lives##FontStatus", null, null, reducedMotion: false, prepareDecorations: fontStatusDecorations.Prepare);
-            if (ImGui.Begin("Thick Thighs Save Lives##FontStatus", ImGuiWindowFlags.AlwaysAutoResize))
+            bool statusVisible;
+            using (MaterialSkin.BackdropStyle())
+                statusVisible = ImGui.Begin("Thick Thighs Save Lives##FontStatus", ImGuiWindowFlags.AlwaysAutoResize);
+            if (statusVisible)
             {
+                MaterialSkin.Backdrop();
                 fontStatusDecorations.Paint();
                 if (theme.IsLcars) MaterialLcars.Header("TTSL");
                 var loading = fonts.LoadException is null && !fontIssueLogged;
@@ -152,8 +156,9 @@ internal sealed class TtslAppearance : IDisposable
     {
         foreach (var owner in windows.Windows.OfType<Window>())
         {
-            if ((owner.Flags & ImGuiWindowFlags.NoTitleBar) != 0 || appearanceTitleBars.ContainsKey(owner)) continue;
-            appearanceTitleBars.Add(owner, MaterialAppearanceTitleBar.Register(owner,
+            if ((owner.Flags & ImGuiWindowFlags.NoTitleBar) != 0) continue;
+            if (!appearanceTitleBars.ContainsKey(owner))
+                appearanceTitleBars.Add(owner, MaterialAppearanceTitleBar.Register(owner,
                 () => new(UiText.T("Language"), UiText.T("Compact mode"), UiText.T("Transparency"), UiText.T("Color")),
                 DrawLanguageSelector,
                 () => { plugin.Configuration.UiCompact = !plugin.Configuration.UiCompact; plugin.Configuration.Save(); },
@@ -164,16 +169,20 @@ internal sealed class TtslAppearance : IDisposable
                     ? new(plugin.Configuration.UiLanguageVisibleOnMainWindow, plugin.Configuration.UiCompactVisibleOnMainWindow,
                         plugin.Configuration.UiTransparencyVisibleOnMainWindow, true)
                     : new(true, true, true, true)));
-            var speaker = new TitleBarButton
+            if (!soundButtons.TryGetValue(owner, out var speaker))
             {
-                Icon = plugin.Configuration.UiSoundsMuted ? FontAwesomeIcon.VolumeMute : FontAwesomeIcon.VolumeUp,
-                Priority = owner.TitleBarButtons.Min(button => button.Priority) - 1,
-                IconOffset = new(2, 1),
-                Click = button => { if (button == ImGuiMouseButton.Left) SetSoundsMuted(!plugin.Configuration.UiSoundsMuted); },
-                ShowTooltip = () => MaterialText.SetTooltip(UiText.T(plugin.Configuration.UiSoundsMuted ? "Unmute UI sounds" : "Mute UI sounds")),
-            };
-            owner.TitleBarButtons.Add(speaker);
-            soundButtons.Add(owner, speaker);
+                speaker = new TitleBarButton
+                {
+                    Priority = owner.TitleBarButtons.Min(button => button.Priority) - 1,
+                    IconOffset = new(2, 1),
+                    Click = button => { if (button == ImGuiMouseButton.Left && theme.IsLcars) SetSoundsMuted(!plugin.Configuration.UiSoundsMuted); },
+                    ShowTooltip = () => MaterialText.SetTooltip(UiText.T(plugin.Configuration.UiSoundsMuted ? "Unmute UI sounds" : "Mute UI sounds")),
+                };
+                soundButtons.Add(owner, speaker);
+            }
+            speaker.Icon = plugin.Configuration.UiSoundsMuted ? FontAwesomeIcon.VolumeMute : FontAwesomeIcon.VolumeUp;
+            if (theme.IsLcars && !owner.TitleBarButtons.Contains(speaker)) owner.TitleBarButtons.Add(speaker);
+            else if (!theme.IsLcars) owner.TitleBarButtons.Remove(speaker);
         }
     }
 
@@ -181,7 +190,18 @@ internal sealed class TtslAppearance : IDisposable
     {
         var changed = MaterialAppearanceSelector.DrawColors(id, ref colorDraft, ref accentDraft,
             new(UiText.T("Color"), UiText.T("Language"), UiText.T("Teal"), UiText.T("Blue"), UiText.T("Pink"), UiText.T("Custom RGB")),
-            new(UiText.T("Auto"), UiText.T("Picker"), UiText.T("Default"), UiText.T("Background, controls and text follow your theme."), UiText.T("Theme colour"), UiText.T("Choose each colour independently."), UiText.T("Background"), UiText.T("Controls"), UiText.T("Text"), UiText.T("Aa  Preview text"), UiText.T("Control"), UiText.T("Switch to Picker to set each colour yourself."), UiText.T("Switch back to Auto to use the automatic theme.")) { Lcars = UiText.T("LCARS"), LcarsHelp = UiText.T("LCARS") }, plugin.Configuration.UiCompact ? 298 : 316);
+            new(UiText.T("Auto"), UiText.T("Picker"), UiText.T("Default"), UiText.T("Background, controls and text follow your theme."), UiText.T("Theme colour"), UiText.T("Choose each colour independently."), UiText.T("Background"), UiText.T("Controls"), UiText.T("Text"), UiText.T("Aa  Preview text"), UiText.T("Control"), UiText.T("Switch to Picker to set each colour yourself."), UiText.T("Switch back to Auto to use the automatic theme."))
+            {
+                Lcars = UiText.T("LCARS"), LcarsHelp = UiText.T("LCARS panels, bars and controls"),
+                LcarsBar1 = UiText.T("LCARS bar 1"), LcarsBar2 = UiText.T("LCARS bar 2"), LcarsBar3 = UiText.T("LCARS bar 3"),
+                Glassmorphism = UiText.T("Glassmorphism"), Spatial = UiText.T("Spatial"), Cyberpunk = UiText.T("Cyberpunk"),
+                Reset = UiText.T("Reset"), ResetColors = UiText.T("Reset colours"),
+                Animation = UiText.T("Animation"), AnimationSpeed = UiText.T("Animation speed (0.1–10x; default 1x)"),
+                WaveColors = UiText.T("Wave colours"), GlassWave1 = UiText.T("Wave colour 1"),
+                GlassWave2 = UiText.T("Wave colour 2"), GlassWave3 = UiText.T("Wave colour 3"), ResetWaveColors = UiText.T("Reset wave colours"),
+            },
+            new MaterialColorSettings(), MaterialColorSettings.Rgb(TtslPresentation.ReferenceAccent),
+            plugin.Configuration.UiCompact ? 298 : 316);
         if (!changed) return false;
         plugin.Configuration.UiColors = colorDraft;
         plugin.Configuration.UiAccentRgb = MaterialColorSettings.ToRgb(accentDraft);

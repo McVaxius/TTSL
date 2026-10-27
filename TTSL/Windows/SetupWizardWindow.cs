@@ -11,6 +11,7 @@ namespace TTSL.Windows;
 public sealed class SetupWizardWindow : Window, IDisposable
 {
     private readonly MaterialWindowMotion windowMotion = new();
+    private bool materialBackdropStylePushed;
     private enum SetupMode
     {
         LocalHud,
@@ -87,21 +88,36 @@ public sealed class SetupWizardWindow : Window, IDisposable
     {
         var width = 560f * ImGui.GetIO().FontGlobalScale;
         ImGui.SetNextWindowSizeConstraints(new Vector2(width, 0), new Vector2(width, float.MaxValue));
+        if (TtslPresentation.HasMaterial)
+        {
+            ImGui.PushStyleColor(ImGuiCol.WindowBg, Vector4.Zero);
+            materialBackdropStylePushed = true;
+        }
         windowMotion.Prepare(this, reducedMotion: false, roundedCorners: true);
     }
 
     public override void PostDraw()
     {
         windowMotion.Restore(this);
+        ReleaseMaterialBackdropStyle();
         UiGui.ImageTitleWithStatus(this, "TTSL " + UiText.T("Setup Wizard"), plugin.OriginalIcon, status: plugin.TitlebarStatus);
+    }
+
+    private void ReleaseMaterialBackdropStyle()
+    {
+        if (!materialBackdropStylePushed) return;
+        ImGui.PopStyleColor();
+        materialBackdropStylePushed = false;
     }
 
     public override void Draw()
     {
+        ReleaseMaterialBackdropStyle();
+        MaterialSkin.Backdrop();
         windowMotion.DrawChrome();
         if (MaterialTheme.Current.IsLcars) MaterialLcars.Header(UiText.T("Setup Wizard"));
         UiGui.TitleWithButtons("TTSL Setup Wizard","TTSL "+UiText.T("Setup Wizard"), this);
-        if (MaterialTheme.Current.IsLcars) TtslPresentation.Panel(DrawSteps, 0); else DrawSteps();
+        if (MaterialTheme.Current.IsLcars || TtslPresentation.HasMaterial) TtslPresentation.Panel(DrawSteps, 0); else DrawSteps();
         if (MaterialTheme.Current.IsLcars) MaterialLcars.Footer(UiText.T("Setup Wizard"));
     }
 
@@ -139,7 +155,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
 
     private void DrawModeStep()
     {
-        UiGui.Text("Where should TTSL show your HUD?");
+        DrawHeading("Where should TTSL show your HUD?");
         UiGui.TextWrapped("Choose a starting mode. The wizard changes only the settings shown here; advanced web permissions, refresh intervals, radar sizing, icons, and labels stay as they are.");
         ImGui.Spacing();
 
@@ -170,7 +186,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
 
     private void DrawPanelsStep()
     {
-        UiGui.Text("Choose the local HUD details you want ready");
+        DrawHeading("Choose the local HUD details you want ready");
         UiGui.TextWrapped("These choices also control which sections are included when local HUD data is published.");
         ImGui.Spacing();
 
@@ -186,7 +202,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
     {
         var usesRemote = draft!.Mode != SetupMode.LocalHud;
 
-        UiGui.Text("Remote server and review");
+        DrawHeading("Remote server and review");
         UiGui.TextWrapped(usesRemote
             ? "Confirm the web server address and copy the existing launch command if you need to start the local server."
             : "Local HUD mode does not publish snapshots. The existing remote URL is preserved for later.");
@@ -210,7 +226,7 @@ public sealed class SetupWizardWindow : Window, IDisposable
         ImGui.EndDisabled();
 
         ImGui.Spacing();
-        UiGui.Text("Review");
+        DrawHeading("Review");
         UiGui.BulletText(UiText.F("Mode: {0}", UiText.T(GetModeName(draft.Mode))));
         UiGui.BulletText(UiText.F("Condition panel: {0}", UiText.T(OnOff(draft.ShowConditionPanel))));
         UiGui.BulletText(UiText.F("Repair summary: {0}", UiText.T(OnOff(draft.ShowRepairSummary))));
@@ -305,6 +321,14 @@ public sealed class SetupWizardWindow : Window, IDisposable
 
     private static void DrawCheckbox(string label, ref bool value)
         => UiGui.Checkbox(label, ref value);
+
+    private static void DrawHeading(string text)
+    {
+        if (!TtslPresentation.HasMaterial) { UiGui.Text(text); return; }
+        ImGui.PushTextWrapPos(0);
+        MaterialSkin.Heading(UiText.T(text));
+        ImGui.PopTextWrapPos();
+    }
 
     private static string OnOff(bool value)
         => value ? "On" : "Off";

@@ -12,6 +12,7 @@ internal static class TtslPresentation
     internal static readonly float[] FontSizes = [16, 16, 32, 22, 22, 18, 26];
     internal static readonly string[] FontFiles = ["segoeui.ttf", "seguisb.ttf", "segoeuib.ttf", "seguisb.ttf", "seguisb.ttf", "seguisb.ttf", "segoeuib.ttf"];
     internal static float AtlasHeight(UiFontRole role) => FontSizes[(int)role] * 4 / 3;
+    internal static bool HasMaterial => MaterialTheme.Current.IsGlassmorphism || MaterialTheme.Current.IsSpatial || MaterialTheme.Current.IsCyberpunk;
     internal static bool Compact => MaterialTheme.Current.Density == MaterialDensity.Compact;
     internal static float HeaderHeight => Compact ? 50 : 72;
     internal static float Gap => Compact ? 10 : 16;
@@ -78,7 +79,7 @@ internal static class TtslPresentation
         var innerWorkRect=previousWorkRect;innerWorkRect.Max.X=Math.Min(innerWorkRect.Max.X,innerRight);
         var innerContentRect=previousContentRect;innerContentRect.Max.X=Math.Min(innerContentRect.Max.X,innerRight);
         window.WorkRect=innerWorkRect;window.ContentRegionRect=innerContentRect;
-        ImGui.PushClipRect(new Vector2(start.X+16*s,window.ClipRect.Min.Y),new Vector2(innerRight,window.ClipRect.Max.Y),true);
+        ImGui.PushClipRect(new Vector2(start.X,window.ClipRect.Min.Y),new Vector2(innerRight,window.ClipRect.Max.Y),true);
         ImGui.BeginGroup();
         ImGuiP.PushOverrideID(ImGuiP.GetCurrentWindow().ID);
         try { draw(); }
@@ -94,7 +95,7 @@ internal static class TtslPresentation
 
     internal static void Surface(Vector2 min, Vector2 max)
     {
-        if (MaterialTheme.Current.IsLcars) { MaterialLcars.PanelFrame(min, max); return; }
+        if (MaterialTheme.Current.IsLcars || HasMaterial) { MaterialSkin.PanelFrame(min, max); return; }
         var c = MaterialTheme.Current.Colors;
         MaterialCanvas.Surface(min, max, c.SurfaceContainerHigh, c.Surface, 4 * MaterialTheme.Metrics.Scale);
         ImGui.GetWindowDrawList().AddRect(min, max, MaterialCanvas.Color(c.OutlineVariant), 4 * MaterialTheme.Metrics.Scale);

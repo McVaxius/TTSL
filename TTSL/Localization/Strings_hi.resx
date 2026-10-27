@@ -1432,4 +1432,20 @@
 <data name="Unmute UI sounds" xml:space="preserve"><value>UI ध्वनियाँ चालू करें</value></data>
 <data name="Preview UI sound" xml:space="preserve"><value>UI ध्वनि सुनें</value></data>
 <data name="Audio output is unavailable." xml:space="preserve"><value>ऑडियो आउटपुट उपलब्ध नहीं है।</value></data>
+  <data name="LCARS panels, bars and controls" xml:space="preserve"><value>LCARS पैनल, पट्टियाँ और नियंत्रण</value></data>
+  <data name="Glassmorphism" xml:space="preserve"><value>ग्लासमॉर्फ़िज़्म</value></data>
+  <data name="Spatial" xml:space="preserve"><value>स्थानिक</value></data>
+  <data name="Cyberpunk" xml:space="preserve"><value>साइबरपंक</value></data>
+  <data name="LCARS bar 1" xml:space="preserve"><value>LCARS पट्टी 1</value></data>
+  <data name="LCARS bar 2" xml:space="preserve"><value>LCARS पट्टी 2</value></data>
+  <data name="LCARS bar 3" xml:space="preserve"><value>LCARS पट्टी 3</value></data>
+  <data name="Reset" xml:space="preserve"><value>रीसेट</value></data>
+  <data name="Reset colours" xml:space="preserve"><value>रंग रीसेट करें</value></data>
+  <data name="Animation" xml:space="preserve"><value>एनिमेशन</value></data>
+  <data name="Animation speed (0.1–10x; default 1x)" xml:space="preserve"><value>एनिमेशन की गति (0.1–10x; डिफ़ॉल्ट 1x)</value></data>
+  <data name="Wave colours" xml:space="preserve"><value>तरंगों के रंग</value></data>
+  <data name="Wave colour 1" xml:space="preserve"><value>तरंग का रंग 1</value></data>
+  <data name="Wave colour 2" xml:space="preserve"><value>तरंग का रंग 2</value></data>
+  <data name="Wave colour 3" xml:space="preserve"><value>तरंग का रंग 3</value></data>
+  <data name="Reset wave colours" xml:space="preserve"><value>तरंगों के रंग रीसेट करें</value></data>
 </root>

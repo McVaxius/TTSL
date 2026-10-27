@@ -64,6 +64,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
 
     public override void Draw()
     {
+        BeginMaterialContent();
         WindowMotion.DrawChrome();
         var cfg = plugin.Configuration;
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";
@@ -113,7 +114,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
             using (UiText.Font(plugin.Configuration.UiCompact ? UiFontRole.CompactTitle : UiFontRole.Title)) MaterialLcars.Header(PluginInfo.DisplayName);
             UiGui.TextDisabled("TTSL " + version);
             if (UiGui.SmallButton("Ko-fi")) Process.Start(new ProcessStartInfo { FileName = PluginInfo.SupportUrl, UseShellExecute = true });
-            Flow("Discord"); if (UiGui.SmallButton("Discord")) Process.Start(new ProcessStartInfo { FileName = PluginInfo.DiscordUrl, UseShellExecute = true });
+            ImGui.SameLine(); if (UiGui.SmallButton("Discord")) Process.Start(new ProcessStartInfo { FileName = PluginInfo.DiscordUrl, UseShellExecute = true });
             if (ImGui.IsItemHovered()) UiGui.SetTooltip(PluginInfo.DiscordFeedbackNote);
             return;
         }
@@ -125,13 +126,13 @@ public sealed class MainWindow : PositionedWindow, IDisposable
         ImGui.SetCursorScreenPos(start+new Vector2(62,6)*scale);
         using(UiText.Font(plugin.Configuration.UiCompact?UiFontRole.CompactTitle:UiFontRole.Title)) MaterialText.Text(PluginInfo.DisplayName);
         ImGui.SameLine(); UiGui.TextDisabled("TTSL "+version);
-        var right=ImGui.GetWindowPos().X+ImGui.GetWindowSize().X-ImGui.GetStyle().WindowPadding.X;
-        var toolbarWidth = MaterialText.Measure(UiText.T("Ko-fi")).X
-            + MaterialText.Measure(UiText.T("Discord")).X + 4 * ImGui.GetStyle().FramePadding.X + ImGui.GetStyle().ItemSpacing.X;
+        var right=ImGui.GetCursorScreenPos().X+ImGui.GetContentRegionAvail().X;
+        var toolbarWidth = MathF.Ceiling(MaterialText.Measure(UiText.T("Ko-fi")).X
+            + MaterialText.Measure(UiText.T("Discord")).X + 4 * ImGui.GetStyle().FramePadding.X + ImGui.GetStyle().ItemSpacing.X) + scale;
         var single=right-ImGui.GetItemRectMax().X>toolbarWidth+ImGui.GetStyle().ItemSpacing.X;
         ImGui.SetCursorScreenPos(single?new Vector2(right-toolbarWidth,start.Y+12*scale):start+new Vector2(0,TtslPresentation.HeaderHeight)*scale);
         if(UiGui.SmallButton("Ko-fi")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.SupportUrl,UseShellExecute=true});
-        Flow("Discord"); if(UiGui.SmallButton("Discord")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.DiscordUrl,UseShellExecute=true});
+        ImGui.SameLine(); if(UiGui.SmallButton("Discord")) Process.Start(new ProcessStartInfo{FileName=PluginInfo.DiscordUrl,UseShellExecute=true});
         if(ImGui.IsItemHovered()) UiGui.SetTooltip(PluginInfo.DiscordFeedbackNote);
         ImGui.SetCursorScreenPos(start+new Vector2(0,(single?TtslPresentation.HeaderHeight:TtslPresentation.HeaderHeight+38))*scale);
         ImGui.Spacing();
@@ -219,6 +220,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     private static void Heading(string text)
     {
         if (MaterialTheme.Current.IsLcars) { using (UiText.Font(UiFontRole.PluginName)) MaterialLcars.PanelHeading(UiText.T(text)); return; }
+        if (TtslPresentation.HasMaterial) { using (UiText.Font(UiFontRole.PluginName)) MaterialSkin.Heading(UiText.T(text)); return; }
         var s=MaterialTheme.Metrics.Scale;var p=ImGui.GetCursorScreenPos();var ink=MaterialTheme.Current.Colors.OnSurface;
         var icon=text switch { "Snapshot" or "Party"=>MaterialIcon.Person, "Conditions"=>MaterialIcon.Document, "Equipment"=>MaterialIcon.Settings, _=>MaterialIcon.Link };
         if(text=="Party Radar")

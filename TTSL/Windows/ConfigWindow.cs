@@ -40,10 +40,11 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
 
     public override void Draw()
     {
+        BeginMaterialContent();
         WindowMotion.DrawChrome();
         if (MaterialTheme.Current.IsLcars) MaterialLcars.Header(PluginInfo.DisplayName + " · " + UiText.T("Settings"));
         UiGui.TitleWithButtons(PluginInfo.DisplayName+" Settings",PluginInfo.DisplayName+" "+UiText.T("Settings"), this);
-        if (MaterialTheme.Current.IsLcars) TtslPresentation.Panel(DrawSettings, 0); else DrawSettings();
+        if (MaterialTheme.Current.IsLcars || TtslPresentation.HasMaterial) TtslPresentation.Panel(DrawSettings, 0); else DrawSettings();
         FinalizePendingWindowPlacement();
         if (MaterialTheme.Current.IsLcars) MaterialLcars.Footer(UiText.T("Settings"));
     }

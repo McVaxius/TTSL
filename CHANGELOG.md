@@ -1,3 +1,10 @@
+2026-10-27 - 1.0.0.12 - Additional appearance styles
+
+- Add Glassmorphism, Spatial and Cyberpunk across the plugin, native server and both browser HUD producers. Preserve Auto, Picker and LCARS, existing actions, account ownership, permissions and original fonts.
+- Add independent style palettes, individual and palette resets, four LCARS colour roles, and Glass animation, speed and three editable wave colours. Keep wave choices through palette resets and expose the speaker shortcut only in LCARS.
+- Keep the complete Hindi glyph ink visible inside inset panels.
+- Build against the published shared UI library while retaining the existing plugin and native-server release artifacts.
+
 2026-10-23 - LCARS appearance
 
 - Add Auto / Picker / LCARS through the existing colour preferences. Render segmented rails, elbow headers, framed content and outlined native controls across plugin Main, Settings and Setup, both embedded browser HUD pages and the separate Win32 server manager. Retain native actions, permissions, modes, geometry, existing Picker values and account scopes.

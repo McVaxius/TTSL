@@ -1420,5 +1420,21 @@ Ikon saja: &apos;&lt;icon&gt;&apos;</value>
 <data name="Unmute UI sounds" xml:space="preserve"><value>Aktifkan suara antarmuka</value></data>
 <data name="Preview UI sound" xml:space="preserve"><value>Pratinjau suara antarmuka</value></data>
 <data name="Audio output is unavailable." xml:space="preserve"><value>Keluaran audio tidak tersedia.</value></data>
+  <data name="LCARS panels, bars and controls" xml:space="preserve"><value>Panel, bilah, dan kontrol LCARS</value></data>
+  <data name="Glassmorphism" xml:space="preserve"><value>Efek kaca</value></data>
+  <data name="Spatial" xml:space="preserve"><value>Spasial</value></data>
+  <data name="Cyberpunk" xml:space="preserve"><value>Cyberpunk</value></data>
+  <data name="LCARS bar 1" xml:space="preserve"><value>Bilah LCARS 1</value></data>
+  <data name="LCARS bar 2" xml:space="preserve"><value>Bilah LCARS 2</value></data>
+  <data name="LCARS bar 3" xml:space="preserve"><value>Bilah LCARS 3</value></data>
+  <data name="Reset" xml:space="preserve"><value>Atur ulang</value></data>
+  <data name="Reset colours" xml:space="preserve"><value>Atur ulang warna</value></data>
+  <data name="Animation" xml:space="preserve"><value>Animasi</value></data>
+  <data name="Animation speed (0.1–10x; default 1x)" xml:space="preserve"><value>Kecepatan animasi (0,1–10x; bawaan 1x)</value></data>
+  <data name="Wave colours" xml:space="preserve"><value>Warna gelombang</value></data>
+  <data name="Wave colour 1" xml:space="preserve"><value>Warna gelombang 1</value></data>
+  <data name="Wave colour 2" xml:space="preserve"><value>Warna gelombang 2</value></data>
+  <data name="Wave colour 3" xml:space="preserve"><value>Warna gelombang 3</value></data>
+  <data name="Reset wave colours" xml:space="preserve"><value>Atur ulang warna gelombang</value></data>
 </root>
 

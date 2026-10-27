@@ -1396,4 +1396,20 @@
 <data name="Unmute UI sounds" xml:space="preserve"><value>启用界面音效</value></data>
 <data name="Preview UI sound" xml:space="preserve"><value>试听界面音效</value></data>
 <data name="Audio output is unavailable." xml:space="preserve"><value>音频输出不可用。</value></data>
+  <data name="LCARS panels, bars and controls" xml:space="preserve"><value>LCARS 面板、栏和控件</value></data>
+  <data name="Glassmorphism" xml:space="preserve"><value>玻璃拟态</value></data>
+  <data name="Spatial" xml:space="preserve"><value>空间</value></data>
+  <data name="Cyberpunk" xml:space="preserve"><value>赛博朋克</value></data>
+  <data name="LCARS bar 1" xml:space="preserve"><value>LCARS 色条 1</value></data>
+  <data name="LCARS bar 2" xml:space="preserve"><value>LCARS 色条 2</value></data>
+  <data name="LCARS bar 3" xml:space="preserve"><value>LCARS 色条 3</value></data>
+  <data name="Reset" xml:space="preserve"><value>重置</value></data>
+  <data name="Reset colours" xml:space="preserve"><value>重置颜色</value></data>
+  <data name="Animation" xml:space="preserve"><value>动画</value></data>
+  <data name="Animation speed (0.1–10x; default 1x)" xml:space="preserve"><value>动画速度（0.1–10x；默认 1x）</value></data>
+  <data name="Wave colours" xml:space="preserve"><value>波纹颜色</value></data>
+  <data name="Wave colour 1" xml:space="preserve"><value>波纹颜色 1</value></data>
+  <data name="Wave colour 2" xml:space="preserve"><value>波纹颜色 2</value></data>
+  <data name="Wave colour 3" xml:space="preserve"><value>波纹颜色 3</value></data>
+  <data name="Reset wave colours" xml:space="preserve"><value>重置波纹颜色</value></data>
 </root>

@@ -1396,4 +1396,20 @@
 <data name="Unmute UI sounds" xml:space="preserve"><value>UIサウンドを有効化</value></data>
 <data name="Preview UI sound" xml:space="preserve"><value>UIサウンドを試聴</value></data>
 <data name="Audio output is unavailable." xml:space="preserve"><value>音声出力を利用できません。</value></data>
+  <data name="LCARS panels, bars and controls" xml:space="preserve"><value>LCARSのパネル、バー、コントロール</value></data>
+  <data name="Glassmorphism" xml:space="preserve"><value>グラスモーフィズム</value></data>
+  <data name="Spatial" xml:space="preserve"><value>空間</value></data>
+  <data name="Cyberpunk" xml:space="preserve"><value>サイバーパンク</value></data>
+  <data name="LCARS bar 1" xml:space="preserve"><value>LCARS バー 1</value></data>
+  <data name="LCARS bar 2" xml:space="preserve"><value>LCARS バー 2</value></data>
+  <data name="LCARS bar 3" xml:space="preserve"><value>LCARS バー 3</value></data>
+  <data name="Reset" xml:space="preserve"><value>リセット</value></data>
+  <data name="Reset colours" xml:space="preserve"><value>色をリセット</value></data>
+  <data name="Animation" xml:space="preserve"><value>アニメーション</value></data>
+  <data name="Animation speed (0.1–10x; default 1x)" xml:space="preserve"><value>アニメーション速度 (0.1–10x、既定値 1x)</value></data>
+  <data name="Wave colours" xml:space="preserve"><value>波の色</value></data>
+  <data name="Wave colour 1" xml:space="preserve"><value>波の色 1</value></data>
+  <data name="Wave colour 2" xml:space="preserve"><value>波の色 2</value></data>
+  <data name="Wave colour 3" xml:space="preserve"><value>波の色 3</value></data>
+  <data name="Reset wave colours" xml:space="preserve"><value>波の色をリセット</value></data>
 </root>

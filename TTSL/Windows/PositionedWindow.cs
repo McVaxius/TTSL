@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using AethertekUI;
 using AethertekUI.Dalamud;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
@@ -10,6 +11,7 @@ namespace TTSL.Windows;
 public abstract class PositionedWindow : Window
 {
     protected readonly MaterialWindowMotion WindowMotion = new();
+    private bool materialBackdropStylePushed;
     private Vector2? pendingWindowPosition;
     private bool pendingPositionConditionReset;
 
@@ -33,10 +35,32 @@ public abstract class PositionedWindow : Window
             pendingWindowPosition = null;
             pendingPositionConditionReset = true;
         }
+        if (Ui.TtslPresentation.HasMaterial)
+        {
+            ImGui.PushStyleColor(ImGuiCol.WindowBg, Vector4.Zero);
+            materialBackdropStylePushed = true;
+        }
         WindowMotion.Prepare(this, reducedMotion: false, roundedCorners: true);
     }
 
-    public override void PostDraw() => WindowMotion.Restore(this);
+    public override void PostDraw()
+    {
+        WindowMotion.Restore(this);
+        ReleaseMaterialBackdropStyle();
+    }
+
+    protected void BeginMaterialContent()
+    {
+        ReleaseMaterialBackdropStyle();
+        MaterialSkin.Backdrop();
+    }
+
+    private void ReleaseMaterialBackdropStyle()
+    {
+        if (!materialBackdropStylePushed) return;
+        ImGui.PopStyleColor();
+        materialBackdropStylePushed = false;
+    }
 
     protected void FinalizePendingWindowPlacement()
     {

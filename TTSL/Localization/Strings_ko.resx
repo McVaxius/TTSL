@@ -1396,4 +1396,20 @@
 <data name="Unmute UI sounds" xml:space="preserve"><value>UI 소리 켜기</value></data>
 <data name="Preview UI sound" xml:space="preserve"><value>UI 소리 미리 듣기</value></data>
 <data name="Audio output is unavailable." xml:space="preserve"><value>오디오 출력을 사용할 수 없습니다.</value></data>
+  <data name="LCARS panels, bars and controls" xml:space="preserve"><value>LCARS 패널, 막대 및 컨트롤</value></data>
+  <data name="Glassmorphism" xml:space="preserve"><value>글래스모피즘</value></data>
+  <data name="Spatial" xml:space="preserve"><value>공간</value></data>
+  <data name="Cyberpunk" xml:space="preserve"><value>사이버펑크</value></data>
+  <data name="LCARS bar 1" xml:space="preserve"><value>LCARS 막대 1</value></data>
+  <data name="LCARS bar 2" xml:space="preserve"><value>LCARS 막대 2</value></data>
+  <data name="LCARS bar 3" xml:space="preserve"><value>LCARS 막대 3</value></data>
+  <data name="Reset" xml:space="preserve"><value>재설정</value></data>
+  <data name="Reset colours" xml:space="preserve"><value>색상 초기화</value></data>
+  <data name="Animation" xml:space="preserve"><value>애니메이션</value></data>
+  <data name="Animation speed (0.1–10x; default 1x)" xml:space="preserve"><value>애니메이션 속도 (0.1–10x; 기본값 1x)</value></data>
+  <data name="Wave colours" xml:space="preserve"><value>물결 색상</value></data>
+  <data name="Wave colour 1" xml:space="preserve"><value>물결 색상 1</value></data>
+  <data name="Wave colour 2" xml:space="preserve"><value>물결 색상 2</value></data>
+  <data name="Wave colour 3" xml:space="preserve"><value>물결 색상 3</value></data>
+  <data name="Reset wave colours" xml:space="preserve"><value>물결 색상 초기화</value></data>
 </root>

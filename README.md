@@ -36,15 +36,17 @@ This repo is still under active development.
 
 ## Appearance
 
-Colour offers **Auto / Picker / LCARS** in that order. LCARS adds segmented rails, elbow headers, framed panels and outlined controls across Main, Settings and Guided Setup while retaining saved Picker colours. The separate native server and both browser HUD producers use their existing Win32 and HTML hosts and save appearance through their own existing preferences.
+Colour offers **Auto / Picker / LCARS / Glassmorphism / Spatial / Cyberpunk**. Glassmorphism uses frosted panes and flowing coloured ribbons; Spatial uses raised and inset surfaces; Cyberpunk uses angular plates and accent tabs. Picker and each new style save independent Background, Controls and Text colours. LCARS saves its Background and three bar colours independently. Individual and palette resets restore the selected style defaults. The plugin, native server and both browser HUD producers keep their existing appearance storage and controls.
 
-**Mute UI sounds** defaults on. Settings and the speaker shortcut share that saved preference within each host; unmuting enables short generated LCARS control tones, and **Preview UI sound** plays one sample. Muting or leaving LCARS stops only the host's owned UI sound. These tones are independent of speech and require no sound pack. Browser playback depends on available browser audio support.
+Glassmorphism animation defaults on, with a speed of 1x adjustable from 0.1 to 10x. Its three wave colours remain editable with animation off. Reset colours preserves wave choices; Reset wave colours restores only the waves.
+
+**Mute UI sounds** defaults on. Settings and the LCARS speaker shortcut share that saved preference within each host; unmuting enables short generated LCARS control tones, and **Preview UI sound** plays one sample. Muting or leaving LCARS stops only the host's owned UI sound. These tones are independent of speech and require no sound pack. Browser playback depends on available browser audio support.
 
 **Transparency** applies to the complete plugin window, including its titlebar and popups. Settings provides normal opacity, automatic focus fade, faded opacity and delay; defaults are 100%, fading to 50% after 10 seconds without focus and restoring on focus. Compact and language controls can be hidden independently on Main while remaining available in Settings.
 
 Main's titlebar opens Settings or Guided Setup and toggles the local HUD overlay. The packaged icon appears in Main branding and its titlebar, including when collapsed. The setup wizard keeps its local/web HUD choices and permissions; enabling the local HUD does not grant remote control.
 
-The main HUD now uses the approved two-column snapshot/remote/conditions/equipment and party/radar composition. Narrow windows stack the same groups and retain native scrolling. The header includes a compact `C` checkbox, colour picker, and language selector; Settings mirrors those preferences. Segoe UI content fonts use Dalamud's managed atlas with host CJK and symbol coverage. The plugin waits for required fonts instead of accepting a temporary host font as the finished design.
+The main HUD now uses the approved two-column snapshot/remote/conditions/equipment and party/radar composition. Narrow windows stack the same groups and retain native scrolling. The native titlebar shortcuts and Settings expose the saved compact, colour and language preferences. Segoe UI content fonts use Dalamud's managed atlas with host CJK and symbol coverage. The plugin waits for required fonts instead of accepting a temporary host font as the finished design.
 
 Hindi is enabled only when the local font check passes. Otherwise the selector shows disabled **Hindi (unavailable)** while other languages remain usable. A saved Hindi choice that fails its required-font check shows an English status and **Use English**; that button explicitly saves English. Font failures never change the saved language automatically.
 
