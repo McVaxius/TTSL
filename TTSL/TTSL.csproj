@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWindowsForms>true</UseWindowsForms>
-    <Version>1.0.0.12</Version>
-    <FileVersion>1.0.0.12</FileVersion>
-    <AssemblyVersion>1.0.0.12</AssemblyVersion>
+    <Version>1.0.0.13</Version>
+    <FileVersion>1.0.0.13</FileVersion>
+    <AssemblyVersion>1.0.0.13</AssemblyVersion>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <IsPackable>false</IsPackable>
     <RootNamespace>TTSL</RootNamespace>
@@ -44,5 +44,12 @@
     <None Include="TTSL.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="images\icon.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="images\icon.png" Link="icon.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="TerraFX.Interop.Windows">
+      <HintPath>$(DalamudLibPath)/TerraFX.Interop.Windows.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <None Update="Notices\Glasswork.MIT.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

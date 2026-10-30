@@ -35,7 +35,7 @@ jobs:
         with:
           repository: McVaxius/aethertekUI
           # Publish compatible library APIs before consumer changes.
-          ref: a8f8dff351f9051fbd6e0094e58a9a576cb59351
+          ref: c3d41179747c1b8f8aa0ca71d47902bd7307286f
           path: aethertekUI
           # Repository-specific read-only SSH deploy key; no expiration.
           ssh-key: ${{ secrets.AETHERTEKUI_DEPLOY_KEY }}

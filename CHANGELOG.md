@@ -1,3 +1,9 @@
+2026-10-29 - 1.0.0.13 - Shared glass backgrounds and window controls
+
+- Add actual glass backgrounds, Waves/Lights/Image choices, image browsing and runtime screenshot pause in Colour and Transparency. Preserve palettes, languages, opacity/fade, HUD behavior and window placement actions.
+- Add native/styled UI and movement/resize locks in Settings and native titles, plus /ttsl style, style on, style off, lock and unlock.
+- Include renderer dependencies and the Glasswork MIT notice. Host GPU and screenshot acceptance remain separate from local compilation.
+
 2026-10-27 - 1.0.0.12 - Additional appearance styles
 
 - Add Glassmorphism, Spatial and Cyberpunk across the plugin, native server and both browser HUD producers. Preserve Auto, Picker and LCARS, existing actions, account ownership, permissions and original fonts.

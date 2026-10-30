@@ -1436,5 +1436,37 @@ Somente ícone: &apos;&lt;icon&gt;&apos;</value>
   <data name="Wave colour 2" xml:space="preserve"><value>Cor da onda 2</value></data>
   <data name="Wave colour 3" xml:space="preserve"><value>Cor da onda 3</value></data>
   <data name="Reset wave colours" xml:space="preserve"><value>Redefinir cores das ondas</value></data>
+  <data name="UI styling" xml:space="preserve"><value>Estilo da interface</value></data>
+  <data name="Lock window movement and resizing" xml:space="preserve"><value>Bloquear o movimento e o redimensionamento das janelas</value></data>
+  <data name="Use native UI" xml:space="preserve"><value>Usar a interface nativa</value></data>
+  <data name="Use styled UI" xml:space="preserve"><value>Usar a interface estilizada</value></data>
+  <data name="Lock windows" xml:space="preserve"><value>Bloquear janelas</value></data>
+  <data name="Unlock windows" xml:space="preserve"><value>Desbloquear janelas</value></data>
+  <data name="Background mode" xml:space="preserve"><value>Modo de fundo</value></data>
+  <data name="Waves" xml:space="preserve"><value>Ondas</value></data>
+  <data name="Lights" xml:space="preserve"><value>Luzes</value></data>
+  <data name="Image" xml:space="preserve"><value>Imagem</value></data>
+  <data name="Light effect" xml:space="preserve"><value>Efeito de luz</value></data>
+  <data name="Ambient glows" xml:space="preserve"><value>Brilhos ambientes</value></data>
+  <data name="Sweeping beams" xml:space="preserve"><value>Feixes de luz móveis</value></data>
+  <data name="Mouse-following glow" xml:space="preserve"><value>Brilho que segue o mouse</value></data>
+  <data name="Image file" xml:space="preserve"><value>Arquivo de imagem</value></data>
+  <data name="Browse..." xml:space="preserve"><value>Procurar...</value></data>
+  <data name="Choose background image" xml:space="preserve"><value>Escolher imagem de fundo</value></data>
+  <data name="Images" xml:space="preserve"><value>Imagens</value></data>
+  <data name="Load image" xml:space="preserve"><value>Carregar imagem</value></data>
+  <data name="The image fills the window. Blur (%) applies to the image." xml:space="preserve"><value>A imagem preenche a janela. Desfoque (%) se aplica à imagem.</value></data>
+  <data name="Choose an image file." xml:space="preserve"><value>Escolha um arquivo de imagem.</value></data>
+  <data name="Loading image..." xml:space="preserve"><value>Carregando imagem...</value></data>
+  <data name="Image could not be loaded." xml:space="preserve"><value>Não foi possível carregar a imagem.</value></data>
+  <data name="Image backgrounds remain visible to screenshots." xml:space="preserve"><value>Fundos de imagem continuam visíveis nas capturas de tela.</value></data>
+  <data name="Light colours" xml:space="preserve"><value>Cores das luzes</value></data>
+  <data name="Reset light colours" xml:space="preserve"><value>Redefinir cores das luzes</value></data>
+  <data name="Light colour 1" xml:space="preserve"><value>Cor da luz 1</value></data>
+  <data name="Light colour 2" xml:space="preserve"><value>Cor da luz 2</value></data>
+  <data name="Light colour 3" xml:space="preserve"><value>Cor da luz 3</value></data>
+  <data name="Background blur" xml:space="preserve"><value>Desfoque do fundo</value></data>
+  <data name="Blur (%)" xml:space="preserve"><value>Desfoque (%)</value></data>
+  <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Pausar o fundo para capturas de tela</value></data>
 </root>
 

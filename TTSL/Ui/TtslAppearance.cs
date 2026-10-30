@@ -5,6 +5,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface;
+using Dalamud.Interface.ImGuiFileDialog;
 
 namespace TTSL.Ui;
 
@@ -31,6 +32,11 @@ internal sealed class TtslAppearance : IDisposable
     private int checkedGeneration = -1;
     private int checkedHindiGeneration = -1;
     private bool fontIssueLogged;
+
+    private readonly FileDialogManager imagePicker = new();
+    private MaterialGlassRenderer? backgroundGlass;
+    internal bool BackgroundEnabled => plugin.Configuration.UiStylingEnabled &&
+        (colorDraft.HasBackgroundBlur(colorDraft.Mode) || colorDraft.Mode == MaterialColorMode.Glassmorphism && colorDraft.GlassBackground == MaterialGlassBackground.Image);
 
     private void Apply()
     {
@@ -63,15 +69,35 @@ internal sealed class TtslAppearance : IDisposable
             accentDraft = new(rgb.X, rgb.Y, rgb.Z);
         }
         theme.Density = plugin.Configuration.UiCompact ? MaterialDensity.Compact : MaterialDensity.Standard;
-        var active = theme.IsLcars && !plugin.Configuration.UiSoundsMuted;
+        var active = LcarsActive && !plugin.Configuration.UiSoundsMuted;
         if (soundsActive && !active) sounds.Stop();
         soundsActive = active;
     }
 
     internal void Draw(WindowSystem windows)
     {
+        try { DrawCore(windows); }
+        catch { backgroundGlass?.EndFrame(false); throw; }
+    }
+
+    private void DrawCore(WindowSystem windows)
+    {
         Apply();
-        if (!windows.Windows.Any(window => window.IsOpen)) return;
+        if (!windows.Windows.Any(window => window.IsOpen))
+        {
+            backgroundGlass?.EndFrame(false);
+            if (fonts.Ready && checkedGeneration == fonts.Generation)
+            {
+                using var pickerText = text.Enter();
+                using var pickerShaping = shapedText.Push();
+                using var pickerTheme = MaterialTheme.Push(theme, ImGuiHelpers.GlobalScale,
+                    plugin.Configuration.UiStylingEnabled ? MaterialStyleMode.ColorsOnly : MaterialStyleMode.Native);
+                using var pickerBody = fonts.Push(UiFontRole.Body);
+                using var pickerBackground = MaterialSkin.PushBackgroundRenderer(null, false, 0);
+                imagePicker.Draw();
+            }
+            return;
+        }
         using var resources = text.Enter();
         using var shaping = shapedText.Push();
         if (fonts.Ready && checkedHindiGeneration != fonts.Generation)
@@ -98,21 +124,25 @@ internal sealed class TtslAppearance : IDisposable
                 if (!fontIssueLogged) { Plugin.Log.Error(ex, "[TTSL] Required UI glyph coverage failed."); fontIssueLogged = true; }
             }
         }
-        using var palette = MaterialTheme.Push(theme, ImGuiHelpers.GlobalScale, MaterialStyleMode.ColorsOnly);
-        using var chrome = MaterialWindowChrome.Push();
+        using var palette = MaterialTheme.Push(theme, ImGuiHelpers.GlobalScale,
+            plugin.Configuration.UiStylingEnabled ? MaterialStyleMode.ColorsOnly : MaterialStyleMode.Native);
+        using var chrome = plugin.Configuration.UiStylingEnabled ? MaterialWindowChrome.Push() : default;
         if (!fonts.Ready || checkedGeneration != fonts.Generation)
         {
+            backgroundGlass?.EndFrame(false);
             if (!fontIssueLogged && fonts.LoadException is { } error) { Plugin.Log.Error(error, "[TTSL] Required UI fonts failed to load."); fontIssueLogged = true; }
             ImGui.SetNextWindowSize(new Vector2(460 * ImGuiHelpers.GlobalScale, 0));
-            fontStatusMotion.PreDraw("Thick Thighs Save Lives##FontStatus", null, null, reducedMotion: false, prepareDecorations: fontStatusDecorations.Prepare);
+            fontStatusMotion.PreDraw("Thick Thighs Save Lives##FontStatus", null, null, reducedMotion: !plugin.Configuration.UiStylingEnabled,
+                prepareDecorations: plugin.Configuration.UiStylingEnabled ? fontStatusDecorations.Prepare : null);
             bool statusVisible;
             using (MaterialSkin.BackdropStyle())
-                statusVisible = ImGui.Begin("Thick Thighs Save Lives##FontStatus", ImGuiWindowFlags.AlwaysAutoResize);
+                statusVisible = ImGui.Begin("Thick Thighs Save Lives##FontStatus", ImGuiWindowFlags.AlwaysAutoResize |
+                    (plugin.Configuration.UiWindowsLocked ? ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize : ImGuiWindowFlags.None));
             if (statusVisible)
             {
                 MaterialSkin.Backdrop();
-                fontStatusDecorations.Paint();
-                if (theme.IsLcars) MaterialLcars.Header("TTSL");
+                if (plugin.Configuration.UiStylingEnabled) fontStatusDecorations.Paint();
+                if (LcarsActive) MaterialLcars.Header("TTSL");
                 var loading = fonts.LoadException is null && !fontIssueLogged;
                 if (appliedLanguage == "hi")
                 {
@@ -120,33 +150,64 @@ internal sealed class TtslAppearance : IDisposable
                     if (!loading && ImGui.Button("Use English")) { plugin.Configuration.UiLanguage = "en"; plugin.Configuration.Save(); }
                 }
                 else MaterialText.TextWrapped(UiText.T(loading ? "Loading UI fonts..." : "UI fonts failed to load. See the plugin log."));
-                if (theme.IsLcars) MaterialLcars.Footer("TTSL");
+                if (LcarsActive) MaterialLcars.Footer("TTSL");
             }
             ImGui.End();
-            fontStatusDecorations.Paint();
+            if (plugin.Configuration.UiStylingEnabled) fontStatusDecorations.Paint();
             fontStatusMotion.PostDraw();
             ApplyWindowOpacity(fontStatusOpacity, "Thick Thighs Save Lives##FontStatus");
             return;
         }
-        using var style = new MaterialStyleScope();
-        var s = ImGuiHelpers.GlobalScale;
-        style.Style(ImGuiStyleVar.WindowPadding, new Vector2(plugin.Configuration.UiCompact ? 12 : 20) * s);
-        style.Style(ImGuiStyleVar.ItemSpacing, new Vector2(plugin.Configuration.UiCompact ? 8 : 12, plugin.Configuration.UiCompact ? 5 : 10) * s);
-        style.Style(ImGuiStyleVar.FramePadding, new Vector2(plugin.Configuration.UiCompact ? 10 : 14, plugin.Configuration.UiCompact ? 4 : 7) * s);
-        style.Style(ImGuiStyleVar.CellPadding, new Vector2(plugin.Configuration.UiCompact ? 6 : 10, plugin.Configuration.UiCompact ? 4 : 8) * s);
-        style.Style(ImGuiStyleVar.FrameRounding, 4 * s);
-        style.Style(ImGuiStyleVar.ChildRounding, 4 * s);
-        using var body = fonts.Push(UiFontRole.Body);
-        PrepareAppearanceTitleBars(windows);
-        foreach (var actions in appearanceTitleBars.Values) { actions.SetLcarsIcons(theme.IsLcars); actions.RefreshVisibility(); }
-        windows.Draw();
-        foreach (var window in windows.Windows)
+        var blur = plugin.Configuration.UiStylingEnabled && colorDraft.HasBackgroundBlur(colorDraft.Mode);
+        var image = plugin.Configuration.UiStylingEnabled && colorDraft.Mode == MaterialColorMode.Glassmorphism &&
+            colorDraft.GlassBackground == MaterialGlassBackground.Image;
+        if (blur || image) backgroundGlass ??= new(Plugin.PluginInterface, Plugin.Log);
+        backgroundGlass?.ConfigureImage(Plugin.TextureProvider, image, plugin.Configuration.UiColors?.GlassImagePath);
+        backgroundGlass?.BeginFrame();
+        var restoreBackground = blur || image
+            ? windows.Windows.Where(window => (window.Flags & ImGuiWindowFlags.NoBackground) == 0).ToArray()
+            : Array.Empty<Window>();
+        var completed = false;
+        using (MaterialSkin.PushBackgroundRenderer(blur || image ? backgroundGlass : null, blur, colorDraft.BackgroundBlurPercent / 100f))
         {
-            if (window is Window owner && appearanceTitleBars.TryGetValue(owner, out var actions)) actions.DrawPopups();
-            if (!windowOpacities.TryGetValue(window, out var opacity))
-                windowOpacities.Add(window, opacity = new());
-            ApplyWindowOpacity(opacity, window.WindowName);
+            try
+            {
+                using var style = new MaterialStyleScope();
+                var s = ImGuiHelpers.GlobalScale;
+                if (plugin.Configuration.UiStylingEnabled)
+                {
+                    style.Style(ImGuiStyleVar.WindowPadding, new Vector2(plugin.Configuration.UiCompact ? 12 : 20) * s);
+                    style.Style(ImGuiStyleVar.ItemSpacing, new Vector2(plugin.Configuration.UiCompact ? 8 : 12, plugin.Configuration.UiCompact ? 5 : 10) * s);
+                    style.Style(ImGuiStyleVar.FramePadding, new Vector2(plugin.Configuration.UiCompact ? 10 : 14, plugin.Configuration.UiCompact ? 4 : 7) * s);
+                    style.Style(ImGuiStyleVar.CellPadding, new Vector2(plugin.Configuration.UiCompact ? 6 : 10, plugin.Configuration.UiCompact ? 4 : 8) * s);
+                    style.Style(ImGuiStyleVar.FrameRounding, 4 * s);
+                    style.Style(ImGuiStyleVar.ChildRounding, 4 * s);
+                }
+                using var body = fonts.Push(UiFontRole.Body);
+                PrepareAppearanceTitleBars(windows);
+                foreach (var window in windows.Windows) window.AllowBackgroundBlur = false;
+                foreach (var window in restoreBackground) window.Flags |= ImGuiWindowFlags.NoBackground;
+                windows.Draw();
+                foreach (var (window, titlebar) in appearanceTitleBars)
+                {
+                    PrepareBackgroundOpacity(window);
+                    titlebar.DrawPopups();
+                }
+                foreach (var window in windows.Windows)
+                {
+                    if (!windowOpacities.TryGetValue(window, out var opacity))
+                        windowOpacities.Add(window, opacity = new());
+                    ApplyWindowOpacity(opacity, window.WindowName);
+                }
+                completed = true;
+            }
+            finally
+            {
+                foreach (var window in restoreBackground) window.Flags &= ~ImGuiWindowFlags.NoBackground;
+                backgroundGlass?.EndFrame((blur || image) && completed);
+            }
         }
+        using (fonts.Push(UiFontRole.Body)) imagePicker.Draw();
     }
 
     private readonly System.Collections.Generic.Dictionary<Window, MaterialAppearanceTitleBar> appearanceTitleBars = new();
@@ -158,7 +219,8 @@ internal sealed class TtslAppearance : IDisposable
         {
             if ((owner.Flags & ImGuiWindowFlags.NoTitleBar) != 0) continue;
             if (!appearanceTitleBars.ContainsKey(owner))
-                appearanceTitleBars.Add(owner, MaterialAppearanceTitleBar.Register(owner,
+            {
+                var actions = MaterialAppearanceTitleBar.Register(owner,
                 () => new(UiText.T("Language"), UiText.T("Compact mode"), UiText.T("Transparency"), UiText.T("Color")),
                 DrawLanguageSelector,
                 () => { plugin.Configuration.UiCompact = !plugin.Configuration.UiCompact; plugin.Configuration.Save(); },
@@ -168,21 +230,29 @@ internal sealed class TtslAppearance : IDisposable
                 () => owner is TTSL.Windows.MainWindow
                     ? new(plugin.Configuration.UiLanguageVisibleOnMainWindow, plugin.Configuration.UiCompactVisibleOnMainWindow,
                         plugin.Configuration.UiTransparencyVisibleOnMainWindow, true)
-                    : new(true, true, true, true)));
+                    : new(true, true, true, true));
+                actions.RegisterWindowControls(() => SetStyling(!plugin.Configuration.UiStylingEnabled),
+                    () => UiText.T(plugin.Configuration.UiStylingEnabled ? "Use native UI" : "Use styled UI"),
+                    () => { plugin.Configuration.UiWindowsLocked = !plugin.Configuration.UiWindowsLocked; plugin.Configuration.Save(); },
+                    () => UiText.T(plugin.Configuration.UiWindowsLocked ? "Unlock windows" : "Lock windows"));
+                appearanceTitleBars.Add(owner, actions);
+            }
+            appearanceTitleBars[owner].SetLcarsIcons(LcarsActive);
+            appearanceTitleBars[owner].RefreshVisibility();
             if (!soundButtons.TryGetValue(owner, out var speaker))
             {
                 speaker = new TitleBarButton
                 {
                     Priority = owner.TitleBarButtons.Min(button => button.Priority) - 1,
                     IconOffset = new(2, 1),
-                    Click = button => { if (button == ImGuiMouseButton.Left && theme.IsLcars) SetSoundsMuted(!plugin.Configuration.UiSoundsMuted); },
+                    Click = button => { if (button == ImGuiMouseButton.Left && LcarsActive) SetSoundsMuted(!plugin.Configuration.UiSoundsMuted); },
                     ShowTooltip = () => MaterialText.SetTooltip(UiText.T(plugin.Configuration.UiSoundsMuted ? "Unmute UI sounds" : "Mute UI sounds")),
                 };
                 soundButtons.Add(owner, speaker);
             }
             speaker.Icon = plugin.Configuration.UiSoundsMuted ? FontAwesomeIcon.VolumeMute : FontAwesomeIcon.VolumeUp;
-            if (theme.IsLcars && !owner.TitleBarButtons.Contains(speaker)) owner.TitleBarButtons.Add(speaker);
-            else if (!theme.IsLcars) owner.TitleBarButtons.Remove(speaker);
+            if (LcarsActive && !owner.TitleBarButtons.Contains(speaker)) owner.TitleBarButtons.Add(speaker);
+            else if (!LcarsActive) owner.TitleBarButtons.Remove(speaker);
         }
     }
 
@@ -199,9 +269,18 @@ internal sealed class TtslAppearance : IDisposable
                 Animation = UiText.T("Animation"), AnimationSpeed = UiText.T("Animation speed (0.1–10x; default 1x)"),
                 WaveColors = UiText.T("Wave colours"), GlassWave1 = UiText.T("Wave colour 1"),
                 GlassWave2 = UiText.T("Wave colour 2"), GlassWave3 = UiText.T("Wave colour 3"), ResetWaveColors = UiText.T("Reset wave colours"),
+                        BackgroundMode = UiText.T("Background mode"), Waves = UiText.T("Waves"), Lights = UiText.T("Lights"), Image = UiText.T("Image"),
+                        LightEffect = UiText.T("Light effect"), AmbientGlows = UiText.T("Ambient glows"), SweepingBeams = UiText.T("Sweeping beams"),
+                        PointerGlow = UiText.T("Mouse-following glow"), ImageFile = UiText.T("Image file"), BrowseImage = UiText.T("Browse..."),
+                        LoadImage = UiText.T("Load image"), ImageHelp = UiText.T("The image fills the window. Blur (%) applies to the image."),
+                        LightColors = UiText.T("Light colours"), GlassLight1 = UiText.T("Light colour 1"), GlassLight2 = UiText.T("Light colour 2"),
+                        GlassLight3 = UiText.T("Light colour 3"), ResetLightColors = UiText.T("Reset light colours"),
+                        BackgroundBlur = UiText.T("Background blur"), BlurPercent = UiText.T("Blur (%)"),
             },
             new MaterialColorSettings(), MaterialColorSettings.Rgb(TtslPresentation.ReferenceAccent),
-            plugin.Configuration.UiCompact ? 298 : 316);
+            BrowseImage, plugin.Configuration.UiCompact ? 298 : 316);
+        DrawScreenshotPause("colour");
+        if (backgroundGlass?.ImageProblem is { } problem) UiGui.TextWrapped(problem);
         if (!changed) return false;
         plugin.Configuration.UiColors = colorDraft;
         plugin.Configuration.UiAccentRgb = MaterialColorSettings.ToRgb(accentDraft);
@@ -235,6 +314,7 @@ internal sealed class TtslAppearance : IDisposable
         theme = TtslPresentation.Theme(appliedAccent);
         var rgb = TtslPresentation.Rgb(appliedAccent);
         accentDraft = new(rgb.X, rgb.Y, rgb.Z);
+        Plugin.PluginInterface.UiBuilder.ResizeBuffers += ReleaseBackgroundResources;
     }
     private IDisposable PushFont(UiFontRole role) => fonts.Push(role);
     internal string Label(string key) => text.Label(key);
@@ -242,11 +322,43 @@ internal sealed class TtslAppearance : IDisposable
     internal string NativeLabel(string key) => text.Language == "hi" ? key : text.Label(key);
     internal string Format(string key, params object?[] arguments) => text.Format(key, arguments);
 
-    public void Dispose() { sounds.Dispose(); fonts?.Dispose(); text?.Dispose(); shapedText.Dispose(); }
+    public void Dispose()
+    {
+        Plugin.PluginInterface.UiBuilder.ResizeBuffers -= ReleaseBackgroundResources;
+        imagePicker.Reset();
+        backgroundGlass?.Dispose();
+        sounds.Dispose(); fonts?.Dispose(); text?.Dispose(); shapedText.Dispose();
+    }
+
+    private void ReleaseBackgroundResources() => backgroundGlass?.ReleaseResources();
+
+    private bool LcarsActive => plugin.Configuration.UiStylingEnabled && theme.IsLcars;
+
+    internal bool TryApplyCommand(string arguments)
+    {
+        switch (arguments.Trim().ToLowerInvariant())
+        {
+            case "lock": plugin.Configuration.UiWindowsLocked = true; break;
+            case "unlock": plugin.Configuration.UiWindowsLocked = false; break;
+            case "ui": case "style": case "styling": SetStyling(!plugin.Configuration.UiStylingEnabled); return true;
+            case "ui on": case "style on": case "styling on": SetStyling(true); return true;
+            case "ui off": case "style off": case "styling off": SetStyling(false); return true;
+            default: return false;
+        }
+        plugin.Configuration.Save();
+        return true;
+    }
+
+    private void SetStyling(bool enabled)
+    {
+        plugin.Configuration.UiStylingEnabled = enabled;
+        if (!enabled) sounds.Stop();
+        plugin.Configuration.Save();
+    }
 
     private void PlaySound(MaterialUiSoundCue cue)
     {
-        if (theme.IsLcars && !plugin.Configuration.UiSoundsMuted) sounds.TryPlay(cue);
+        if (LcarsActive && !plugin.Configuration.UiSoundsMuted) sounds.TryPlay(cue);
     }
 
     private void SetSoundsMuted(bool muted)
@@ -255,6 +367,15 @@ internal sealed class TtslAppearance : IDisposable
         if (muted) sounds.Stop();
         foreach (var speaker in soundButtons.Values) speaker.Icon = muted ? FontAwesomeIcon.VolumeMute : FontAwesomeIcon.VolumeUp;
         plugin.Configuration.Save();
+    }
+
+    internal void PrepareBackgroundOpacity(Window window, bool appearing = false)
+    {
+        if (backgroundGlass == null) return;
+        var nativeOwner = ImGuiP.FindWindowByName(window.WindowName);
+        appearing |= !nativeOwner.IsNull && nativeOwner.Appearing;
+        backgroundGlass.Opacity = !plugin.Configuration.UiTransparencyEnabled ? 1 : appearing || !windowOpacities.TryGetValue(window, out var opacity)
+            ? plugin.Configuration.UiWindowOpacityPercent / 100f : opacity.CurrentOpacity;
     }
 
     internal void ApplyWindowOpacity(AethertekUI.MaterialWindowOpacity opacity, string windowName)
@@ -271,11 +392,42 @@ internal sealed class TtslAppearance : IDisposable
         { plugin.Configuration.UiTransparencyEnabled = enabled; plugin.Configuration.Save(); }
     }
 
+    private void BrowseImage()
+        => imagePicker.OpenFileDialog(UiText.T("Choose background image") + "###TTSLBackgroundImagePicker",
+            UiText.T("Images") + "{.png,.jpg,.jpeg,.bmp,.gif,.webp,.tif,.tiff,.dds,.tga},.*", (accepted, path) =>
+            {
+                if (!accepted) return;
+                var previous = plugin.Configuration.UiColors?.GlassImagePath;
+                plugin.Configuration.UiColors = colorDraft = colorDraft with { GlassImagePath = path };
+                if (path != previous) plugin.Configuration.Save();
+            });
+
+    private void DrawScreenshotPause(string id)
+    {
+        var paused = backgroundGlass?.ScreenshotsPaused == true;
+        if (!paused && colorDraft.Mode == MaterialColorMode.Glassmorphism && colorDraft.GlassBackground == MaterialGlassBackground.Image)
+        { UiGui.TextWrapped("Image backgrounds remain visible to screenshots."); return; }
+        ImGui.PushID(id);
+        ImGui.BeginDisabled(!paused && backgroundGlass?.CanPauseForScreenshots != true);
+        try
+        {
+            if (MaterialSelection.Checkbox("##pause-backdrop", UiText.T("Pause backdrop for screenshots"), ref paused,
+                Math.Max(1, ImGui.GetContentRegionAvail().X))) backgroundGlass?.TrySetScreenshotsPaused(paused);
+        }
+        finally { ImGui.EndDisabled(); ImGui.PopID(); }
+    }
+
     internal void DrawWindowSettings()
     {
+        var styling = plugin.Configuration.UiStylingEnabled;
+        if (MaterialSelection.Checkbox("UI styling", UiText.T("UI styling"), ref styling, Math.Max(1, ImGui.GetContentRegionAvail().X))) SetStyling(styling);
+        var locked = plugin.Configuration.UiWindowsLocked;
+        if (MaterialSelection.Checkbox("Lock window movement and resizing", UiText.T("Lock window movement and resizing"), ref locked, Math.Max(1, ImGui.GetContentRegionAvail().X)))
+        { plugin.Configuration.UiWindowsLocked = locked; plugin.Configuration.Save(); }
+        DrawScreenshotPause("transparency");
         var muted = plugin.Configuration.UiSoundsMuted;
         if (UiGui.Checkbox("Mute UI sounds###UiSoundsMuted", ref muted)) SetSoundsMuted(muted);
-        ImGui.BeginDisabled(muted || !theme.IsLcars);
+        ImGui.BeginDisabled(muted || !LcarsActive);
         UiGui.Button("Preview UI sound###ui-sound-preview", cue: MaterialUiSoundCue.Preview);
         ImGui.EndDisabled();
         if (sounds.Error is not null) UiGui.TextDisabled("Audio output is unavailable.");

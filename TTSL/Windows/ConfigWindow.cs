@@ -18,7 +18,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
     private readonly Plugin plugin;
 
     public ConfigWindow(Plugin plugin)
-        : base($"{PluginInfo.DisplayName} Settings##TTSLConfig")
+        : base(plugin, $"{PluginInfo.DisplayName} Settings##TTSLConfig")
     {
         this.plugin = plugin;
         SizeConstraints = new WindowSizeConstraints
@@ -41,6 +41,7 @@ public sealed class ConfigWindow : PositionedWindow, IDisposable
     public override void Draw()
     {
         BeginMaterialContent();
+        using var structuralBackgrounds = MaterialSkin.StructuralBackgroundStyle();
         WindowMotion.DrawChrome();
         if (MaterialTheme.Current.IsLcars) MaterialLcars.Header(PluginInfo.DisplayName + " · " + UiText.T("Settings"));
         UiGui.TitleWithButtons(PluginInfo.DisplayName+" Settings",PluginInfo.DisplayName+" "+UiText.T("Settings"), this);

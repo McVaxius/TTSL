@@ -11,6 +11,7 @@ namespace TTSL.Windows;
 public sealed class SetupWizardWindow : Window, IDisposable
 {
     private readonly MaterialWindowMotion windowMotion = new();
+    private readonly MaterialWindowLock movementLock = new();
     private bool materialBackdropStylePushed;
     private enum SetupMode
     {
@@ -88,16 +89,18 @@ public sealed class SetupWizardWindow : Window, IDisposable
     {
         var width = 560f * ImGui.GetIO().FontGlobalScale;
         ImGui.SetNextWindowSizeConstraints(new Vector2(width, 0), new Vector2(width, float.MaxValue));
-        if (TtslPresentation.HasMaterial)
+        if (TtslPresentation.HasMaterial || plugin.Appearance.BackgroundEnabled)
         {
             ImGui.PushStyleColor(ImGuiCol.WindowBg, Vector4.Zero);
             materialBackdropStylePushed = true;
         }
-        windowMotion.Prepare(this, reducedMotion: false, roundedCorners: true);
+        windowMotion.Prepare(this, reducedMotion: !plugin.Configuration.UiStylingEnabled, roundedCorners: plugin.Configuration.UiStylingEnabled);
+        movementLock.Apply(this, plugin.Configuration.UiWindowsLocked);
     }
 
     public override void PostDraw()
     {
+        movementLock.Restore(this);
         windowMotion.Restore(this);
         ReleaseMaterialBackdropStyle();
         UiGui.ImageTitleWithStatus(this, "TTSL " + UiText.T("Setup Wizard"), plugin.OriginalIcon, status: plugin.TitlebarStatus);
@@ -113,7 +116,9 @@ public sealed class SetupWizardWindow : Window, IDisposable
     public override void Draw()
     {
         ReleaseMaterialBackdropStyle();
+        plugin.Appearance.PrepareBackgroundOpacity(this, ImGui.IsWindowAppearing());
         MaterialSkin.Backdrop();
+        using var structuralBackgrounds = MaterialSkin.StructuralBackgroundStyle();
         windowMotion.DrawChrome();
         if (MaterialTheme.Current.IsLcars) MaterialLcars.Header(UiText.T("Setup Wizard"));
         UiGui.TitleWithButtons("TTSL Setup Wizard","TTSL "+UiText.T("Setup Wizard"), this);

@@ -21,7 +21,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     private readonly Plugin plugin;
 
     public MainWindow(Plugin plugin)
-        : base($"{PluginInfo.DisplayName}##TTSLMain")
+        : base(plugin, $"{PluginInfo.DisplayName}##TTSLMain")
     {
         this.plugin = plugin;
         SizeConstraints = new WindowSizeConstraints
@@ -65,6 +65,7 @@ public sealed class MainWindow : PositionedWindow, IDisposable
     public override void Draw()
     {
         BeginMaterialContent();
+        using var structuralBackgrounds = MaterialSkin.StructuralBackgroundStyle();
         WindowMotion.DrawChrome();
         var cfg = plugin.Configuration;
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0";

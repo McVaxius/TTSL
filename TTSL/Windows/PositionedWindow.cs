@@ -11,13 +11,16 @@ namespace TTSL.Windows;
 public abstract class PositionedWindow : Window
 {
     protected readonly MaterialWindowMotion WindowMotion = new();
+    private readonly MaterialWindowLock movementLock = new();
+    private readonly Plugin ownerPlugin;
     private bool materialBackdropStylePushed;
     private Vector2? pendingWindowPosition;
     private bool pendingPositionConditionReset;
 
-    protected PositionedWindow(string name, ImGuiWindowFlags flags = ImGuiWindowFlags.None)
+    protected PositionedWindow(Plugin plugin, string name, ImGuiWindowFlags flags = ImGuiWindowFlags.None)
         : base(name, flags)
     {
+        ownerPlugin = plugin;
     }
 
     public void QueueResetToOrigin()
@@ -35,16 +38,18 @@ public abstract class PositionedWindow : Window
             pendingWindowPosition = null;
             pendingPositionConditionReset = true;
         }
-        if (Ui.TtslPresentation.HasMaterial)
+        if (Ui.TtslPresentation.HasMaterial || ownerPlugin.Appearance.BackgroundEnabled)
         {
             ImGui.PushStyleColor(ImGuiCol.WindowBg, Vector4.Zero);
             materialBackdropStylePushed = true;
         }
-        WindowMotion.Prepare(this, reducedMotion: false, roundedCorners: true);
+        WindowMotion.Prepare(this, reducedMotion: !ownerPlugin.Configuration.UiStylingEnabled, roundedCorners: ownerPlugin.Configuration.UiStylingEnabled);
+        movementLock.Apply(this, ownerPlugin.Configuration.UiWindowsLocked);
     }
 
     public override void PostDraw()
     {
+        movementLock.Restore(this);
         WindowMotion.Restore(this);
         ReleaseMaterialBackdropStyle();
     }
@@ -52,6 +57,7 @@ public abstract class PositionedWindow : Window
     protected void BeginMaterialContent()
     {
         ReleaseMaterialBackdropStyle();
+        ownerPlugin.Appearance.PrepareBackgroundOpacity(this, ImGui.IsWindowAppearing());
         MaterialSkin.Backdrop();
     }
 

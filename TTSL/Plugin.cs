@@ -528,6 +528,7 @@ public sealed class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
+        if (Appearance.TryApplyCommand(args)) return;
         var arg = args.Trim().ToLowerInvariant();
         switch (arg)
         {

@@ -1436,5 +1436,37 @@ Chỉ biểu tượng: &apos;&lt;icon&gt;&apos;</value>
   <data name="Wave colour 2" xml:space="preserve"><value>Màu sóng 2</value></data>
   <data name="Wave colour 3" xml:space="preserve"><value>Màu sóng 3</value></data>
   <data name="Reset wave colours" xml:space="preserve"><value>Đặt lại màu sóng</value></data>
+  <data name="UI styling" xml:space="preserve"><value>Kiểu giao diện</value></data>
+  <data name="Lock window movement and resizing" xml:space="preserve"><value>Khóa di chuyển và thay đổi kích thước cửa sổ</value></data>
+  <data name="Use native UI" xml:space="preserve"><value>Dùng giao diện gốc</value></data>
+  <data name="Use styled UI" xml:space="preserve"><value>Dùng giao diện có kiểu</value></data>
+  <data name="Lock windows" xml:space="preserve"><value>Khóa cửa sổ</value></data>
+  <data name="Unlock windows" xml:space="preserve"><value>Mở khóa cửa sổ</value></data>
+  <data name="Background mode" xml:space="preserve"><value>Chế độ nền</value></data>
+  <data name="Waves" xml:space="preserve"><value>Sóng</value></data>
+  <data name="Lights" xml:space="preserve"><value>Ánh sáng</value></data>
+  <data name="Image" xml:space="preserve"><value>Hình ảnh</value></data>
+  <data name="Light effect" xml:space="preserve"><value>Hiệu ứng ánh sáng</value></data>
+  <data name="Ambient glows" xml:space="preserve"><value>Ánh sáng dịu</value></data>
+  <data name="Sweeping beams" xml:space="preserve"><value>Chùm sáng chuyển động</value></data>
+  <data name="Mouse-following glow" xml:space="preserve"><value>Ánh sáng theo chuột</value></data>
+  <data name="Image file" xml:space="preserve"><value>Tệp hình ảnh</value></data>
+  <data name="Browse..." xml:space="preserve"><value>Duyệt...</value></data>
+  <data name="Choose background image" xml:space="preserve"><value>Chọn ảnh nền</value></data>
+  <data name="Images" xml:space="preserve"><value>Hình ảnh</value></data>
+  <data name="Load image" xml:space="preserve"><value>Tải hình ảnh</value></data>
+  <data name="The image fills the window. Blur (%) applies to the image." xml:space="preserve"><value>Hình ảnh lấp đầy cửa sổ. Độ mờ (%) áp dụng cho hình ảnh.</value></data>
+  <data name="Choose an image file." xml:space="preserve"><value>Chọn tệp hình ảnh.</value></data>
+  <data name="Loading image..." xml:space="preserve"><value>Đang tải hình ảnh...</value></data>
+  <data name="Image could not be loaded." xml:space="preserve"><value>Không thể tải hình ảnh.</value></data>
+  <data name="Image backgrounds remain visible to screenshots." xml:space="preserve"><value>Nền hình ảnh vẫn hiển thị trong ảnh chụp màn hình.</value></data>
+  <data name="Light colours" xml:space="preserve"><value>Màu ánh sáng</value></data>
+  <data name="Reset light colours" xml:space="preserve"><value>Đặt lại màu ánh sáng</value></data>
+  <data name="Light colour 1" xml:space="preserve"><value>Màu ánh sáng 1</value></data>
+  <data name="Light colour 2" xml:space="preserve"><value>Màu ánh sáng 2</value></data>
+  <data name="Light colour 3" xml:space="preserve"><value>Màu ánh sáng 3</value></data>
+  <data name="Background blur" xml:space="preserve"><value>Làm mờ nền</value></data>
+  <data name="Blur (%)" xml:space="preserve"><value>Làm mờ (%)</value></data>
+  <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Tạm dừng nền để chụp ảnh màn hình</value></data>
 </root>
 
