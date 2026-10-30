@@ -340,9 +340,9 @@ internal sealed class TtslAppearance : IDisposable
         {
             case "lock": plugin.Configuration.UiWindowsLocked = true; break;
             case "unlock": plugin.Configuration.UiWindowsLocked = false; break;
-            case "ui": case "style": case "styling": SetStyling(!plugin.Configuration.UiStylingEnabled); return true;
-            case "ui on": case "style on": case "styling on": SetStyling(true); return true;
-            case "ui off": case "style off": case "styling off": SetStyling(false); return true;
+            case "style": case "styling": SetStyling(!plugin.Configuration.UiStylingEnabled); return true;
+            case "style on": case "styling on": SetStyling(true); return true;
+            case "style off": case "styling off": SetStyling(false); return true;
             default: return false;
         }
         plugin.Configuration.Save();
