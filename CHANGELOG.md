@@ -1,3 +1,8 @@
+2026-11-09 - 1.0.0.14 - Shared UI library update
+
+- Update shared text controls and glass rendering to the reviewed AethertekUI 0.3.1 baseline.
+- The shared-library rollout to other existing plugins is in progress.
+
 2026-10-29 - 1.0.0.13 - Shared glass backgrounds and window controls
 
 - Add actual glass backgrounds, Waves/Lights/Image choices, image browsing and runtime screenshot pause in Colour and Transparency. Preserve palettes, languages, opacity/fade, HUD behavior and window placement actions.
