@@ -1,3 +1,8 @@
+2026-11-12 - 1.0.0.15 - Highlight contrast
+
+- Add Highlight contrast (0–100%) to Appearance and Colour, defaulting to 50% when absent. Preserve saved zero and custom values.
+- Use AethertekUI 0.3.2 for clearer controls and selection states while retaining palettes, native styling, opacity, language and existing plugin behavior.
+
 2026-11-09 - 1.0.0.14 - Shared UI library update
 
 - Update shared text controls and glass rendering to the reviewed AethertekUI 0.3.1 baseline.

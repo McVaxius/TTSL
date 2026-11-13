@@ -1468,5 +1468,7 @@ Somente ícone: &apos;&lt;icon&gt;&apos;</value>
   <data name="Background blur" xml:space="preserve"><value>Desfoque do fundo</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>Desfoque (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Pausar o fundo para capturas de tela</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>Contraste de destaque</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>Torna os controles e os estados de seleção mais distintos.</value></data>
 </root>
 

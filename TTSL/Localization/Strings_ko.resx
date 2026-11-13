@@ -1444,4 +1444,6 @@
   <data name="Background blur" xml:space="preserve"><value>배경 흐림</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>흐림 (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>스크린샷 촬영을 위해 배경 일시 정지</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>강조 대비</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>컨트롤과 선택 상태를 더 뚜렷하게 표시합니다.</value></data>
 </root>

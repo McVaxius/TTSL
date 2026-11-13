@@ -1444,4 +1444,6 @@ Icône seule: '&lt;icon&gt;'</value>
   <data name="Background blur" xml:space="preserve"><value>Flou d’arrière-plan</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>Flou (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Figer l’arrière-plan pour les captures d’écran</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>Contraste des surbrillances</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>Rend les commandes et les états de sélection plus distincts.</value></data>
 </root>

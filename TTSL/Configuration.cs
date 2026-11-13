@@ -11,6 +11,8 @@ public sealed class Configuration : IPluginConfiguration
     public uint UiAccentRgb { get; set; } = 0x1CC9E6;
     public AethertekUI.MaterialColorSettings UiColors { get; set; } = new();
     public bool UiStylingEnabled { get; set; } = true;
+    private int uiHighlightContrastPercent = 50;
+    public int UiHighlightContrastPercent { get => uiHighlightContrastPercent; set => uiHighlightContrastPercent = Math.Clamp(value, 0, 100); }
     public bool UiWindowsLocked { get; set; }
     public bool UiSoundsMuted { get; set; } = true;
     public bool UiCompact { get; set; } = true;

@@ -1468,5 +1468,7 @@ Chỉ biểu tượng: &apos;&lt;icon&gt;&apos;</value>
   <data name="Background blur" xml:space="preserve"><value>Làm mờ nền</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>Làm mờ (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Tạm dừng nền để chụp ảnh màn hình</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>Độ tương phản tô sáng</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>Giúp phân biệt rõ hơn các điều khiển và trạng thái được chọn.</value></data>
 </root>
 

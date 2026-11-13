@@ -1480,4 +1480,6 @@
   <data name="Background blur" xml:space="preserve"><value>पृष्ठभूमि धुंधलापन</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>धुंधलापन (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>स्क्रीनशॉट के लिए पृष्ठभूमि रोकें</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>हाइलाइट कंट्रास्ट</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>नियंत्रणों और चयन स्थितियों को अधिक स्पष्ट बनाता है।</value></data>
 </root>

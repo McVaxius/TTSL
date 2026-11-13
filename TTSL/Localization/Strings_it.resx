@@ -1444,4 +1444,6 @@ Solo icona: '&lt;icon&gt;'</value>
   <data name="Background blur" xml:space="preserve"><value>Sfocatura dello sfondo</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>Sfocatura (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Metti in pausa lo sfondo per gli screenshot</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>Contrasto delle evidenziazioni</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>Rende più distinti i controlli e gli stati di selezione.</value></data>
 </root>

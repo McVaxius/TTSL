@@ -1444,4 +1444,6 @@
   <data name="Background blur" xml:space="preserve"><value>背景のぼかし</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>ぼかし（%）</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>スクリーンショット用に背景を一時停止</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>ハイライトのコントラスト</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>コントロールと選択状態を見分けやすくします。</value></data>
 </root>

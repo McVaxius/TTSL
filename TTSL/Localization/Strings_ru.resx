@@ -1444,4 +1444,6 @@
   <data name="Background blur" xml:space="preserve"><value>Размытие фона</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>Размытие (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Приостановить обновление фона для снимков экрана</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>Контраст выделения</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>Делает элементы управления и состояния выбора более различимыми.</value></data>
 </root>

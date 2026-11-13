@@ -1468,5 +1468,7 @@ Ikon saja: &apos;&lt;icon&gt;&apos;</value>
   <data name="Background blur" xml:space="preserve"><value>Keburaman latar belakang</value></data>
   <data name="Blur (%)" xml:space="preserve"><value>Keburaman (%)</value></data>
   <data name="Pause backdrop for screenshots" xml:space="preserve"><value>Jeda latar belakang untuk tangkapan layar</value></data>
+  <data name="Highlight contrast" xml:space="preserve"><value>Kontras sorotan</value></data>
+  <data name="Makes controls and selection states more distinct." xml:space="preserve"><value>Membuat kontrol dan status pilihan lebih mudah dibedakan.</value></data>
 </root>
 
