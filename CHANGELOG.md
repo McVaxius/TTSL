@@ -1,6 +1,6 @@
-Unreleased - Portable interface fonts
+2026-11-22 - 1.0.0.16 - Portable interface fonts
 
-- Bundle the interface fonts and load them from the Dalamud plugin directory for Windows and Wine.
+- **Updated interface fonts.** Dalamud loads bundled fonts on Windows and Wine.
 
 2026-11-12 - 1.0.0.15 - Highlight contrast
 
