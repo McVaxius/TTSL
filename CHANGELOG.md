@@ -1,3 +1,7 @@
+Unreleased - Portable interface fonts
+
+- Bundle the interface fonts and load them from the Dalamud plugin directory for Windows and Wine.
+
 2026-11-12 - 1.0.0.15 - Highlight contrast
 
 - Add Highlight contrast (0–100%) to Appearance and Colour, defaulting to 50% when absent. Preserve saved zero and custom values.

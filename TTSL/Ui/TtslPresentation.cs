@@ -1,5 +1,6 @@
 using System.Numerics;
 using AethertekUI;
+using AethertekUI.Dalamud;
 using Dalamud.Bindings.ImGui;
 
 namespace TTSL.Ui;
@@ -10,7 +11,16 @@ internal static class TtslPresentation
 {
     internal const uint ReferenceAccent = 0x1CC9E6;
     internal static readonly float[] FontSizes = [16, 16, 32, 22, 22, 18, 26];
-    internal static readonly string[] FontFiles = ["segoeui.ttf", "seguisb.ttf", "segoeuib.ttf", "seguisb.ttf", "seguisb.ttf", "seguisb.ttf", "segoeuib.ttf"];
+    internal static readonly MaterialFontWeight[] FontWeights =
+    [
+        MaterialFontWeight.Regular,
+        MaterialFontWeight.Semibold,
+        MaterialFontWeight.Bold,
+        MaterialFontWeight.Semibold,
+        MaterialFontWeight.Semibold,
+        MaterialFontWeight.Semibold,
+        MaterialFontWeight.Bold,
+    ];
     internal static float AtlasHeight(UiFontRole role) => FontSizes[(int)role] * 4 / 3;
     internal static bool HasMaterial => MaterialTheme.Current.IsGlassmorphism || MaterialTheme.Current.IsSpatial || MaterialTheme.Current.IsCyberpunk;
     internal static bool Compact => MaterialTheme.Current.Density == MaterialDensity.Compact;
