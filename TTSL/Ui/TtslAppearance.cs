@@ -2,6 +2,7 @@ using System.Numerics;
 using AethertekUI;
 using AethertekUI.Dalamud;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Interface.ManagedFontAtlas;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Windowing;
 using Dalamud.Interface;
@@ -14,11 +15,12 @@ internal sealed class TtslAppearance : IDisposable
     private readonly System.Collections.Generic.Dictionary<Dalamud.Interface.Windowing.IWindow, AethertekUI.MaterialWindowOpacity> windowOpacities = new();
     private readonly AethertekUI.MaterialWindowOpacity fontStatusOpacity = new();
     private readonly Plugin plugin;
-    private readonly MaterialTextHost shapedText;
-    private readonly MaterialUiSoundPlayer sounds = new();
+    private MaterialTextHost? shapedText;
+    private MaterialUiSoundPlayer? sounds;
     private bool soundsActive;
-    private UiText text;
-    private TtslFonts fonts;
+    private UiText? text;
+    private volatile IReadOnlyDictionary<string, string> nativeLabels;
+    private TtslFonts? fonts;
     private MaterialTheme theme;
     private readonly MaterialWindowFold fontStatusMotion = new();
     private readonly MaterialWindowDecorations fontStatusDecorations = new();
@@ -34,25 +36,13 @@ internal sealed class TtslAppearance : IDisposable
     private bool fontIssueLogged;
 
     private readonly FileDialogManager imagePicker = new();
+    private bool imagePickerOpen;
     private MaterialGlassRenderer? backgroundGlass;
     internal bool BackgroundEnabled => plugin.Configuration.UiStylingEnabled &&
         (colorDraft.HasBackgroundBlur(colorDraft.Mode) || colorDraft.Mode == MaterialColorMode.Glassmorphism && colorDraft.GlassBackground == MaterialGlassBackground.Image);
 
     private void Apply()
     {
-        var language = UiText.Languages.Any(l => l.Code == plugin.Configuration.UiLanguage) ? plugin.Configuration.UiLanguage : "en";
-        if (language != appliedLanguage)
-        {
-            fonts?.Dispose();
-            text?.Dispose();
-            text = new(language, PushFont);
-            fonts = new(Plugin.PluginInterface.UiBuilder.FontAtlas, text.GlyphRanges(), language, Plugin.PluginInterface.AssemblyLocation.DirectoryName!);
-            appliedLanguage = language;
-            checkedGeneration = -1;
-            checkedHindiGeneration = -1;
-            fontIssueLogged = false;
-            plugin.UpdateDtrBar();
-        }
         var savedColors = plugin.Configuration.UiColors ?? new MaterialColorSettings();
         if (savedColors != appliedSavedColors)
         {
@@ -71,7 +61,7 @@ internal sealed class TtslAppearance : IDisposable
         theme.HighlightContrastPercent = plugin.Configuration.UiHighlightContrastPercent;
         theme.Density = plugin.Configuration.UiCompact ? MaterialDensity.Compact : MaterialDensity.Standard;
         var active = LcarsActive && !plugin.Configuration.UiSoundsMuted;
-        if (soundsActive && !active) sounds.Stop();
+        if (soundsActive && !active) sounds?.Stop();
         soundsActive = active;
     }
 
@@ -83,22 +73,28 @@ internal sealed class TtslAppearance : IDisposable
 
     private void DrawCore(WindowSystem windows)
     {
-        Apply();
-        if (!windows.Windows.Any(window => window.IsOpen))
+        var language = UiText.Languages.Any(l => l.Code == plugin.Configuration.UiLanguage) ? plugin.Configuration.UiLanguage : "en";
+        if (language != appliedLanguage)
         {
-            backgroundGlass?.EndFrame(false);
-            if (fonts.Ready && checkedGeneration == fonts.Generation)
-            {
-                using var pickerText = text.Enter();
-                using var pickerShaping = shapedText.Push();
-                using var pickerTheme = MaterialTheme.Push(theme, ImGuiHelpers.GlobalScale,
-                    plugin.Configuration.UiStylingEnabled ? MaterialStyleMode.ColorsOnly : MaterialStyleMode.Native);
-                using var pickerBody = fonts.Push(UiFontRole.Body);
-                using var pickerBackground = MaterialSkin.PushBackgroundRenderer(null, false, 0);
-                imagePicker.Draw();
-            }
+            ReleaseFonts();
+            this.text?.Dispose();
+            this.text = null;
+            nativeLabels = UiText.ReadNativeLabels(language);
+            appliedLanguage = language;
+            plugin.UpdateDtrBar();
+        }
+
+        var anyWindowOpen = windows.Windows.Any(window => window.IsOpen);
+        if (!anyWindowOpen && !imagePickerOpen)
+        {
+            ReleaseWindowResources();
             return;
         }
+
+        Apply();
+        var text = this.text ??= new(appliedLanguage, PushFont);
+        var fonts = this.fonts ??= CreateFonts(text);
+        var shapedText = this.shapedText ??= new(Plugin.TextureProvider);
         using var resources = text.Enter();
         using var shaping = shapedText.Push();
         if (fonts.Ready && checkedHindiGeneration != fonts.Generation)
@@ -159,12 +155,28 @@ internal sealed class TtslAppearance : IDisposable
             ApplyWindowOpacity(fontStatusOpacity, "Thick Thighs Save Lives##FontStatus");
             return;
         }
+        if (!anyWindowOpen)
+        {
+            DisposeBackgroundGlass();
+            using var body = fonts.Push(UiFontRole.Body);
+            using var background = MaterialSkin.PushBackgroundRenderer(null, false, 0);
+            imagePicker.Draw();
+            return;
+        }
+
         var blur = plugin.Configuration.UiStylingEnabled && colorDraft.HasBackgroundBlur(colorDraft.Mode);
         var image = plugin.Configuration.UiStylingEnabled && colorDraft.Mode == MaterialColorMode.Glassmorphism &&
             colorDraft.GlassBackground == MaterialGlassBackground.Image;
-        if (blur || image) backgroundGlass ??= new(Plugin.PluginInterface, Plugin.Log);
-        backgroundGlass?.ConfigureImage(Plugin.TextureProvider, image, plugin.Configuration.UiColors?.GlassImagePath);
-        backgroundGlass?.BeginFrame();
+        if (blur || image)
+        {
+            backgroundGlass ??= new(Plugin.PluginInterface, Plugin.Log);
+            backgroundGlass.BeginFrame(blur, image);
+            backgroundGlass.ConfigureImage(Plugin.TextureProvider, image, plugin.Configuration.UiColors?.GlassImagePath);
+        }
+        else
+        {
+            DisposeBackgroundGlass();
+        }
         var restoreBackground = blur || image
             ? windows.Windows.Where(window => (window.Flags & ImGuiWindowFlags.NoBackground) == 0).ToArray()
             : Array.Empty<Window>();
@@ -208,7 +220,11 @@ internal sealed class TtslAppearance : IDisposable
                 backgroundGlass?.EndFrame((blur || image) && completed);
             }
         }
-        using (fonts.Push(UiFontRole.Body)) imagePicker.Draw();
+        if (imagePickerOpen)
+        {
+            using var body = fonts.Push(UiFontRole.Body);
+            imagePicker.Draw();
+        }
     }
 
     private readonly System.Collections.Generic.Dictionary<Window, MaterialAppearanceTitleBar> appearanceTitleBars = new();
@@ -321,31 +337,72 @@ internal sealed class TtslAppearance : IDisposable
     internal TtslAppearance(Plugin plugin)
     {
         this.plugin = plugin;
-        shapedText = new(Plugin.TextureProvider);
         appliedLanguage = UiText.Languages.Any(l => l.Code == plugin.Configuration.UiLanguage) ? plugin.Configuration.UiLanguage : "en";
-        text = new(appliedLanguage, PushFont);
-        fonts = new(Plugin.PluginInterface.UiBuilder.FontAtlas, text.GlyphRanges(), appliedLanguage, Plugin.PluginInterface.AssemblyLocation.DirectoryName!);
+        nativeLabels = UiText.ReadNativeLabels(appliedLanguage);
         appliedAccent = plugin.Configuration.UiAccentRgb & 0xFFFFFF;
         theme = TtslPresentation.Theme(appliedAccent);
         var rgb = TtslPresentation.Rgb(appliedAccent);
         accentDraft = new(rgb.X, rgb.Y, rgb.Z);
         Plugin.PluginInterface.UiBuilder.ResizeBuffers += ReleaseBackgroundResources;
     }
-    private IDisposable PushFont(UiFontRole role) => fonts.Push(role);
-    internal string Label(string key) => text.Label(key);
+    private TtslFonts CreateFonts(UiText text)
+    {
+        var pluginInterface = Plugin.PluginInterface;
+        var atlas = pluginInterface.UiBuilder.CreateFontAtlas(FontAtlasAutoRebuildMode.OnNewFrame, true, "TTSL UI");
+        try
+        {
+            return new(atlas, text.GlyphRanges(), appliedLanguage, pluginInterface.AssemblyLocation.DirectoryName!);
+        }
+        catch
+        {
+            atlas.Dispose();
+            throw;
+        }
+    }
+
+    private IDisposable PushFont(UiFontRole role) => fonts!.Push(role);
+    internal string Label(string key) => text!.Label(key);
     // DTR is game-rendered and cannot use the ImGui shaping bridge.
-    internal string NativeLabel(string key) => text.Language == "hi" ? key : text.Label(key);
-    internal string Format(string key, params object?[] arguments) => text.Format(key, arguments);
+    internal string NativeLabel(string key) => nativeLabels.TryGetValue(key, out var label) ? label : key;
+    internal string Format(string key, params object?[] arguments) => text!.Format(key, arguments);
 
     public void Dispose()
     {
         Plugin.PluginInterface.UiBuilder.ResizeBuffers -= ReleaseBackgroundResources;
         imagePicker.Reset();
-        backgroundGlass?.Dispose();
-        sounds.Dispose(); fonts?.Dispose(); text?.Dispose(); shapedText.Dispose();
+        imagePickerOpen = false;
+        ReleaseWindowResources();
     }
 
     private void ReleaseBackgroundResources() => backgroundGlass?.ReleaseResources();
+
+    private void DisposeBackgroundGlass()
+    {
+        backgroundGlass?.Dispose();
+        backgroundGlass = null;
+    }
+
+    private void ReleaseFonts()
+    {
+        fonts?.Dispose();
+        fonts = null;
+        checkedGeneration = -1;
+        checkedHindiGeneration = -1;
+        fontIssueLogged = false;
+    }
+
+    private void ReleaseWindowResources()
+    {
+        DisposeBackgroundGlass();
+        ReleaseFonts();
+        shapedText?.Dispose();
+        shapedText = null;
+        text?.Dispose();
+        text = null;
+        sounds?.Dispose();
+        sounds = null;
+        soundsActive = false;
+    }
 
     private bool LcarsActive => plugin.Configuration.UiStylingEnabled && theme.IsLcars;
 
@@ -367,19 +424,19 @@ internal sealed class TtslAppearance : IDisposable
     private void SetStyling(bool enabled)
     {
         plugin.Configuration.UiStylingEnabled = enabled;
-        if (!enabled) sounds.Stop();
+        if (!enabled) sounds?.Stop();
         plugin.Configuration.Save();
     }
 
     private void PlaySound(MaterialUiSoundCue cue)
     {
-        if (LcarsActive && !plugin.Configuration.UiSoundsMuted) sounds.TryPlay(cue);
+        if (LcarsActive && !plugin.Configuration.UiSoundsMuted) (sounds ??= new()).TryPlay(cue);
     }
 
     private void SetSoundsMuted(bool muted)
     {
         plugin.Configuration.UiSoundsMuted = muted;
-        if (muted) sounds.Stop();
+        if (muted) sounds?.Stop();
         foreach (var speaker in soundButtons.Values) speaker.Icon = muted ? FontAwesomeIcon.VolumeMute : FontAwesomeIcon.VolumeUp;
         plugin.Configuration.Save();
     }
@@ -408,14 +465,18 @@ internal sealed class TtslAppearance : IDisposable
     }
 
     private void BrowseImage()
-        => imagePicker.OpenFileDialog(UiText.T("Choose background image") + "###TTSLBackgroundImagePicker",
+    {
+        imagePicker.OpenFileDialog(UiText.T("Choose background image") + "###TTSLBackgroundImagePicker",
             UiText.T("Images") + "{.png,.jpg,.jpeg,.bmp,.gif,.webp,.tif,.tiff,.dds,.tga},.*", (accepted, path) =>
             {
+                imagePickerOpen = false;
                 if (!accepted) return;
                 var previous = plugin.Configuration.UiColors?.GlassImagePath;
                 plugin.Configuration.UiColors = colorDraft = colorDraft with { GlassImagePath = path };
                 if (path != previous) plugin.Configuration.Save();
             });
+        imagePickerOpen = true;
+    }
 
     private void DrawScreenshotPause(string id)
     {
@@ -445,7 +506,7 @@ internal sealed class TtslAppearance : IDisposable
         ImGui.BeginDisabled(muted || !LcarsActive);
         UiGui.Button("Preview UI sound###ui-sound-preview", cue: MaterialUiSoundCue.Preview);
         ImGui.EndDisabled();
-        if (sounds.Error is not null) UiGui.TextDisabled("Audio output is unavailable.");
+        if (sounds?.Error is not null) UiGui.TextDisabled("Audio output is unavailable.");
         var showTitlebarStatus = plugin.Configuration.UiShowTitlebarStatus;
         if (UiGui.Checkbox(UiText.T("Show titlebar status") + "###UiShowTitlebarStatus", ref showTitlebarStatus))
         { plugin.Configuration.UiShowTitlebarStatus = showTitlebarStatus; plugin.Configuration.Save(); }

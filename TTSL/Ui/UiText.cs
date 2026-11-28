@@ -83,6 +83,25 @@ internal sealed class UiText : IDisposable
     internal static string F(FormattableString text) => string.Format(Current.Culture, T(text.Format), text.GetArguments());
     internal string Format(string key, params object?[] args) => string.Format(Culture, Resources.GetString(key, false) ?? key, args);
     internal string Label(string key) => Resources.GetString(key, false) ?? key;
+    internal static IReadOnlyDictionary<string, string> ReadNativeLabels(string language)
+    {
+        var labels = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (language is "en" or "hi") return labels;
+
+        var manager = new ResourceManager("TTSL.Localization.Strings_" + language.Replace('-', '_'), typeof(UiText).Assembly);
+        try
+        {
+            foreach (var key in new[] { "On", "Off", "Click to toggle the HUD." })
+            {
+                labels.Add(key, manager.GetString(key, CultureInfo.InvariantCulture) ?? key);
+            }
+        }
+        finally
+        {
+            manager.ReleaseAllResources();
+        }
+        return labels;
+    }
     internal static IDisposable Font(UiFontRole role) => Current.pushFont(role);
     internal Scope Enter() => new(this);
     internal readonly struct Scope : IDisposable

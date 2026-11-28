@@ -1,3 +1,8 @@
+2026-11-28 - 1.0.0.17 - On-demand interface resources
+
+- **Updated interface resource handling.** TTSL loads window fonts and appearance resources when needed and releases them when the interface closes.
+- The DTR retains its localized HUD status and tooltip, and the background image picker stays open when its parent closes.
+
 2026-11-22 - 1.0.0.16 - Portable interface fonts
 
 - **Updated interface fonts.** Dalamud loads bundled fonts on Windows and Wine.

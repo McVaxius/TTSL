@@ -7,11 +7,14 @@ namespace TTSL.Ui;
 
 internal sealed class TtslFonts : IDisposable
 {
+    private readonly IFontAtlas atlas;
     private readonly IFontHandle[] handles;
     private int generation;
     internal int Generation => System.Threading.Volatile.Read(ref generation);
     internal TtslFonts(IFontAtlas atlas, ushort[] ranges, string language, string assetRoot)
     {
+        this.atlas = atlas;
+        atlas.BuildStepChange += MaterialFontAtlas.ReleaseRasterizedInputs;
         handles = TtslPresentation.FontSizes.Select((_, index) => MaterialFontAtlas.CreateFont(
             atlas,
             TtslPresentation.FontWeights[index],
@@ -41,5 +44,14 @@ internal sealed class TtslFonts : IDisposable
         if(!handle.Available || handle.LoadException is not null) throw new InvalidOperationException("Thick Thighs Save Lives fonts are not ready.",handle.LoadException);
         return handle.Push();
     }
-    public void Dispose() { foreach(var handle in handles) { handle.ImFontChanged-=FontChanged;handle.Dispose(); } }
+    public void Dispose()
+    {
+        atlas.BuildStepChange -= MaterialFontAtlas.ReleaseRasterizedInputs;
+        foreach (var handle in handles)
+        {
+            handle.ImFontChanged -= FontChanged;
+            handle.Dispose();
+        }
+        atlas.Dispose();
+    }
 }
