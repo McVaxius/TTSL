@@ -1,3 +1,7 @@
+2026-11-28 - 1.0.0.18 - Backdrop memory
+
+- Release the previous backdrop while interface fonts reload. The selected backdrop returns when the window is ready.
+
 2026-11-28 - 1.0.0.17 - On-demand interface resources
 
 - **Updated interface resource handling.** TTSL loads window fonts and appearance resources when needed and releases them when the interface closes.

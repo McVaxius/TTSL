@@ -126,7 +126,7 @@ internal sealed class TtslAppearance : IDisposable
         using var chrome = plugin.Configuration.UiStylingEnabled ? MaterialWindowChrome.Push() : default;
         if (!fonts.Ready || checkedGeneration != fonts.Generation)
         {
-            backgroundGlass?.EndFrame(false);
+            DisposeBackgroundGlass();
             if (!fontIssueLogged && fonts.LoadException is { } error) { Plugin.Log.Error(error, "[TTSL] Required UI fonts failed to load."); fontIssueLogged = true; }
             ImGui.SetNextWindowSize(new Vector2(460 * ImGuiHelpers.GlobalScale, 0));
             fontStatusMotion.PreDraw("Thick Thighs Save Lives##FontStatus", null, null, reducedMotion: !plugin.Configuration.UiStylingEnabled,
